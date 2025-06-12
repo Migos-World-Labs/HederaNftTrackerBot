@@ -28,6 +28,12 @@ class NFTSalesBot {
         this.client.once(Events.ClientReady, async () => {
             console.log(`Bot logged in as ${this.client.user.tag}!`);
             console.log(`Bot is in ${this.client.guilds.cache.size} servers`);
+            
+            // Debug: List all servers the bot is in
+            console.log('Server details:');
+            this.client.guilds.cache.forEach(guild => {
+                console.log(`- ${guild.name} (${guild.id}) - ${guild.memberCount} members`);
+            });
             this.generateInviteLink();
             await this.initializeDatabase();
             await this.configureExistingServers();
