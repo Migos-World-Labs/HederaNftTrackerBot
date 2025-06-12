@@ -195,7 +195,7 @@ class NFTSalesBot {
         if (trackedCollections.length > 0) {
             embed.addFields({
                 name: '🔍 Tracked Collections',
-                value: trackedCollections.map(c => `• ${c.name || 'Unknown'} (\`${c.tokenId}\`)`).join('\n') || 'None',
+                value: trackedCollections.map(c => `• ${c.name || 'Unknown'} (\`${c.token_id || c.tokenId}\`)`).join('\n') || 'None',
                 inline: false
             });
         }
@@ -218,7 +218,7 @@ class NFTSalesBot {
             return;
         }
 
-        const success = storage.addTrackedCollection(tokenId, collectionName);
+        const success = await this.storage.addTrackedCollection(message.guild.id, tokenId, collectionName);
         
         if (success) {
             await message.reply(`✅ Added collection **${collectionName || tokenId}** to tracking list.`);
@@ -234,7 +234,7 @@ class NFTSalesBot {
         }
 
         const tokenId = args[0];
-        const success = storage.removeTrackedCollection(tokenId);
+        const success = await this.storage.removeTrackedCollection(message.guild.id, tokenId);
         
         if (success) {
             await message.reply(`✅ Removed collection **${tokenId}** from tracking list.`);
@@ -244,7 +244,7 @@ class NFTSalesBot {
     }
 
     async handleListCollectionsCommand(message) {
-        const trackedCollections = storage.getTrackedCollections();
+        const trackedCollections = await this.storage.getTrackedCollections(message.guild.id);
         
         if (trackedCollections.length === 0) {
             await message.reply('No collections are currently being tracked. Use `!nft add <token_id>` to add one.');
@@ -287,7 +287,7 @@ class NFTSalesBot {
             
             for (const [guildId, guild] of guilds) {
                 // Check if server is already configured
-                const existingConfig = await storage.getServerConfig(guildId);
+                const existingConfig = await this.storage.getServerConfig(guildId);
                 
                 if (!existingConfig) {
                     console.log(`Configuring server: ${guild.name}`);
@@ -311,7 +311,7 @@ class NFTSalesBot {
                 const firstChannel = textChannels.first();
                 
                 // Save server configuration
-                await storage.setServerConfig(guild.id, firstChannel.id, guild.name, true);
+                await this.storage.setServerConfig(guild.id, firstChannel.id, guild.name, true);
                 
                 if (sendWelcome) {
                     // Send welcome message
@@ -456,7 +456,7 @@ class NFTSalesBot {
         }
 
         try {
-            const result = await storage.addCollection(guildId, tokenId, name, true);
+            const result = await this.storage.addCollection(guildId, tokenId, name, true);
             
             if (result) {
                 await interaction.reply({
@@ -484,7 +484,7 @@ class NFTSalesBot {
         const guildId = interaction.guildId;
 
         try {
-            const success = await storage.removeCollection(guildId, tokenId);
+            const success = await this.storage.removeCollection(guildId, tokenId);
             
             if (success) {
                 await interaction.reply({
@@ -582,7 +582,7 @@ class NFTSalesBot {
     async initializeDatabase() {
         try {
             console.log('Initializing database storage...');
-            await storage.init();
+            await this.storage.init();
             console.log('Database storage ready');
         } catch (error) {
             console.error('Failed to initialize database:', error);
@@ -612,7 +612,7 @@ class NFTSalesBot {
             if (!wildTigersSale) {
                 console.log('No Wild Tigers sales found in recent data');
                 // Try any tracked collection sale for testing
-                const trackedCollections = await storage.getCollections();
+                const trackedCollections = await this.storage.getCollections();
                 const trackedTokenIds = trackedCollections.map(c => c.token_id);
                 const anyTrackedSale = recentSales.find(sale => trackedTokenIds.includes(sale.token_id));
                 

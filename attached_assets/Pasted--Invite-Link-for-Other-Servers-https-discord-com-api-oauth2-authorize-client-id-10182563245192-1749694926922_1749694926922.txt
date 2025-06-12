@@ -1,0 +1,28 @@
+🔗 Invite Link for Other Servers:
+https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissions=19456&scope=bot
+
+Required Permissions: Send Messages, Embed Links, View Channel
+
+Initializing database storage...
+Failed to initialize database: ReferenceError: storage is not defined
+    at NFTSalesBot.initializeDatabase (/home/runner/workspace/bot.js:585:13)
+    at Client.<anonymous> (/home/runner/workspace/bot.js:32:24)
+    at Object.onceWrapper (node:events:633:26)
+    at Client.emit (node:events:518:28)
+    at WebSocketManager.triggerClientReady (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketManager.js:384:17)
+    at WebSocketManager.checkShardsReady (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketManager.js:367:10)
+    at WebSocketShard.<anonymous> (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketManager.js:197:16)
+    at WebSocketShard.emit (node:events:518:28)
+    at WebSocketShard.checkReady (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketShard.js:184:12)
+    at WebSocketShard.gotGuild (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketShard.js:158:10)
+Discord client error: ReferenceError: storage is not defined
+    at NFTSalesBot.initializeDatabase (/home/runner/workspace/bot.js:585:13)
+    at Client.<anonymous> (/home/runner/workspace/bot.js:32:24)
+    at Object.onceWrapper (node:events:633:26)
+    at Client.emit (node:events:518:28)
+    at WebSocketManager.triggerClientReady (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketManager.js:384:17)
+    at WebSocketManager.checkShardsReady (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketManager.js:367:10)
+    at WebSocketShard.<anonymous> (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketManager.js:197:16)
+    at WebSocketShard.emit (node:events:518:28)
+    at WebSocketShard.checkReady (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketShard.js:184:12)
+    at WebSocketShard.gotGuild (/home/runner/workspace/node_modules/discord.js/src/client/websocket/WebSocketShard.js:158:10)
