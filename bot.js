@@ -110,24 +110,8 @@ class NFTSalesBot {
                 return saleTimestamp > lastProcessedTimestamp;
             });
 
-            // Load collections from database and filter sales
-            try {
-                const enabledCollections = await storage.getCollections(true);
-                
-                if (enabledCollections.length > 0) {
-                    const trackedTokenIds = enabledCollections.map(c => c.tokenId);
-                    newSales = newSales.filter(sale => {
-                        return trackedTokenIds.includes(sale.token_id);
-                    });
-                    
-                    console.log(`Tracking ${enabledCollections.length} collections: ${enabledCollections.map(c => c.name).join(', ')}`);
-                    if (newSales.length > 0) {
-                        console.log(`Found ${newSales.length} sales from tracked collections`);
-                    }
-                }
-            } catch (error) {
-                console.log('Error loading collections from database:', error.message);
-            }
+            // We'll filter sales per-server in processSale, so keep all new sales for now
+            console.log(`Found ${newSales.length} new sales to process`);
 
             if (newSales.length === 0) {
                 console.log('No new sales to process');
@@ -158,30 +142,31 @@ class NFTSalesBot {
 
     async processSale(sale, hbarRate) {
         try {
-            // Create Discord embed for the sale
-            const embed = embedUtils.createSaleEmbed(sale, hbarRate);
-            
             // Get all configured servers and channels
-            const serverConfigs = storage.getAllServerConfigs();
+            const serverConfigs = await storage.getAllServerConfigs();
             let successCount = 0;
             
             if (serverConfigs.length === 0) {
-                // Fallback to original single channel config for backwards compatibility
-                const channel = this.client.channels.cache.get(config.DISCORD_CHANNEL_ID);
-                if (channel) {
-                    await channel.send({ embeds: [embed] });
-                    console.log(`✅ Posted sale notification: ${sale.nft_name} sold for ${sale.price_hbar} HBAR`);
-                } else {
-                    console.error(`Channel with ID ${config.DISCORD_CHANNEL_ID} not found`);
-                }
+                console.log('No servers configured for notifications');
                 return;
             }
 
-            // Post to all configured servers
+            // Check each server to see if they track this collection
             for (const serverConfig of serverConfigs) {
                 try {
+                    if (!serverConfig.enabled) continue;
+                    
+                    // Check if this server tracks the collection from this sale
+                    const isTracked = await storage.isCollectionTracked(sale.token_id, serverConfig.guildId);
+                    
+                    if (!isTracked) {
+                        continue; // Skip this server, they don't track this collection
+                    }
+                    
                     const channel = this.client.channels.cache.get(serverConfig.channelId);
-                    if (channel && serverConfig.enabled) {
+                    if (channel) {
+                        // Create Discord embed for the sale
+                        const embed = embedUtils.createSaleEmbed(sale, hbarRate);
                         await channel.send({ embeds: [embed] });
                         successCount++;
                     }
@@ -191,7 +176,7 @@ class NFTSalesBot {
             }
             
             if (successCount > 0) {
-                console.log(`✅ Posted sale notification to ${successCount} servers: ${sale.nft_name} sold for ${sale.price_hbar} HBAR`);
+                console.log(`✅ Posted sale notification to ${successCount} server(s): ${sale.nft_name} sold for ${sale.price_hbar} HBAR`);
             }
 
         } catch (error) {
@@ -429,6 +414,7 @@ class NFTSalesBot {
     async handleAddCommand(interaction, options) {
         const tokenId = options.getString('token_id');
         const name = options.getString('name') || 'Unknown Collection';
+        const guildId = interaction.guildId;
 
         // Validate token ID format
         if (!tokenId.match(/^0\.0\.\d+$/)) {
@@ -440,16 +426,16 @@ class NFTSalesBot {
         }
 
         try {
-            const result = await storage.addCollection(tokenId, name, true);
+            const result = await storage.addCollection(guildId, tokenId, name, true);
             
             if (result) {
                 await interaction.reply({
-                    content: `✅ Added **${name}** (${tokenId}) to tracking list!`,
+                    content: `✅ Added **${name}** (${tokenId}) to this server's tracking list!`,
                     ephemeral: false
                 });
             } else {
                 await interaction.reply({
-                    content: '❌ This collection is already being tracked.',
+                    content: '❌ This collection is already being tracked in this server.',
                     ephemeral: true
                 });
             }
@@ -465,18 +451,19 @@ class NFTSalesBot {
 
     async handleRemoveCommand(interaction, options) {
         const tokenId = options.getString('token_id');
+        const guildId = interaction.guildId;
 
         try {
-            const success = await storage.removeCollection(tokenId);
+            const success = await storage.removeCollection(guildId, tokenId);
             
             if (success) {
                 await interaction.reply({
-                    content: `✅ Removed collection **${tokenId}** from tracking list.`,
+                    content: `✅ Removed collection **${tokenId}** from this server's tracking list.`,
                     ephemeral: false
                 });
             } else {
                 await interaction.reply({
-                    content: `❌ Collection **${tokenId}** was not found in tracking list.`,
+                    content: `❌ Collection **${tokenId}** was not found in this server's tracking list.`,
                     ephemeral: true
                 });
             }
@@ -492,18 +479,19 @@ class NFTSalesBot {
 
     async handleListCommand(interaction) {
         try {
-            const collections = await storage.getCollections();
+            const guildId = interaction.guildId;
+            const collections = await storage.getCollections(guildId);
 
             if (collections.length === 0) {
                 await interaction.reply({
-                    content: 'No collections are currently being tracked. Use `/add` to add one.',
+                    content: 'No collections are currently being tracked in this server. Use `/add` to add one.',
                     ephemeral: true
                 });
                 return;
             }
 
             const embed = {
-                title: '📋 Tracked NFT Collections',
+                title: '📋 Tracked NFT Collections (This Server)',
                 color: 0x0099ff,
                 fields: [],
                 footer: { text: `Total: ${collections.length} collection(s)` },

@@ -334,23 +334,22 @@ class DatabaseStorage {
         }
     }
 
-    // Legacy compatibility methods
-    getTrackedCollections() {
-        return this.getCollections(true);
+    // Legacy compatibility methods - now guild-aware
+    getTrackedCollections(guildId = null) {
+        return this.getCollections(guildId, true);
     }
 
-    isCollectionTracked(tokenId) {
-        return this.getCollections(true).then(collections => 
-            collections.some(c => c.tokenId === tokenId)
-        );
+    async isCollectionTracked(tokenId, guildId = null) {
+        const collections = await this.getCollections(guildId, true);
+        return collections.some(c => c.tokenId === tokenId);
     }
 
-    addTrackedCollection(tokenId, name) {
-        return this.addCollection(tokenId, name, true).then(result => !!result);
+    addTrackedCollection(guildId, tokenId, name) {
+        return this.addCollection(guildId, tokenId, name, true).then(result => !!result);
     }
 
-    removeTrackedCollection(tokenId) {
-        return this.removeCollection(tokenId);
+    removeTrackedCollection(guildId, tokenId) {
+        return this.removeCollection(guildId, tokenId);
     }
 }
 
