@@ -17,25 +17,27 @@ class EmbedUtils {
         const usdValue = sale.price_hbar * hbarRate;
         const marketplace = sale.marketplace || 'SentX';
         
+        // Create a more friendly title and description
+        const nftName = sale.nft_name || `NFT #${sale.serial_number || 'Unknown'}`;
+        const collectionName = sale.collection_name && sale.collection_name !== 'Unknown Collection' 
+            ? sale.collection_name 
+            : 'NFT Collection';
+        
         const embed = new EmbedBuilder()
-            .setTitle(`💰 ${sale.nft_name} SOLD!`)
-            .setDescription(`Just sold on ${marketplace} marketplace`)
-            .setColor(marketplace === 'Kabila' ? '#00ff88' : '#FFFFFF')
-            .setTimestamp(new Date(sale.timestamp))
-            .setFooter({ 
-                text: 'Built for Hedera by Mauii-Migos World Labs Inc',
-                iconURL: null
-            });
+            .setTitle(`🎉 ${nftName} just sold!`)
+            .setDescription(`A new sale happened on ${marketplace} for **$${usdValue.toFixed(2)} USD** (${sale.price_hbar} HBAR)`)
+            .setColor(marketplace === 'Kabila' ? '#00ff88' : '#5865F2')
+            .setTimestamp(new Date(sale.timestamp));
 
-        // Add collection info if available
+        // Add collection info prominently
         if (sale.collection_name && sale.collection_name !== 'Unknown Collection') {
             embed.setAuthor({
-                name: sale.collection_name,
-                iconURL: null // Could add collection icon if available
+                name: `${collectionName} Collection`,
+                iconURL: null
             });
         }
 
-        // Add NFT image as main image and collection image as thumbnail
+        // Add NFT image
         const imageUrl = sale.image_url || sale.imageUrl;
         if (imageUrl) {
             const convertedImageUrl = this.convertIpfsToHttp(imageUrl);
@@ -44,92 +46,93 @@ class EmbedUtils {
             }
         }
 
-        // Thumbnail removed to prevent text overlap issues
-
-        // Price information (most important, so it goes first)
-        embed.addFields({
-            name: '💵 Price',
-            value: `**${sale.price_hbar} HBAR**\n*≈ $${usdValue.toFixed(2)} USD*`,
-            inline: true
-        });
-
-        // Buyer and Seller
-        // Get NFT holdings for buyer and seller in this collection
+        // Get collector information for context
         const buyerHoldings = await hederaService.getAccountNFTHoldings(sale.buyer, sale.token_id);
         const sellerHoldings = await hederaService.getAccountNFTHoldings(sale.seller, sale.token_id);
 
         const buyerTier = buyerHoldings ? hederaService.getCollectorTier(buyerHoldings.nft_count) : null;
         const sellerTier = sellerHoldings ? hederaService.getCollectorTier(sellerHoldings.nft_count) : null;
 
-        // Buyer information with collector tier
-        const buyerText = buyerTier 
-            ? `\`${sale.buyer}\`\n${buyerTier.emoji} **${buyerTier.name}** (${hederaService.formatNFTCount(buyerHoldings.nft_count)})`
-            : `\`${sale.buyer}\``;
+        // Main sale information section
+        const saleInfo = [
+            `💰 **Sale Price:** ${sale.price_hbar} HBAR ≈ $${usdValue.toFixed(2)} USD`,
+            `🏪 **Marketplace:** ${marketplace}`,
+        ];
 
-        // Seller information with collector tier
-        const sellerText = sellerTier 
-            ? `\`${sale.seller}\`\n${sellerTier.emoji} **${sellerTier.name}** (${hederaService.formatNFTCount(sellerHoldings.nft_count)})`
-            : `\`${sale.seller}\``;
+        if (sale.serial_number) {
+            saleInfo.push(`🔢 **NFT #:** ${sale.serial_number}`);
+        }
 
-        embed.addFields(
-            {
-                name: '🛒 Buyer',
-                value: buyerText,
-                inline: true
-            },
-            {
-                name: '🏪 Seller',
-                value: sellerText,
-                inline: true
-            }
-        );
+        embed.addFields({
+            name: '📊 Sale Details',
+            value: saleInfo.join('\n'),
+            inline: false
+        });
 
-        // Rarity and Rank if available
+        // Rarity information (if available)
         if (sale.rarity || sale.rank) {
-            let rarityText = '';
+            let rarityInfo = [];
             if (sale.rank) {
-                rarityText += `**#${sale.rank}** of collection`;
+                rarityInfo.push(`🏆 **Rank:** #${sale.rank} in collection`);
             }
             if (sale.rarity) {
-                if (rarityText) rarityText += '\n';
                 const rarityPercentage = parseFloat((sale.rarity * 100).toFixed(1));
                 const rarityTier = this.getRarityTier(sale.rarity);
-                rarityText += `${rarityTier} *${rarityPercentage}%*`;
+                rarityInfo.push(`✨ **Rarity:** ${rarityTier} (${rarityPercentage}% rare)`);
             }
             
             embed.addFields({
-                name: '✨ Rarity',
-                value: rarityText,
-                inline: true
-            });
-        }
-
-        // Token ID and Marketplace
-        embed.addFields(
-            {
-                name: '🆔 Collection',
-                value: `\`${sale.token_id}\``,
-                inline: true
-            },
-            {
-                name: '🌐 Marketplace',
-                value: '**SentX**',
-                inline: true
-            }
-        );
-
-        // Transaction hash if available
-        if (sale.transaction_hash) {
-            embed.addFields({
-                name: '🔍 View Transaction',
-                value: `[See on HashScan →](https://hashscan.io/mainnet/transaction/${sale.transaction_hash})`,
+                name: '🌟 Rarity Info',
+                value: rarityInfo.join('\n'),
                 inline: false
             });
         }
 
-        // Add footer with additional info
+        // Buyer and seller information in a more friendly format
+        const traderInfo = [];
+        
+        // Buyer info
+        const buyerLabel = buyerTier 
+            ? `${buyerTier.emoji} ${buyerTier.name} Collector`
+            : '🛒 New Buyer';
+        const buyerCount = buyerHoldings ? ` (owns ${hederaService.formatNFTCount(buyerHoldings.nft_count)})` : '';
+        traderInfo.push(`**Bought by:** ${buyerLabel}${buyerCount}`);
+        traderInfo.push(`*Account:* \`${this.formatAccountId(sale.buyer)}\``);
+        
+        traderInfo.push(''); // Empty line for separation
+        
+        // Seller info
+        const sellerLabel = sellerTier 
+            ? `${sellerTier.emoji} ${sellerTier.name} Collector`
+            : '🏪 Seller';
+        const sellerCount = sellerHoldings ? ` (owns ${hederaService.formatNFTCount(sellerHoldings.nft_count)})` : '';
+        traderInfo.push(`**Sold by:** ${sellerLabel}${sellerCount}`);
+        traderInfo.push(`*Account:* \`${this.formatAccountId(sale.seller)}\``);
+
+        embed.addFields({
+            name: '👥 Trading Parties',
+            value: traderInfo.join('\n'),
+            inline: false
+        });
+
+        // Technical details section (collapsible-like format)
+        const technicalDetails = [
+            `🆔 **Collection ID:** \`${sale.token_id}\``,
+        ];
+
+        if (sale.transaction_hash) {
+            technicalDetails.push(`🔗 **Transaction:** [View on HashScan](https://hashscan.io/mainnet/transaction/${sale.transaction_hash})`);
+        }
+
+        embed.addFields({
+            name: '🔧 Technical Details',
+            value: technicalDetails.join('\n'),
+            inline: false
+        });
+
+        // Footer with timestamp and branding
         embed.setFooter({
-            text: `Built for Hedera by Mauii - Migos World Labs Inc`
+            text: `Hedera NFT Sales Tracker • ${new Date(sale.timestamp).toLocaleString()}`
         });
 
         return embed;
@@ -222,6 +225,22 @@ class EmbedUtils {
         }
 
         return embed;
+    }
+
+    /**
+     * Format account ID for display in a more user-friendly way
+     * @param {string} accountId - Raw account ID
+     * @returns {string} Formatted account ID
+     */
+    formatAccountId(accountId) {
+        if (!accountId) return 'Unknown';
+        
+        // If it's a long account ID, show first 6 and last 4 characters
+        if (accountId.length > 15) {
+            return `${accountId.substring(0, 6)}...${accountId.substring(accountId.length - 4)}`;
+        }
+        
+        return accountId;
     }
 
     /**
