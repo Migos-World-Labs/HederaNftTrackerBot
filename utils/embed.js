@@ -109,7 +109,7 @@ class EmbedUtils {
 
         // Add footer with additional info
         embed.setFooter({
-            text: `SentX • HBAR Rate: ${currencyService.formatCurrency(hbarRate, 'USD')}/ℏ`
+            text: `Built for Hedera by Mauii - Migos World Labs Inc`
         });
 
         return embed;
