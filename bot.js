@@ -48,7 +48,7 @@ class NFTSalesBot {
         // Handle when bot leaves a server
         this.client.on(Events.GuildDelete, async (guild) => {
             console.log(`❌ Bot removed from server: ${guild.name} (${guild.id})`);
-            await storage.removeServerConfig(guild.id);
+            await this.storage.removeServerConfig(guild.id);
         });
 
         // Handle slash commands
