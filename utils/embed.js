@@ -19,7 +19,7 @@ class EmbedUtils {
         const embed = new EmbedBuilder()
             .setTitle(`💰 ${sale.nft_name} SOLD!`)
             .setDescription(`Just sold on SentX marketplace`)
-            .setColor('#1DB954') // Spotify green for success
+            .setColor('#FFFFFF') // White color
             .setTimestamp(new Date(sale.timestamp))
             .setFooter({ 
                 text: 'Built for Hedera by Mauii-Migos World Labs Inc',
