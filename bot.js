@@ -84,13 +84,41 @@ class NFTSalesBot {
         this.isMonitoring = true;
         console.log('Starting NFT sales monitoring...');
         
+        // Set initial timestamp to now to avoid posting old sales
+        this.initializeLastProcessedTimestamp();
+        
         // Monitor every 30 seconds for new sales
         this.monitoringTask = cron.schedule('*/30 * * * * *', async () => {
             await this.checkForNewSales();
         });
 
-        // Also do an initial check
-        this.checkForNewSales();
+        // Don't do initial check to avoid spam - wait for first interval
+        console.log('Monitoring initialized - will check for new sales every 30 seconds');
+    }
+
+    async initializeLastProcessedTimestamp() {
+        try {
+            const currentTimestamp = Date.now();
+            
+            // Get the most recent sale timestamp from SentX to set as baseline
+            const recentSales = await sentxService.getRecentSales(5);
+            
+            if (recentSales && recentSales.length > 0) {
+                // Use the most recent sale timestamp as baseline
+                const mostRecentSale = recentSales[0];
+                const baselineTimestamp = new Date(mostRecentSale.timestamp).getTime();
+                await this.storage.setLastProcessedSale(baselineTimestamp);
+                console.log(`Set baseline timestamp to most recent sale: ${new Date(baselineTimestamp).toISOString()}`);
+            } else {
+                // Fallback to current time
+                await this.storage.setLastProcessedSale(currentTimestamp);
+                console.log(`Set baseline timestamp to current time: ${new Date(currentTimestamp).toISOString()}`);
+            }
+        } catch (error) {
+            console.error('Error initializing timestamp:', error);
+            // Fallback to current time
+            await this.storage.setLastProcessedSale(Date.now());
+        }
     }
 
     async checkForNewSales() {
@@ -108,28 +136,47 @@ class NFTSalesBot {
             // Get the timestamp of the last processed sale
             const lastProcessedTimestamp = await this.storage.getLastProcessedSale();
             
-            // Filter for new sales only
+            // Filter for truly new sales only (sales that happened after our last check)
             let newSales = recentSales.filter(sale => {
                 const saleTimestamp = new Date(sale.timestamp).getTime();
-                return saleTimestamp > lastProcessedTimestamp;
+                const isNewer = saleTimestamp > lastProcessedTimestamp;
+                
+                // Additional check: sale must be within last 5 minutes to be considered "live"
+                const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+                const isRecent = saleTimestamp > fiveMinutesAgo;
+                
+                return isNewer && isRecent;
             });
 
-            // We'll filter sales per-server in processSale, so keep all new sales for now
-            console.log(`Found ${newSales.length} new sales to process`);
+            console.log(`Found ${newSales.length} new live sales to process`);
 
             if (newSales.length === 0) {
-                console.log('No new sales to process');
+                console.log('No new live sales to process');
                 return;
             }
 
-            console.log(`Found ${newSales.length} new sales`);
+            // Sort by timestamp to process oldest first
+            newSales.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
             // Get current HBAR to USD rate
             const hbarRate = await currencyService.getHbarToUsdRate();
 
             // Process each new sale
             for (const sale of newSales) {
+                // Create unique sale ID to prevent duplicates
+                const saleId = `${sale.token_id}_${sale.serial_number}_${sale.timestamp}`;
+                
+                // Check if we've already processed this sale
+                const alreadyProcessed = await this.storage.isSaleProcessed(saleId);
+                if (alreadyProcessed) {
+                    console.log(`Skipping duplicate sale: ${sale.nft_name}`);
+                    continue;
+                }
+                
                 await this.processSale(sale, hbarRate);
+                
+                // Mark sale as processed to prevent duplicates
+                await this.storage.markSaleProcessed(saleId, sale.token_id);
                 
                 // Update last processed timestamp
                 const saleTimestamp = new Date(sale.timestamp).getTime();
