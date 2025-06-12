@@ -596,7 +596,7 @@ class NFTSalesBot {
     }
 
     async handleStatusSlashCommand(interaction) {
-        const serverConfigs = await storage.getAllServerConfigs();
+        const serverConfigs = await this.storage.getAllServerConfigs();
         const hbarRate = await currencyService.getHbarToUsdRate();
 
         const embed = {
