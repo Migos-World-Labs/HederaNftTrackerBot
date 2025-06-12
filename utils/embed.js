@@ -302,6 +302,44 @@ class EmbedUtils {
             .map(attr => `**${attr.trait_type}:** ${attr.value}`)
             .join('\n');
     }
+
+    /**
+     * Create a welcome embed for new servers
+     * @param {string} serverName - Name of the Discord server
+     * @returns {EmbedBuilder} Welcome embed
+     */
+    createWelcomeEmbed(serverName) {
+        const embed = new EmbedBuilder()
+            .setTitle('🤖 NFT Sales Bot Added!')
+            .setDescription(`Thank you for adding the NFT Sales Bot to **${serverName}**!`)
+            .setColor('#00ff00')
+            .addFields(
+                {
+                    name: '📈 What I Do',
+                    value: 'I track real-time NFT sales from SentX marketplace on Hedera and post detailed notifications here.',
+                    inline: false
+                },
+                {
+                    name: '⚙️ Setup Instructions',
+                    value: '1. Make sure I have **Send Messages** and **Embed Links** permissions\n2. Use the web interface to add NFT collections to track\n3. I\'ll automatically post sales from your tracked collections!',
+                    inline: false
+                },
+                {
+                    name: '🔗 Collection Manager',
+                    value: 'Visit the web interface to add/remove NFT collections to track. The link will be provided by the bot owner.',
+                    inline: false
+                },
+                {
+                    name: '💰 Features',
+                    value: '• Real-time sale notifications\n• HBAR to USD conversion\n• NFT images and details\n• Buyer/seller information\n• Collection filtering',
+                    inline: false
+                }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Ready to track your favorite NFT collections!' });
+
+        return embed;
+    }
 }
 
 module.exports = new EmbedUtils();

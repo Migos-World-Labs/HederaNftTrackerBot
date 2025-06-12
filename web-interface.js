@@ -173,6 +173,14 @@ app.get('/', (req, res) => {
         
         <div id="status" class="status"></div>
         
+        <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #2196f3;">
+            <h3 style="margin-top: 0;">📋 Bot Status & Invite Link</h3>
+            <p><strong>Discord Invite Link:</strong></p>
+            <code style="background: #f5f5f5; padding: 8px; border-radius: 4px; display: block; margin: 5px 0; word-break: break-all;">https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissions=19456&scope=bot</code>
+            <p><small>Required permissions: Send Messages, Embed Links, View Channel</small></p>
+            <div id="serverInfo">Loading server information...</div>
+        </div>
+        
         <h3>Add New Collection</h3>
         <form id="addForm">
             <div class="form-group">
@@ -303,8 +311,41 @@ app.get('/', (req, res) => {
             }
         });
 
-        // Load collections on page load
+        // Load server info
+        async function loadServerInfo() {
+            try {
+                const response = await fetch('/api/servers');
+                const data = await response.json();
+                
+                const serverInfo = document.getElementById('serverInfo');
+                if (data.success) {
+                    if (data.totalServers === 0) {
+                        serverInfo.innerHTML = '<p><strong>Bot Status:</strong> Not connected to any servers yet. Use the invite link above to add the bot to your Discord server.</p>';
+                    } else {
+                        const serverList = data.servers.map(server => 
+                            `<div style="margin: 5px 0;">
+                                <strong>${server.guildName}</strong> 
+                                <span style="color: ${server.enabled ? 'green' : 'red'};">
+                                    ${server.enabled ? '✅ Active' : '❌ Disabled'}
+                                </span>
+                            </div>`
+                        ).join('');
+                        serverInfo.innerHTML = `<p><strong>Connected Servers (${data.totalServers}):</strong></p>${serverList}`;
+                    }
+                } else {
+                    serverInfo.innerHTML = '<p>Unable to load server information.</p>';
+                }
+            } catch (error) {
+                document.getElementById('serverInfo').innerHTML = '<p>Error loading server information.</p>';
+            }
+        }
+
+        // Load collections and server info on page load
         loadCollections();
+        loadServerInfo();
+        
+        // Refresh server info every 30 seconds
+        setInterval(loadServerInfo, 30000);
     </script>
 </body>
 </html>
@@ -315,6 +356,20 @@ app.get('/', (req, res) => {
 app.get('/api/collections', (req, res) => {
     const data = loadCollections();
     res.json(data);
+});
+
+app.get('/api/servers', (req, res) => {
+    try {
+        const storage = require('./utils/storage');
+        const servers = storage.getAllServerConfigs();
+        res.json({ 
+            success: true, 
+            servers: servers,
+            totalServers: servers.length 
+        });
+    } catch (error) {
+        res.json({ success: false, message: 'Error loading server information' });
+    }
 });
 
 app.post('/api/collections', (req, res) => {
