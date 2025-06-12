@@ -1,8 +1,8 @@
 {
-  "lastProcessedSale": 0,
+  "lastProcessedSale": 1749687864000,
   "processedSales": [],
   "botStats": {
-    "totalSalesProcessed": 0,
+    "totalSalesProcessed": 50,
     "startTime": 1749687694959,
     "lastError": null
   }

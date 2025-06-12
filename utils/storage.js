@@ -13,6 +13,7 @@ class StorageService {
         this.data = {
             lastProcessedSale: 0,
             processedSales: new Set(),
+            trackedCollections: [],
             botStats: {
                 totalSalesProcessed: 0,
                 startTime: Date.now(),
@@ -219,6 +220,61 @@ class StorageService {
             processedSales: Array.from(this.data.processedSales),
             exportTimestamp: Date.now()
         };
+    }
+
+    /**
+     * Add a collection to track
+     * @param {string} tokenId - Token ID of the collection
+     * @param {string} name - Optional name for the collection
+     * @returns {boolean} True if added, false if already exists
+     */
+    addTrackedCollection(tokenId, name = null) {
+        if (this.data.trackedCollections.some(c => c.tokenId === tokenId)) {
+            return false;
+        }
+        
+        this.data.trackedCollections.push({
+            tokenId: tokenId,
+            name: name,
+            addedDate: Date.now()
+        });
+        
+        this.saveData();
+        return true;
+    }
+
+    /**
+     * Remove a collection from tracking
+     * @param {string} tokenId - Token ID of the collection
+     * @returns {boolean} True if removed, false if not found
+     */
+    removeTrackedCollection(tokenId) {
+        const initialLength = this.data.trackedCollections.length;
+        this.data.trackedCollections = this.data.trackedCollections.filter(c => c.tokenId !== tokenId);
+        
+        if (this.data.trackedCollections.length < initialLength) {
+            this.saveData();
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Get all tracked collections
+     * @returns {Array} Array of tracked collection objects
+     */
+    getTrackedCollections() {
+        return this.data.trackedCollections || [];
+    }
+
+    /**
+     * Check if a collection is being tracked
+     * @param {string} tokenId - Token ID to check
+     * @returns {boolean} True if being tracked
+     */
+    isCollectionTracked(tokenId) {
+        return this.data.trackedCollections.some(c => c.tokenId === tokenId);
     }
 
     /**

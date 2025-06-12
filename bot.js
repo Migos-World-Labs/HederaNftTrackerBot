@@ -33,8 +33,8 @@ class NFTSalesBot {
             console.error('Discord client error:', error);
         });
 
-        // Remove message handling since we don't need MessageContent intent
-        // The bot will only post sale notifications, not respond to commands
+        // Commands disabled temporarily due to Discord permissions
+        // Will implement slash commands or provide web interface for collection management
     }
 
     async start() {
@@ -86,10 +86,36 @@ class NFTSalesBot {
             const lastProcessedTimestamp = storage.getLastProcessedSale();
             
             // Filter for new sales only
-            const newSales = recentSales.filter(sale => {
+            let newSales = recentSales.filter(sale => {
                 const saleTimestamp = new Date(sale.timestamp).getTime();
                 return saleTimestamp > lastProcessedTimestamp;
             });
+
+            // Load collections from config file and filter sales
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                const collectionsPath = path.join(__dirname, 'collections.json');
+                
+                if (fs.existsSync(collectionsPath)) {
+                    const collectionsData = JSON.parse(fs.readFileSync(collectionsPath, 'utf8'));
+                    const enabledCollections = collectionsData.collections.filter(c => c.enabled);
+                    
+                    if (enabledCollections.length > 0) {
+                        const trackedTokenIds = enabledCollections.map(c => c.tokenId);
+                        newSales = newSales.filter(sale => {
+                            return trackedTokenIds.includes(sale.token_id);
+                        });
+                        
+                        console.log(`Tracking ${enabledCollections.length} collections: ${enabledCollections.map(c => c.name).join(', ')}`);
+                        if (newSales.length > 0) {
+                            console.log(`Found ${newSales.length} sales from tracked collections`);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('No collection filter applied - tracking all sales');
+            }
 
             if (newSales.length === 0) {
                 console.log('No new sales to process');
@@ -144,6 +170,78 @@ class NFTSalesBot {
                 console.error('Error processing sale:', error.message);
             }
         }
+    }
+
+    async handleStatusCommand(message) {
+        const embed = embedUtils.createStatusEmbed(this.isMonitoring);
+        const trackedCollections = storage.getTrackedCollections();
+        
+        if (trackedCollections.length > 0) {
+            embed.addFields({
+                name: '🔍 Tracked Collections',
+                value: trackedCollections.map(c => `• ${c.name || 'Unknown'} (\`${c.tokenId}\`)`).join('\n') || 'None',
+                inline: false
+            });
+        }
+        
+        await message.reply({ embeds: [embed] });
+    }
+
+    async handleAddCollectionCommand(message, args) {
+        if (args.length < 1) {
+            await message.reply('Please provide a token ID. Example: `!nft add 0.0.878200`');
+            return;
+        }
+
+        const tokenId = args[0];
+        const collectionName = args.slice(1).join(' ') || null;
+
+        // Validate token ID format
+        if (!tokenId.match(/^0\.0\.\d+$/)) {
+            await message.reply('Invalid token ID format. Use format: `0.0.123456`');
+            return;
+        }
+
+        const success = storage.addTrackedCollection(tokenId, collectionName);
+        
+        if (success) {
+            await message.reply(`✅ Added collection **${collectionName || tokenId}** to tracking list.`);
+        } else {
+            await message.reply(`❌ Collection **${tokenId}** is already being tracked.`);
+        }
+    }
+
+    async handleRemoveCollectionCommand(message, args) {
+        if (args.length < 1) {
+            await message.reply('Please provide a token ID. Example: `!nft remove 0.0.878200`');
+            return;
+        }
+
+        const tokenId = args[0];
+        const success = storage.removeTrackedCollection(tokenId);
+        
+        if (success) {
+            await message.reply(`✅ Removed collection **${tokenId}** from tracking list.`);
+        } else {
+            await message.reply(`❌ Collection **${tokenId}** was not found in tracking list.`);
+        }
+    }
+
+    async handleListCollectionsCommand(message) {
+        const trackedCollections = storage.getTrackedCollections();
+        
+        if (trackedCollections.length === 0) {
+            await message.reply('No collections are currently being tracked. Use `!nft add <token_id>` to add one.');
+            return;
+        }
+
+        const embed = embedUtils.createCollectionsListEmbed(trackedCollections);
+        await message.reply({ embeds: [embed] });
+    }
+
+    async handleHelpCommand(message) {
+        const embed = embedUtils.createHelpEmbed();
+        await message.reply({ embeds: [embed] });
     }
 
     delay(ms) {

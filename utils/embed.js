@@ -227,6 +227,69 @@ class EmbedUtils {
     }
 
     /**
+     * Create a collections list embed
+     * @param {Array} collections - Array of tracked collections
+     * @returns {EmbedBuilder} Collections list embed
+     */
+    createCollectionsListEmbed(collections) {
+        const embed = new EmbedBuilder()
+            .setTitle('📋 Tracked NFT Collections')
+            .setColor('#0099ff')
+            .setTimestamp();
+
+        if (collections.length === 0) {
+            embed.setDescription('No collections are currently being tracked.');
+        } else {
+            const collectionList = collections.map((collection, index) => {
+                const name = collection.name || 'Unknown Collection';
+                const addedDate = new Date(collection.addedDate).toLocaleDateString();
+                return `${index + 1}. **${name}**\n   Token ID: \`${collection.tokenId}\`\n   Added: ${addedDate}`;
+            }).join('\n\n');
+
+            embed.setDescription(collectionList);
+            embed.setFooter({ text: `Total: ${collections.length} collection(s)` });
+        }
+
+        return embed;
+    }
+
+    /**
+     * Create a help embed with available commands
+     * @returns {EmbedBuilder} Help embed
+     */
+    createHelpEmbed() {
+        const embed = new EmbedBuilder()
+            .setTitle('🤖 NFT Sales Bot Commands')
+            .setColor('#5865f2')
+            .setTimestamp();
+
+        embed.addFields([
+            {
+                name: '📊 Status Commands',
+                value: '`!nft status` - Show bot status and tracked collections\n`!nft list` - List all tracked collections',
+                inline: false
+            },
+            {
+                name: '➕ Collection Management',
+                value: '`!nft add <token_id> [name]` - Add collection to track\n`!nft remove <token_id>` - Remove collection from tracking',
+                inline: false
+            },
+            {
+                name: '📖 Examples',
+                value: '`!nft add 0.0.878200 Dead Pixels Ghost Club`\n`!nft remove 0.0.878200`\n`!nft status`',
+                inline: false
+            },
+            {
+                name: 'ℹ️ Notes',
+                value: '• Token IDs must be in format: `0.0.123456`\n• Collection names are optional but recommended\n• Bot will only track sales from added collections',
+                inline: false
+            }
+        ]);
+
+        return embed;
+    }
+
+    /**
      * Format attributes for display
      * @param {Array} attributes - NFT attributes
      * @returns {string} Formatted attributes string
