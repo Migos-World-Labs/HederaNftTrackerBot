@@ -79,8 +79,10 @@ class EmbedUtils {
             }
             if (sale.rarity) {
                 if (rarityText) rarityText += '\n';
-                const rarityPercentage = (sale.rarity * 100).toFixed(1);
-                rarityText += `**Rarity:** ${rarityPercentage}%`;
+                const rarityPercentage = (sale.rarity * 100);
+                const formattedPercentage = rarityPercentage % 1 === 0 ? rarityPercentage.toFixed(0) : rarityPercentage.toFixed(1);
+                const rarityTier = this.getRarityTier(sale.rarity);
+                rarityText += `**Rarity:** ${rarityTier} (${formattedPercentage}%)`;
             }
             
             embed.addFields({
@@ -318,6 +320,21 @@ class EmbedUtils {
             .slice(0, 5) // Limit to first 5 attributes
             .map(attr => `**${attr.trait_type}:** ${attr.value}`)
             .join('\n');
+    }
+
+    /**
+     * Get rarity tier based on rarity percentage
+     * @param {number} rarityPct - Rarity percentage (0-1)
+     * @returns {string} Rarity tier name
+     */
+    getRarityTier(rarityPct) {
+        const percentage = rarityPct * 100;
+        
+        if (percentage <= 1) return '🔥 Legendary';
+        if (percentage <= 5) return '💎 Epic';
+        if (percentage <= 15) return '🟣 Rare';
+        if (percentage <= 30) return '🔵 Uncommon';
+        return '⚪ Common';
     }
 
     /**
