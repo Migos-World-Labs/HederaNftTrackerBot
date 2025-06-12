@@ -28,9 +28,12 @@ class EmbedUtils {
             });
         }
 
-        // Add NFT image if available
+        // Add NFT image if available (convert IPFS to HTTP URL)
         if (sale.image_url) {
-            embed.setThumbnail(sale.image_url);
+            const imageUrl = this.convertIpfsToHttp(sale.image_url);
+            if (imageUrl) {
+                embed.setThumbnail(imageUrl);
+            }
         }
 
         // Price information (most important, so it goes first)

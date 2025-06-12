@@ -14,8 +14,7 @@ class SentXService {
             headers: {
                 'User-Agent': 'Discord-NFT-Bot/1.0',
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-API-KEY': process.env.SENTX_API_KEY || ''
+                'Accept': 'application/json'
             }
         });
     }
@@ -29,75 +28,46 @@ class SentXService {
         try {
             console.log('Fetching recent sales from SentX...');
             
-            // Try different possible endpoints for SentX API
-            const endpoints = [
-                '/v1/nft/sales',
-                '/v1/sales',
-                '/api/v1/sales',
-                '/nft/sales',
-                '/sales'
-            ];
+            const apiKey = process.env.SENTX_API_KEY;
+            console.log('API Key available:', apiKey ? 'Yes' : 'No');
+            console.log('API Key length:', apiKey ? apiKey.length : 0);
             
-            for (const endpoint of endpoints) {
-                try {
-                    console.log(`Trying endpoint: ${endpoint}`);
-                    const response = await this.axiosInstance.get(endpoint, {
-                        params: {
-                            limit: limit,
-                            network: 'hedera',
-                            sort: 'created_at',
-                            order: 'desc'
-                        }
-                    });
-
-                    if (response.data) {
-                        console.log(`Success with endpoint: ${endpoint}`);
-                        console.log('Response structure:', Object.keys(response.data));
-                        
-                        // Handle different possible response structures
-                        let salesData = [];
-                        if (response.data.sales) {
-                            salesData = response.data.sales;
-                        } else if (response.data.data) {
-                            salesData = response.data.data;
-                        } else if (Array.isArray(response.data)) {
-                            salesData = response.data;
-                        } else {
-                            console.log('Unknown response structure:', response.data);
-                            continue;
-                        }
-
-                        if (salesData && salesData.length > 0) {
-                            return this.formatSalesData(salesData);
-                        }
-                    }
-                } catch (endpointError) {
-                    console.log(`Endpoint ${endpoint} failed:`, endpointError.response?.status || endpointError.message);
-                    continue;
-                }
-            }
+            const params = {
+                apikey: apiKey,
+                activityFilter: 'Sales', // Only get sales, not listings
+                amount: limit,
+                page: 1,
+                hbarMarketOnly: 1 // Focus on HBAR market
+            };
             
-            console.log('All endpoints failed, trying direct marketplace query...');
+            console.log('Request params:', JSON.stringify(params, null, 2));
             
-            // Try a more general marketplace query
-            const marketplaceResponse = await this.axiosInstance.get('/v1/marketplace/activity', {
-                params: {
-                    limit: limit,
-                    type: 'sale',
-                    network: 'hedera'
-                }
+            const response = await this.axiosInstance.get('/v1/public/market/activity', {
+                params: params
             });
-            
-            if (marketplaceResponse.data) {
-                console.log('Marketplace endpoint response:', Object.keys(marketplaceResponse.data));
-                const salesData = marketplaceResponse.data.activities || marketplaceResponse.data.data || marketplaceResponse.data;
-                if (salesData && salesData.length > 0) {
-                    return this.formatSalesData(salesData);
-                }
+
+            if (!response.data || !response.data.success) {
+                console.log('No successful response from SentX API');
+                return [];
             }
 
-            console.log('No sales data received from any SentX API endpoint');
-            return [];
+            if (!response.data.marketActivity || response.data.marketActivity.length === 0) {
+                console.log('No market activity found');
+                return [];
+            }
+
+            console.log(`Found ${response.data.marketActivity.length} market activities`);
+            
+            // Filter only actual sales (not price changes or listings)
+            const salesOnly = response.data.marketActivity.filter(activity => 
+                activity.saletype === 'Sale' || 
+                activity.saletype === 'Purchase' ||
+                (activity.buyerAddress && activity.buyerAddress !== null)
+            );
+
+            console.log(`Filtered to ${salesOnly.length} actual sales`);
+            
+            return this.formatSalesData(salesOnly);
 
         } catch (error) {
             if (error.response) {
@@ -141,20 +111,24 @@ class SentXService {
     formatSalesData(rawSales) {
         return rawSales.map(sale => {
             return {
-                id: sale.id,
-                nft_name: sale.nft?.name || 'Unknown NFT',
-                collection_name: sale.nft?.collection?.name || 'Unknown Collection',
-                token_id: sale.nft?.token_id || sale.token_id,
-                price_hbar: this.parseHbarAmount(sale.price),
-                buyer: this.formatAddress(sale.buyer),
-                seller: this.formatAddress(sale.seller),
-                timestamp: sale.created_at || sale.timestamp,
-                image_url: sale.nft?.image_url || sale.nft?.image || null,
-                rarity: sale.nft?.rarity || null,
-                rank: sale.nft?.rank || null,
+                id: `${sale.nftTokenAddress}-${sale.nftSerialId}-${sale.saleDate}`,
+                nft_name: sale.nftName || 'Unknown NFT',
+                collection_name: sale.collectionName || 'Unknown Collection',
+                token_id: sale.nftTokenAddress,
+                serial_id: sale.nftSerialId,
+                price_hbar: this.parseHbarAmount(sale.salePrice),
+                buyer: this.formatAddress(sale.buyerAddress),
+                seller: this.formatAddress(sale.sellerAddress),
+                timestamp: sale.saleDate,
+                image_url: sale.nftImage || null,
+                rarity: sale.rarity || null,
+                rank: sale.rank || null,
                 marketplace: 'SentX',
-                transaction_hash: sale.transaction_hash,
-                attributes: sale.nft?.attributes || []
+                transaction_hash: sale.transactionHash || null,
+                attributes: sale.attributes || [],
+                payment_token: sale.paymentToken || { symbol: 'HBAR' },
+                listing_url: sale.listingUrl ? `https://sentx.io${sale.listingUrl}` : null,
+                previous_price: sale.previousPrice || null
             };
         });
     }
