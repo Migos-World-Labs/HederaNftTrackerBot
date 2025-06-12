@@ -116,13 +116,13 @@ class NFTSalesBot {
         // Set initial timestamp to now to avoid posting old sales
         this.initializeLastProcessedTimestamp();
         
-        // Monitor every 10 seconds for new sales
-        this.monitoringTask = cron.schedule('*/10 * * * * *', async () => {
+        // Monitor every 3 seconds for new sales
+        this.monitoringTask = cron.schedule('*/3 * * * * *', async () => {
             await this.checkForNewSales();
         });
 
         // Don't do initial check to avoid spam - wait for first interval
-        console.log('Monitoring initialized - will check for new sales every 10 seconds');
+        console.log('Monitoring initialized - will check for new sales every 3 seconds');
     }
 
     async initializeLastProcessedTimestamp() {
