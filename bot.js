@@ -8,7 +8,7 @@ const config = require('./config');
 const sentxService = require('./services/sentx');
 const currencyService = require('./services/currency');
 const embedUtils = require('./utils/embed');
-const storage = require('./utils/storage');
+const storage = require('./database-storage');
 
 class NFTSalesBot {
     constructor() {
@@ -28,6 +28,7 @@ class NFTSalesBot {
             console.log(`Bot logged in as ${this.client.user.tag}!`);
             console.log(`Bot is in ${this.client.guilds.cache.size} servers`);
             this.generateInviteLink();
+            await this.initializeDatabase();
             await this.registerSlashCommands();
             this.startMonitoring();
         });
