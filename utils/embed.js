@@ -32,6 +32,8 @@ class EmbedUtils {
         if (sale.image_url) {
             const imageUrl = this.convertIpfsToHttp(sale.image_url);
             if (imageUrl) {
+                // Use both thumbnail and image for maximum visibility
+                embed.setImage(imageUrl);
                 embed.setThumbnail(imageUrl);
             }
         }
