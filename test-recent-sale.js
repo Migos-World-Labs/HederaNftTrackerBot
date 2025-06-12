@@ -47,30 +47,50 @@ async function testRecentSaleMessage() {
             .setFooter({ text: 'Kabila Sales Bot - Test Message' })
             .setTimestamp();
         
-        // Find the target guild and channel
-        const targetGuild = client.guilds.cache.find(guild => guild.name.includes('Migos'));
-        if (!targetGuild) {
-            console.log('Target guild not found');
-            process.exit(1);
+        // Use the same channel posting logic as the main bot
+        const DatabaseStorage = require('./database-storage');
+        const storage = new DatabaseStorage();
+        await storage.init();
+        
+        const serverConfigs = await storage.getAllServerConfigs();
+        let successCount = 0;
+        
+        for (const serverConfig of serverConfigs) {
+            if (!serverConfig.enabled) continue;
+            
+            const channel = client.channels.cache.get(serverConfig.channel_id);
+            if (channel) {
+                // Create enhanced embed using the same utility as the main bot
+                const EmbedUtils = require('./utils/embed');
+                const embedUtils = new EmbedUtils();
+                
+                // Format sale data to match bot expectations
+                const formattedSale = {
+                    nft_name: latestSale.nftName || 'Kabila NFT',
+                    price_hbar: latestSale.price,
+                    timestamp: latestSale.timestamp,
+                    marketplace: 'Kabila',
+                    collection_name: latestSale.collectionName || 'Unknown Collection',
+                    buyer: latestSale.buyer || 'unknown',
+                    seller: latestSale.seller || 'unknown',
+                    token_id: latestSale.tokenId,
+                    serial_number: latestSale.serialNumber,
+                    imageUrl: latestSale.imageUrl
+                };
+                
+                const botEmbed = await embedUtils.createSaleEmbed(formattedSale, hbarRate);
+                
+                await channel.send({
+                    content: '🧪 **Test Message** - Recent Kabila Sale Notification',
+                    embeds: [botEmbed]
+                });
+                
+                successCount++;
+                console.log(`Posted to ${serverConfig.guild_name} #${channel.name}`);
+            }
         }
         
-        // Post to bot-test channel
-        const channel = targetGuild.channels.cache.find(ch => 
-            ch.type === 0 && ch.name.includes('bot-test')
-        );
-        
-        if (!channel) {
-            console.log('bot-test channel not found');
-            process.exit(1);
-        }
-        
-        // Post the message
-        await channel.send({
-            content: '🧪 **Test Message** - Recent Kabila Sale Notification',
-            embeds: [embed]
-        });
-        
-        console.log(`Successfully posted recent Kabila sale (${latestSale.price} HBAR) to #${channel.name}`);
+        console.log(`Successfully posted recent Kabila sale (${latestSale.price} HBAR) to ${successCount} channels`);
         
         client.destroy();
         process.exit(0);

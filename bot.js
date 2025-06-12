@@ -313,7 +313,7 @@ class NFTSalesBot {
                         successCount++;
                     }
                 } catch (error) {
-                    console.error(`Failed to post to server ${serverConfig.guildId}:`, error.message);
+                    console.error(`Failed to post to server ${serverConfig.guild_id}:`, error.message);
                 }
             }
             

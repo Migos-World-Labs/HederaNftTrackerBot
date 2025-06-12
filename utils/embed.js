@@ -15,11 +15,12 @@ class EmbedUtils {
      */
     async createSaleEmbed(sale, hbarRate) {
         const usdValue = sale.price_hbar * hbarRate;
+        const marketplace = sale.marketplace || 'SentX';
         
         const embed = new EmbedBuilder()
             .setTitle(`💰 ${sale.nft_name} SOLD!`)
-            .setDescription(`Just sold on SentX marketplace`)
-            .setColor('#FFFFFF') // White color
+            .setDescription(`Just sold on ${marketplace} marketplace`)
+            .setColor(marketplace === 'Kabila' ? '#00ff88' : '#FFFFFF')
             .setTimestamp(new Date(sale.timestamp))
             .setFooter({ 
                 text: 'Built for Hedera by Mauii-Migos World Labs Inc',
@@ -35,10 +36,11 @@ class EmbedUtils {
         }
 
         // Add NFT image as main image and collection image as thumbnail
-        if (sale.image_url) {
-            const imageUrl = this.convertIpfsToHttp(sale.image_url);
-            if (imageUrl) {
-                embed.setImage(imageUrl);
+        const imageUrl = sale.image_url || sale.imageUrl;
+        if (imageUrl) {
+            const convertedImageUrl = this.convertIpfsToHttp(imageUrl);
+            if (convertedImageUrl) {
+                embed.setImage(convertedImageUrl);
             }
         }
 

@@ -86,18 +86,31 @@ class KabilaService {
             
             // All data returned is already filtered to SALE activity type
             // Transform the raw sales data into our standard format
-            const sales = rawSales.map((sale, index) => ({
-                id: `kabila_${sale.createdAt}_${index}`,
-                timestamp: sale.createdAt,
-                price: sale.price,
-                marketplace: 'Kabila',
-                // Add default values for missing fields that will be populated by formatSalesData
-                tokenId: sale.tokenId || 'unknown',
-                serialNumber: sale.serialNumber || index,
-                seller: sale.seller || 'unknown',
-                buyer: sale.buyer || 'unknown',
-                nftName: sale.nftName || `NFT #${index}`,
-                collectionName: sale.collectionName || 'Unknown Collection'
+            const sales = await Promise.all(rawSales.map(async (sale, index) => {
+                // Try to get detailed NFT information including image
+                let nftDetails = null;
+                if (sale.tokenId && sale.serialNumber) {
+                    try {
+                        nftDetails = await this.getNFTDetailsFromMirror(sale.tokenId, sale.serialNumber);
+                    } catch (error) {
+                        console.log(`Could not fetch NFT details for ${sale.tokenId}/${sale.serialNumber}`);
+                    }
+                }
+
+                return {
+                    id: `kabila_${sale.createdAt}_${index}`,
+                    timestamp: sale.createdAt,
+                    price: sale.price,
+                    marketplace: 'Kabila',
+                    tokenId: sale.tokenId || 'unknown',
+                    serialNumber: sale.serialNumber || index,
+                    seller: sale.seller || 'unknown',
+                    buyer: sale.buyer || 'unknown',
+                    nftName: sale.nftName || nftDetails?.name || `NFT #${sale.serialNumber || index}`,
+                    collectionName: sale.collectionName || nftDetails?.token_name || 'Unknown Collection',
+                    imageUrl: nftDetails?.metadata?.image || null,
+                    attributes: nftDetails?.metadata?.attributes || []
+                };
             }));
             
             console.log(`Processed ${sales.length} sales from Kabila`);
@@ -111,6 +124,42 @@ class KabilaService {
         } catch (error) {
             console.error('Error fetching Kabila sales:', error.response?.data || error.message);
             return [];
+        }
+    }
+
+    /**
+     * Get detailed NFT information from Hedera Mirror Node
+     * @param {string} tokenId - Token ID of the NFT
+     * @param {string} serialNumber - Serial number of the NFT
+     * @returns {Object} NFT details object
+     */
+    async getNFTDetailsFromMirror(tokenId, serialNumber) {
+        try {
+            const response = await axios.get(`https://mainnet-public.mirrornode.hedera.com/api/v1/tokens/${tokenId}/nfts/${serialNumber}`, {
+                timeout: 10000
+            });
+            
+            if (response.data && response.data.metadata) {
+                try {
+                    // Decode base64 metadata
+                    const metadataBase64 = response.data.metadata;
+                    const metadataString = Buffer.from(metadataBase64, 'base64').toString('utf8');
+                    const metadata = JSON.parse(metadataString);
+                    
+                    return {
+                        ...response.data,
+                        metadata: metadata
+                    };
+                } catch (metadataError) {
+                    console.log(`Could not parse metadata for ${tokenId}/${serialNumber}`);
+                    return response.data;
+                }
+            }
+            
+            return response.data;
+        } catch (error) {
+            console.log(`Failed to fetch NFT details from Mirror Node: ${error.message}`);
+            return null;
         }
     }
 
