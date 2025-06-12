@@ -6,9 +6,14 @@ const axios = require('axios');
 
 class KabilaService {
     constructor() {
-        this.baseURL = 'https://labs.kabila.app/api/marketplace/analytics';
+        this.baseURLs = [
+            'https://api.kabila.app/marketplace/analytics',
+            'https://labs.kabila.app/api/marketplace/analytics',
+            'https://api.kabila.app',
+            'https://labs.kabila.app/api'
+        ];
+        this.currentBaseURL = this.baseURLs[0];
         this.axiosInstance = axios.create({
-            baseURL: this.baseURL,
             timeout: 15000,
             headers: {
                 'User-Agent': 'Discord-NFT-Bot/1.0',
@@ -25,38 +30,70 @@ class KabilaService {
      */
     async getRecentSales(limit = 50) {
         try {
-            console.log('Fetching recent sales from Kabila...');
-            
             const apiKey = process.env.KABILA_API_KEY;
-            console.log('Kabila API Key available:', apiKey ? 'Yes' : 'No');
             
-            // Try different common API endpoints for marketplace sales
-            const endpoints = [
-                '/sales/recent',
-                '/sales',
-                '/activities',
-                '/marketplace/sales',
-                '/v1/sales'
+            if (!apiKey) {
+                console.log('Kabila API Key not provided - skipping Kabila monitoring');
+                return [];
+            }
+            
+            console.log('Fetching recent sales from Kabila...');
+            console.log('Kabila API Key available: Yes');
+            
+            // Try different base URLs and endpoints with authentication
+            const endpointCombinations = [
+                { baseURL: 'https://api.kabila.app/marketplace/analytics', endpoint: '/sales' },
+                { baseURL: 'https://api.kabila.app', endpoint: '/marketplace/analytics/sales' },
+                { baseURL: 'https://labs.kabila.app/api/marketplace/analytics', endpoint: '/sales' },
+                { baseURL: 'https://labs.kabila.app/api', endpoint: '/marketplace/analytics/sales' },
+                { baseURL: 'https://api.kabila.app', endpoint: '/v1/sales' },
+                { baseURL: 'https://api.kabila.app', endpoint: '/sales' },
+                { baseURL: 'https://api.kabila.app', endpoint: '/activities' },
+                { baseURL: 'https://labs.kabila.app/api', endpoint: '/sales' },
+                { baseURL: 'https://labs.kabila.app/api', endpoint: '/activities' }
             ];
 
             let response = null;
-            let usedEndpoint = null;
+            let usedCombination = null;
 
-            for (const endpoint of endpoints) {
+            for (const combination of endpointCombinations) {
                 try {
-                    const params = {
-                        limit: limit,
-                        type: 'sale',
-                        ...(apiKey && { apikey: apiKey })
+                    const headers = {
+                        'User-Agent': 'Discord-NFT-Bot/1.0',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     };
 
-                    console.log(`Trying Kabila endpoint: ${endpoint}`);
-                    response = await this.axiosInstance.get(endpoint, { params });
-                    usedEndpoint = endpoint;
-                    console.log(`Successfully connected to Kabila at: ${endpoint}`);
+                    // Add API key to headers if available
+                    if (apiKey) {
+                        headers['Authorization'] = `Bearer ${apiKey}`;
+                        headers['X-API-Key'] = apiKey;
+                        headers['x-api-key'] = apiKey;
+                    }
+
+                    const params = {
+                        limit: limit,
+                        size: limit,
+                        type: 'sale',
+                        activity: 'sale',
+                        ...(apiKey && { apikey: apiKey, api_key: apiKey })
+                    };
+
+                    console.log(`Trying Kabila: ${combination.baseURL}${combination.endpoint}`);
+                    
+                    response = await axios.get(`${combination.baseURL}${combination.endpoint}`, {
+                        params,
+                        headers,
+                        timeout: 10000
+                    });
+                    
+                    usedCombination = combination;
+                    console.log(`Successfully connected to Kabila at: ${combination.baseURL}${combination.endpoint}`);
                     break;
                 } catch (error) {
-                    console.log(`Endpoint ${endpoint} failed:`, error.response?.status || error.message);
+                    const status = error.response?.status;
+                    const message = error.response?.data?.message || error.message;
+                    console.log(`${combination.baseURL}${combination.endpoint} failed: ${status} - ${message}`);
                     continue;
                 }
             }
