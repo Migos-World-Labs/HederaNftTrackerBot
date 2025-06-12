@@ -16,9 +16,14 @@ class EmbedUtils {
         const usdValue = sale.price_hbar * hbarRate;
         
         const embed = new EmbedBuilder()
-            .setTitle(`🔥 NFT Sale: ${sale.nft_name}`)
-            .setColor('#00ff00') // Green for sales
-            .setTimestamp(new Date(sale.timestamp));
+            .setTitle(`💰 ${sale.nft_name} SOLD!`)
+            .setDescription(`Just sold on SentX marketplace`)
+            .setColor('#1DB954') // Spotify green for success
+            .setTimestamp(new Date(sale.timestamp))
+            .setFooter({ 
+                text: 'Built for Hedera by Mauii-Migos World Labs Inc',
+                iconURL: null
+            });
 
         // Add collection info if available
         if (sale.collection_name && sale.collection_name !== 'Unknown Collection') {
@@ -52,20 +57,20 @@ class EmbedUtils {
 
         // Price information (most important, so it goes first)
         embed.addFields({
-            name: '💰 Sale Price',
-            value: `${currencyService.formatCurrency(sale.price_hbar, 'HBAR')}\n${currencyService.formatCurrency(usdValue, 'USD')}`,
+            name: '💵 Price',
+            value: `**${sale.price_hbar} HBAR**\n*≈ $${usdValue.toFixed(2)} USD*`,
             inline: true
         });
 
         // Buyer and Seller
         embed.addFields(
             {
-                name: '👤 Buyer',
+                name: '🛒 Buyer',
                 value: `\`${sale.buyer}\``,
                 inline: true
             },
             {
-                name: '👤 Seller',
+                name: '🏪 Seller',
                 value: `\`${sale.seller}\``,
                 inline: true
             }
@@ -75,18 +80,17 @@ class EmbedUtils {
         if (sale.rarity || sale.rank) {
             let rarityText = '';
             if (sale.rank) {
-                rarityText += `**Rank:** #${sale.rank}`;
+                rarityText += `**#${sale.rank}** of collection`;
             }
             if (sale.rarity) {
                 if (rarityText) rarityText += '\n';
-                const rarityPercentage = (sale.rarity * 100);
-                const formattedPercentage = rarityPercentage % 1 === 0 ? rarityPercentage.toFixed(0) : rarityPercentage.toFixed(1);
+                const rarityPercentage = parseFloat((sale.rarity * 100).toFixed(1));
                 const rarityTier = this.getRarityTier(sale.rarity);
-                rarityText += `**Rarity:** ${rarityTier} (${formattedPercentage}%)`;
+                rarityText += `${rarityTier} *${rarityPercentage}%*`;
             }
             
             embed.addFields({
-                name: '🏆 Rarity Info',
+                name: '✨ Rarity',
                 value: rarityText,
                 inline: true
             });
@@ -95,13 +99,13 @@ class EmbedUtils {
         // Token ID and Marketplace
         embed.addFields(
             {
-                name: '🔗 Token ID',
+                name: '🆔 Collection',
                 value: `\`${sale.token_id}\``,
                 inline: true
             },
             {
-                name: '🏪 Marketplace',
-                value: sale.marketplace,
+                name: '🌐 Marketplace',
+                value: '**SentX**',
                 inline: true
             }
         );
@@ -109,8 +113,8 @@ class EmbedUtils {
         // Transaction hash if available
         if (sale.transaction_hash) {
             embed.addFields({
-                name: '📝 Transaction',
-                value: `[View on HashScan](https://hashscan.io/mainnet/transaction/${sale.transaction_hash})`,
+                name: '🔍 View Transaction',
+                value: `[See on HashScan →](https://hashscan.io/mainnet/transaction/${sale.transaction_hash})`,
                 inline: false
             });
         }
@@ -332,8 +336,8 @@ class EmbedUtils {
         
         if (percentage <= 1) return '🔥 Legendary';
         if (percentage <= 5) return '💎 Epic';
-        if (percentage <= 15) return '🟣 Rare';
-        if (percentage <= 30) return '🔵 Uncommon';
+        if (percentage <= 20) return '🟣 Rare';
+        if (percentage <= 40) return '🔵 Uncommon';
         return '⚪ Common';
     }
 
