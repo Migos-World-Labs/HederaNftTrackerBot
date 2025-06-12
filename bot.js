@@ -48,7 +48,20 @@ class NFTSalesBot {
         // Handle when bot leaves a server
         this.client.on(Events.GuildDelete, async (guild) => {
             console.log(`❌ Bot removed from server: ${guild.name} (${guild.id})`);
-            await this.storage.removeServerConfig(guild.id);
+            try {
+                // Remove server configuration
+                await this.storage.removeServerConfig(guild.id);
+                
+                // Remove all collections tracked by this server
+                const serverCollections = await this.storage.getCollections(guild.id);
+                for (const collection of serverCollections) {
+                    await this.storage.removeCollection(guild.id, collection.token_id || collection.tokenId);
+                }
+                
+                console.log(`🧹 Cleaned up all data for server: ${guild.name}`);
+            } catch (error) {
+                console.error(`Error cleaning up server data for ${guild.name}:`, error);
+            }
         });
 
         // Handle slash commands
