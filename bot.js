@@ -30,10 +30,19 @@ class NFTSalesBot {
             console.log(`Bot is in ${this.client.guilds.cache.size} servers`);
             
             // Debug: List all servers the bot is in
-            console.log('Server details:');
+            console.log('\n📊 Connected Servers:');
+            console.log('┌─────────────────────────────────────┬───────────────────────┬─────────────┐');
+            console.log('│ Server Name                         │ Server ID             │ Members     │');
+            console.log('├─────────────────────────────────────┼───────────────────────┼─────────────┤');
+            
             this.client.guilds.cache.forEach(guild => {
-                console.log(`- ${guild.name} (${guild.id}) - ${guild.memberCount} members`);
+                const name = guild.name.padEnd(35).substring(0, 35);
+                const id = guild.id.padEnd(21);
+                const members = guild.memberCount.toString().padStart(11);
+                console.log(`│ ${name} │ ${id} │ ${members} │`);
             });
+            
+            console.log('└─────────────────────────────────────┴───────────────────────┴─────────────┘\n');
             this.generateInviteLink();
             await this.initializeDatabase();
             await this.configureExistingServers();
