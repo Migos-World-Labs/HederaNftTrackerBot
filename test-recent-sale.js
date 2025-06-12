@@ -19,6 +19,9 @@ async function testRecentSaleMessage() {
         await client.login(config.DISCORD_TOKEN);
         await new Promise(resolve => client.once('ready', resolve));
         
+        // Wait a moment for the client to fully initialize
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
         // Get the most recent sale from Kabila
         const recentSales = await kabilaService.getRecentSales(1);
         if (!recentSales || recentSales.length === 0) {
@@ -55,14 +58,26 @@ async function testRecentSaleMessage() {
         const serverConfigs = await storage.getAllServerConfigs();
         let successCount = 0;
         
+        console.log(`Found ${serverConfigs.length} server configurations`);
+        
         for (const serverConfig of serverConfigs) {
-            if (!serverConfig.enabled) continue;
+            console.log(`Checking server: ${serverConfig.guildName} (${serverConfig.guildId})`);
+            if (!serverConfig.enabled) {
+                console.log('Server disabled, skipping');
+                continue;
+            }
             
-            const channel = client.channels.cache.get(serverConfig.channel_id);
+            const guild = client.guilds.cache.get(serverConfig.guildId);
+            if (!guild) {
+                console.log(`Guild ${serverConfig.guildId} not found in cache`);
+                continue;
+            }
+            
+            const channel = guild.channels.cache.get(serverConfig.channelId);
             if (channel) {
+                console.log(`Found channel: #${channel.name} in ${guild.name}`);
                 // Create enhanced embed using the same utility as the main bot
-                const EmbedUtils = require('./utils/embed');
-                const embedUtils = new EmbedUtils();
+                const embedUtils = require('./utils/embed');
                 
                 // Format sale data to match bot expectations
                 const formattedSale = {

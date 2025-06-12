@@ -297,7 +297,7 @@ class NFTSalesBot {
                         shouldPost = true;
                     } else {
                         // For SentX sales, check collection tracking
-                        const isTracked = await this.storage.isCollectionTracked(sale.token_id || sale.tokenId, serverConfig.guild_id);
+                        const isTracked = await this.storage.isCollectionTracked(sale.token_id || sale.tokenId, serverConfig.guildId);
                         shouldPost = isTracked;
                     }
                     
@@ -305,7 +305,7 @@ class NFTSalesBot {
                         continue; // Skip this server
                     }
                     
-                    const channel = this.client.channels.cache.get(serverConfig.channel_id);
+                    const channel = this.client.channels.cache.get(serverConfig.channelId);
                     if (channel) {
                         // Create Discord embed for the sale
                         const embed = await embedUtils.createSaleEmbed(sale, hbarRate);
@@ -313,7 +313,7 @@ class NFTSalesBot {
                         successCount++;
                     }
                 } catch (error) {
-                    console.error(`Failed to post to server ${serverConfig.guild_id}:`, error.message);
+                    console.error(`Failed to post to server ${serverConfig.guildId}:`, error.message);
                 }
             }
             
