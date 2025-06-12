@@ -510,7 +510,7 @@ class NFTSalesBot {
     async handleListCommand(interaction) {
         try {
             const guildId = interaction.guildId;
-            const collections = await storage.getCollections(guildId);
+            const collections = await this.storage.getCollections(guildId);
 
             if (collections.length === 0) {
                 await interaction.reply({
