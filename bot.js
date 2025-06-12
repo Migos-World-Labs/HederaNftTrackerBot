@@ -288,14 +288,24 @@ class NFTSalesBot {
                 try {
                     if (!serverConfig.enabled) continue;
                     
-                    // Check if this server tracks the collection from this sale
-                    const isTracked = await this.storage.isCollectionTracked(sale.token_id, serverConfig.guildId);
+                    // For Kabila sales, post to all servers since we can't track specific collections yet
+                    // For SentX sales, check if this server tracks the collection
+                    let shouldPost = false;
                     
-                    if (!isTracked) {
-                        continue; // Skip this server, they don't track this collection
+                    if (sale.marketplace === 'Kabila') {
+                        // Post all Kabila sales to all configured servers
+                        shouldPost = true;
+                    } else {
+                        // For SentX sales, check collection tracking
+                        const isTracked = await this.storage.isCollectionTracked(sale.token_id || sale.tokenId, serverConfig.guild_id);
+                        shouldPost = isTracked;
                     }
                     
-                    const channel = this.client.channels.cache.get(serverConfig.channelId);
+                    if (!shouldPost) {
+                        continue; // Skip this server
+                    }
+                    
+                    const channel = this.client.channels.cache.get(serverConfig.channel_id);
                     if (channel) {
                         // Create Discord embed for the sale
                         const embed = await embedUtils.createSaleEmbed(sale, hbarRate);
