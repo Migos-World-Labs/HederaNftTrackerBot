@@ -1,3 +1,10 @@
 {
-  "collections": []
+  "collections": [
+    {
+      "tokenId": "0.0.6024491",
+      "name": "Wild Tigers",
+      "enabled": true,
+      "addedDate": "2025-06-12T00:57:06.059Z"
+    }
+  ]
 }

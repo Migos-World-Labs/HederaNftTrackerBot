@@ -24,10 +24,11 @@ class NFTSalesBot {
     }
 
     setupEventHandlers() {
-        this.client.once(Events.ClientReady, () => {
+        this.client.once(Events.ClientReady, async () => {
             console.log(`Bot logged in as ${this.client.user.tag}!`);
             console.log(`Bot is in ${this.client.guilds.cache.size} servers`);
             this.generateInviteLink();
+            await this.registerSlashCommands();
             this.startMonitoring();
         });
 
@@ -47,8 +48,11 @@ class NFTSalesBot {
             storage.removeServerConfig(guild.id);
         });
 
-        // Commands disabled temporarily due to Discord permissions
-        // Will implement slash commands or provide web interface for collection management
+        // Handle slash commands
+        this.client.on(Events.InteractionCreate, async (interaction) => {
+            if (!interaction.isChatInputCommand()) return;
+            await this.handleSlashCommand(interaction);
+        });
     }
 
     async start() {
@@ -308,7 +312,30 @@ class NFTSalesBot {
                 storage.setServerConfig(guild.id, firstChannel.id, guild.name, true);
                 
                 // Send welcome message
-                const welcomeEmbed = embedUtils.createWelcomeEmbed(guild.name);
+                const welcomeEmbed = {
+                    title: '🤖 NFT Sales Bot Added!',
+                    description: `Thank you for adding the NFT Sales Bot to **${guild.name}**!`,
+                    color: 0x00ff00,
+                    fields: [
+                        {
+                            name: '📈 What I Do',
+                            value: 'I track real-time NFT sales from SentX marketplace on Hedera and post detailed notifications here.',
+                            inline: false
+                        },
+                        {
+                            name: '⚙️ Setup Instructions',
+                            value: '1. Use `/add` to add NFT collections to track\n2. Use `/list` to see tracked collections\n3. Use `/remove` to stop tracking collections\n4. Use `/status` to check bot status',
+                            inline: false
+                        },
+                        {
+                            name: '💰 Features',
+                            value: '• Real-time sale notifications\n• HBAR to USD conversion\n• NFT images and details\n• Buyer/seller information\n• Collection filtering',
+                            inline: false
+                        }
+                    ],
+                    timestamp: new Date().toISOString(),
+                    footer: { text: 'Ready to track your favorite NFT collections!' }
+                };
                 await firstChannel.send({ embeds: [welcomeEmbed] });
                 
                 console.log(`Configured server ${guild.name} with channel #${firstChannel.name}`);
@@ -318,6 +345,268 @@ class NFTSalesBot {
         } catch (error) {
             console.error(`Error setting up new guild ${guild.name}:`, error);
         }
+    }
+
+    async registerSlashCommands() {
+        const { REST, Routes } = require('discord.js');
+        const rest = new REST().setToken(config.DISCORD_TOKEN);
+
+        const commands = [
+            {
+                name: 'add',
+                description: 'Add an NFT collection to track',
+                options: [
+                    {
+                        name: 'token_id',
+                        type: 3, // STRING
+                        description: 'Token ID of the collection (e.g., 0.0.878200)',
+                        required: true
+                    },
+                    {
+                        name: 'name',
+                        type: 3, // STRING
+                        description: 'Name of the collection',
+                        required: false
+                    }
+                ]
+            },
+            {
+                name: 'remove',
+                description: 'Remove an NFT collection from tracking',
+                options: [
+                    {
+                        name: 'token_id',
+                        type: 3, // STRING
+                        description: 'Token ID of the collection to remove',
+                        required: true
+                    }
+                ]
+            },
+            {
+                name: 'list',
+                description: 'List all tracked NFT collections'
+            },
+            {
+                name: 'status',
+                description: 'Show bot status and monitoring information'
+            }
+        ];
+
+        try {
+            console.log('Registering slash commands...');
+            await rest.put(
+                Routes.applicationCommands(this.client.user.id),
+                { body: commands }
+            );
+            console.log('Successfully registered slash commands');
+        } catch (error) {
+            console.error('Error registering slash commands:', error);
+        }
+    }
+
+    async handleSlashCommand(interaction) {
+        try {
+            const { commandName, options } = interaction;
+
+            switch (commandName) {
+                case 'add':
+                    await this.handleAddCommand(interaction, options);
+                    break;
+                case 'remove':
+                    await this.handleRemoveCommand(interaction, options);
+                    break;
+                case 'list':
+                    await this.handleListCommand(interaction);
+                    break;
+                case 'status':
+                    await this.handleStatusSlashCommand(interaction);
+                    break;
+                default:
+                    await interaction.reply('Unknown command');
+            }
+        } catch (error) {
+            console.error('Error handling slash command:', error);
+            if (!interaction.replied) {
+                await interaction.reply('An error occurred while processing the command.');
+            }
+        }
+    }
+
+    async handleAddCommand(interaction, options) {
+        const tokenId = options.getString('token_id');
+        const name = options.getString('name') || 'Unknown Collection';
+
+        // Validate token ID format
+        if (!tokenId.match(/^0\.0\.\d+$/)) {
+            await interaction.reply({
+                content: '❌ Invalid token ID format. Please use format: 0.0.123456',
+                ephemeral: true
+            });
+            return;
+        }
+
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const collectionsPath = path.join(__dirname, 'collections.json');
+            
+            let collectionsData = { collections: [] };
+            if (fs.existsSync(collectionsPath)) {
+                collectionsData = JSON.parse(fs.readFileSync(collectionsPath, 'utf8'));
+            }
+
+            // Check if collection already exists
+            if (collectionsData.collections.some(c => c.tokenId === tokenId)) {
+                await interaction.reply({
+                    content: '❌ This collection is already being tracked.',
+                    ephemeral: true
+                });
+                return;
+            }
+
+            // Add collection
+            collectionsData.collections.push({
+                tokenId,
+                name,
+                enabled: true,
+                addedDate: new Date().toISOString()
+            });
+
+            fs.writeFileSync(collectionsPath, JSON.stringify(collectionsData, null, 2));
+
+            await interaction.reply({
+                content: `✅ Added **${name}** (${tokenId}) to tracking list!`,
+                ephemeral: false
+            });
+
+        } catch (error) {
+            console.error('Error adding collection:', error);
+            await interaction.reply({
+                content: '❌ Error adding collection. Please try again.',
+                ephemeral: true
+            });
+        }
+    }
+
+    async handleRemoveCommand(interaction, options) {
+        const tokenId = options.getString('token_id');
+
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const collectionsPath = path.join(__dirname, 'collections.json');
+            
+            if (!fs.existsSync(collectionsPath)) {
+                await interaction.reply({
+                    content: '❌ No collections are currently being tracked.',
+                    ephemeral: true
+                });
+                return;
+            }
+
+            const collectionsData = JSON.parse(fs.readFileSync(collectionsPath, 'utf8'));
+            const initialLength = collectionsData.collections.length;
+            
+            collectionsData.collections = collectionsData.collections.filter(c => c.tokenId !== tokenId);
+
+            if (collectionsData.collections.length < initialLength) {
+                fs.writeFileSync(collectionsPath, JSON.stringify(collectionsData, null, 2));
+                await interaction.reply({
+                    content: `✅ Removed collection **${tokenId}** from tracking list.`,
+                    ephemeral: false
+                });
+            } else {
+                await interaction.reply({
+                    content: `❌ Collection **${tokenId}** was not found in tracking list.`,
+                    ephemeral: true
+                });
+            }
+
+        } catch (error) {
+            console.error('Error removing collection:', error);
+            await interaction.reply({
+                content: '❌ Error removing collection. Please try again.',
+                ephemeral: true
+            });
+        }
+    }
+
+    async handleListCommand(interaction) {
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const collectionsPath = path.join(__dirname, 'collections.json');
+            
+            let collectionsData = { collections: [] };
+            if (fs.existsSync(collectionsPath)) {
+                collectionsData = JSON.parse(fs.readFileSync(collectionsPath, 'utf8'));
+            }
+
+            if (collectionsData.collections.length === 0) {
+                await interaction.reply({
+                    content: 'No collections are currently being tracked. Use `/add` to add one.',
+                    ephemeral: true
+                });
+                return;
+            }
+
+            const embed = {
+                title: '📋 Tracked NFT Collections',
+                color: 0x0099ff,
+                fields: [],
+                footer: { text: `Total: ${collectionsData.collections.length} collection(s)` },
+                timestamp: new Date().toISOString()
+            };
+
+            collectionsData.collections.forEach((collection, index) => {
+                const status = collection.enabled ? '✅ Enabled' : '❌ Disabled';
+                embed.fields.push({
+                    name: `${index + 1}. ${collection.name}`,
+                    value: `Token ID: \`${collection.tokenId}\`\nStatus: ${status}`,
+                    inline: true
+                });
+            });
+
+            await interaction.reply({ embeds: [embed] });
+
+        } catch (error) {
+            console.error('Error listing collections:', error);
+            await interaction.reply({
+                content: '❌ Error loading collections. Please try again.',
+                ephemeral: true
+            });
+        }
+    }
+
+    async handleStatusSlashCommand(interaction) {
+        const serverConfigs = storage.getAllServerConfigs();
+        const hbarRate = await currencyService.getHbarToUsdRate();
+
+        const embed = {
+            title: '🤖 Bot Status',
+            color: this.isMonitoring ? 0x00ff00 : 0xff0000,
+            fields: [
+                {
+                    name: '📊 Monitoring Status',
+                    value: this.isMonitoring ? '✅ Active' : '❌ Inactive',
+                    inline: true
+                },
+                {
+                    name: '🏦 HBAR Rate',
+                    value: `$${hbarRate.toFixed(4)} USD`,
+                    inline: true
+                },
+                {
+                    name: '🌐 Connected Servers',
+                    value: `${serverConfigs.length} servers`,
+                    inline: true
+                }
+            ],
+            timestamp: new Date().toISOString(),
+            footer: { text: 'NFT Sales Bot' }
+        };
+
+        await interaction.reply({ embeds: [embed] });
     }
 
     delay(ms) {

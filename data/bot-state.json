@@ -2,7 +2,16 @@
   "lastProcessedSale": 1749687864000,
   "processedSales": [],
   "trackedCollections": [],
-  "serverConfigs": [],
+  "serverConfigs": [
+    {
+      "guildId": "1248509900154343504",
+      "channelId": "1248509901354045542",
+      "guildName": "Wild Tigers",
+      "enabled": true,
+      "addedDate": 1749689874437,
+      "lastUpdated": 1749689874437
+    }
+  ],
   "botStats": {
     "totalSalesProcessed": 50,
     "startTime": 1749687694959,
