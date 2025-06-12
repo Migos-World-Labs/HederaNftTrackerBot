@@ -26,7 +26,7 @@ class EmbedUtils {
         const embed = new EmbedBuilder()
             .setTitle(`🎉 ${nftName} just sold!`)
             .setDescription(`A new sale happened on ${marketplace} for **$${usdValue.toFixed(2)} USD** (${sale.price_hbar} HBAR)`)
-            .setColor(marketplace === 'Kabila' ? '#00ff88' : '#FFFFFF')
+            .setColor('#FFFFFF')
             .setTimestamp(new Date(sale.timestamp));
 
         // Add collection info prominently

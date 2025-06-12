@@ -6,7 +6,7 @@ const { Client, GatewayIntentBits, Events } = require('discord.js');
 const cron = require('node-cron');
 const config = require('./config');
 const sentxService = require('./services/sentx');
-const kabilaService = require('./services/kabila');
+
 const currencyService = require('./services/currency');
 const embedUtils = require('./utils/embed');
 const DatabaseStorage = require('./database-storage');
@@ -154,40 +154,21 @@ class NFTSalesBot {
         try {
             console.log('Checking for new NFT sales...');
             
-            // Get recent sales from both marketplaces simultaneously
-            const [sentxSales, kabilaSales] = await Promise.allSettled([
-                sentxService.getRecentSales(),
-                kabilaService.getRecentSales()
-            ]);
+            // Get recent sales from SentX marketplace
+            const sentxSales = await sentxService.getRecentSales();
 
-            let allSales = [];
-
-            // Process SentX sales
-            if (sentxSales.status === 'fulfilled' && sentxSales.value) {
-                console.log(`Found ${sentxSales.value.length} sales from SentX`);
-                allSales.push(...sentxSales.value);
-            } else {
-                console.log('SentX sales fetch failed:', sentxSales.reason?.message || 'Unknown error');
-            }
-
-            // Process Kabila sales
-            if (kabilaSales.status === 'fulfilled' && kabilaSales.value) {
-                console.log(`Found ${kabilaSales.value.length} sales from Kabila`);
-                allSales.push(...kabilaSales.value);
-            } else {
-                console.log('Kabila sales fetch failed:', kabilaSales.reason?.message || 'Unknown error');
-            }
-            
-            if (allSales.length === 0) {
-                console.log('No recent sales found from any marketplace');
+            if (!sentxSales || sentxSales.length === 0) {
+                console.log('No recent sales found from SentX');
                 return;
             }
+
+            console.log(`Found ${sentxSales.length} sales from SentX`);
 
             // Get the timestamp of the last processed sale
             const lastProcessedTimestamp = await this.storage.getLastProcessedSale();
             
             // Filter for truly new sales only (sales that happened after our last check)
-            let newSales = allSales.filter(sale => {
+            let newSales = sentxSales.filter(sale => {
                 const saleTimestamp = new Date(sale.timestamp).getTime();
                 const isNewer = saleTimestamp > lastProcessedTimestamp;
                 
@@ -198,7 +179,7 @@ class NFTSalesBot {
                 return isNewer && isRecent;
             });
 
-            console.log(`Found ${newSales.length} new live sales to process from all marketplaces`);
+            console.log(`Found ${newSales.length} new live sales to process from SentX`);
 
             if (newSales.length === 0) {
                 console.log('No new live sales to process');
@@ -288,21 +269,11 @@ class NFTSalesBot {
                 try {
                     if (!serverConfig.enabled) continue;
                     
-                    // For Kabila sales, post to all servers since we can't track specific collections yet
-                    // For SentX sales, check if this server tracks the collection
-                    let shouldPost = false;
+                    // Check if this server tracks the collection
+                    const isTracked = await this.storage.isCollectionTracked(sale.token_id || sale.tokenId, serverConfig.guildId);
                     
-                    if (sale.marketplace === 'Kabila') {
-                        // Post all Kabila sales to all configured servers
-                        shouldPost = true;
-                    } else {
-                        // For SentX sales, check collection tracking
-                        const isTracked = await this.storage.isCollectionTracked(sale.token_id || sale.tokenId, serverConfig.guildId);
-                        shouldPost = isTracked;
-                    }
-                    
-                    if (!shouldPost) {
-                        continue; // Skip this server
+                    if (!isTracked) {
+                        continue; // Skip this server if collection not tracked
                     }
                     
                     const channel = this.client.channels.cache.get(serverConfig.channelId);

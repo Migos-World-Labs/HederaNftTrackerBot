@@ -14,9 +14,8 @@ const config = {
     SENTX_API_KEY: process.env.SENTX_API_KEY || '',
     SENTX_BASE_URL: process.env.SENTX_BASE_URL || 'https://api.sentx.io/v1',
     
-    // Kabila API Configuration
-    KABILA_API_KEY: process.env.KABILA_API_KEY || '',
-    KABILA_BASE_URL: process.env.KABILA_BASE_URL || 'https://labs.kabila.app/api/marketplace/analytics',
+
+
     
     // Currency API Configuration
     COINMARKETCAP_API_KEY: process.env.COINMARKETCAP_API_KEY || '',
