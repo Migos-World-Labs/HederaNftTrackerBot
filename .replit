@@ -15,6 +15,10 @@ author = "agent"
 task = "workflow.run"
 args = "Discord NFT Bot"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Collection Manager"
+
 [[workflows.workflow]]
 name = "Discord NFT Bot"
 author = "agent"
@@ -23,5 +27,18 @@ author = "agent"
 task = "shell.exec"
 args = "npm install discord.js axios node-cron dotenv && node index.js"
 
+[[workflows.workflow]]
+name = "Collection Manager"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node web-interface.js"
+waitForPort = 3000
+
 [deployment]
 run = ["sh", "-c", "npm install discord.js axios node-cron dotenv && node index.js"]
+
+[[ports]]
+localPort = 3000
+externalPort = 80
