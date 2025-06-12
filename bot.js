@@ -590,6 +590,54 @@ class NFTSalesBot {
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+
+    async testLastSale() {
+        try {
+            console.log('Testing by posting last Wild Tigers sale...');
+            
+            // Get recent sales from SentX
+            const recentSales = await sentxService.getRecentSales(100); // Get more sales to find Wild Tigers
+            
+            if (!recentSales || recentSales.length === 0) {
+                console.log('No recent sales found for testing');
+                return;
+            }
+            
+            // Find the most recent Wild Tigers sale
+            const wildTigersSale = recentSales.find(sale => sale.token_id === '0.0.6024491');
+            
+            if (!wildTigersSale) {
+                console.log('No Wild Tigers sales found in recent data');
+                // Try any tracked collection sale for testing
+                const trackedCollections = await storage.getCollections();
+                const trackedTokenIds = trackedCollections.map(c => c.token_id);
+                const anyTrackedSale = recentSales.find(sale => trackedTokenIds.includes(sale.token_id));
+                
+                if (anyTrackedSale) {
+                    console.log(`Using ${anyTrackedSale.nft_name} sale for testing instead`);
+                    const hbarRate = await currencyService.getHbarToUsdRate();
+                    await this.processSale(anyTrackedSale, hbarRate);
+                    console.log('Test sale posted successfully!');
+                } else {
+                    console.log('No tracked collection sales found for testing');
+                }
+                return;
+            }
+            
+            console.log('Found Wild Tigers sale for testing:', wildTigersSale.nft_name);
+            
+            // Get HBAR rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            
+            // Process this sale (force post it)
+            await this.processSale(wildTigersSale, hbarRate);
+            
+            console.log('Test sale posted successfully!');
+            
+        } catch (error) {
+            console.error('Error testing last sale:', error);
+        }
+    }
 }
 
 module.exports = new NFTSalesBot();
