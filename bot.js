@@ -38,15 +38,15 @@ class NFTSalesBot {
         });
 
         // Handle when bot joins a new server
-        this.client.on(Events.GuildCreate, (guild) => {
+        this.client.on(Events.GuildCreate, async (guild) => {
             console.log(`✅ Bot added to new server: ${guild.name} (${guild.id})`);
-            this.handleNewGuild(guild);
+            await this.handleNewGuild(guild);
         });
 
         // Handle when bot leaves a server
-        this.client.on(Events.GuildDelete, (guild) => {
+        this.client.on(Events.GuildDelete, async (guild) => {
             console.log(`❌ Bot removed from server: ${guild.name} (${guild.id})`);
-            storage.removeServerConfig(guild.id);
+            await storage.removeServerConfig(guild.id);
         });
 
         // Handle slash commands
@@ -110,30 +110,23 @@ class NFTSalesBot {
                 return saleTimestamp > lastProcessedTimestamp;
             });
 
-            // Load collections from config file and filter sales
+            // Load collections from database and filter sales
             try {
-                const fs = require('fs');
-                const path = require('path');
-                const collectionsPath = path.join(__dirname, 'collections.json');
+                const enabledCollections = await storage.getCollections(true);
                 
-                if (fs.existsSync(collectionsPath)) {
-                    const collectionsData = JSON.parse(fs.readFileSync(collectionsPath, 'utf8'));
-                    const enabledCollections = collectionsData.collections.filter(c => c.enabled);
+                if (enabledCollections.length > 0) {
+                    const trackedTokenIds = enabledCollections.map(c => c.tokenId);
+                    newSales = newSales.filter(sale => {
+                        return trackedTokenIds.includes(sale.token_id);
+                    });
                     
-                    if (enabledCollections.length > 0) {
-                        const trackedTokenIds = enabledCollections.map(c => c.tokenId);
-                        newSales = newSales.filter(sale => {
-                            return trackedTokenIds.includes(sale.token_id);
-                        });
-                        
-                        console.log(`Tracking ${enabledCollections.length} collections: ${enabledCollections.map(c => c.name).join(', ')}`);
-                        if (newSales.length > 0) {
-                            console.log(`Found ${newSales.length} sales from tracked collections`);
-                        }
+                    console.log(`Tracking ${enabledCollections.length} collections: ${enabledCollections.map(c => c.name).join(', ')}`);
+                    if (newSales.length > 0) {
+                        console.log(`Found ${newSales.length} sales from tracked collections`);
                     }
                 }
             } catch (error) {
-                console.log('No collection filter applied - tracking all sales');
+                console.log('Error loading collections from database:', error.message);
             }
 
             if (newSales.length === 0) {
@@ -310,7 +303,7 @@ class NFTSalesBot {
                 const firstChannel = textChannels.first();
                 
                 // Save server configuration
-                storage.setServerConfig(guild.id, firstChannel.id, guild.name, true);
+                await storage.setServerConfig(guild.id, firstChannel.id, guild.name, true);
                 
                 // Send welcome message
                 const welcomeEmbed = {
@@ -447,38 +440,19 @@ class NFTSalesBot {
         }
 
         try {
-            const fs = require('fs');
-            const path = require('path');
-            const collectionsPath = path.join(__dirname, 'collections.json');
+            const result = await storage.addCollection(tokenId, name, true);
             
-            let collectionsData = { collections: [] };
-            if (fs.existsSync(collectionsPath)) {
-                collectionsData = JSON.parse(fs.readFileSync(collectionsPath, 'utf8'));
-            }
-
-            // Check if collection already exists
-            if (collectionsData.collections.some(c => c.tokenId === tokenId)) {
+            if (result) {
+                await interaction.reply({
+                    content: `✅ Added **${name}** (${tokenId}) to tracking list!`,
+                    ephemeral: false
+                });
+            } else {
                 await interaction.reply({
                     content: '❌ This collection is already being tracked.',
                     ephemeral: true
                 });
-                return;
             }
-
-            // Add collection
-            collectionsData.collections.push({
-                tokenId,
-                name,
-                enabled: true,
-                addedDate: new Date().toISOString()
-            });
-
-            fs.writeFileSync(collectionsPath, JSON.stringify(collectionsData, null, 2));
-
-            await interaction.reply({
-                content: `✅ Added **${name}** (${tokenId}) to tracking list!`,
-                ephemeral: false
-            });
 
         } catch (error) {
             console.error('Error adding collection:', error);
@@ -493,25 +467,9 @@ class NFTSalesBot {
         const tokenId = options.getString('token_id');
 
         try {
-            const fs = require('fs');
-            const path = require('path');
-            const collectionsPath = path.join(__dirname, 'collections.json');
+            const success = await storage.removeCollection(tokenId);
             
-            if (!fs.existsSync(collectionsPath)) {
-                await interaction.reply({
-                    content: '❌ No collections are currently being tracked.',
-                    ephemeral: true
-                });
-                return;
-            }
-
-            const collectionsData = JSON.parse(fs.readFileSync(collectionsPath, 'utf8'));
-            const initialLength = collectionsData.collections.length;
-            
-            collectionsData.collections = collectionsData.collections.filter(c => c.tokenId !== tokenId);
-
-            if (collectionsData.collections.length < initialLength) {
-                fs.writeFileSync(collectionsPath, JSON.stringify(collectionsData, null, 2));
+            if (success) {
                 await interaction.reply({
                     content: `✅ Removed collection **${tokenId}** from tracking list.`,
                     ephemeral: false
@@ -534,16 +492,9 @@ class NFTSalesBot {
 
     async handleListCommand(interaction) {
         try {
-            const fs = require('fs');
-            const path = require('path');
-            const collectionsPath = path.join(__dirname, 'collections.json');
-            
-            let collectionsData = { collections: [] };
-            if (fs.existsSync(collectionsPath)) {
-                collectionsData = JSON.parse(fs.readFileSync(collectionsPath, 'utf8'));
-            }
+            const collections = await storage.getCollections();
 
-            if (collectionsData.collections.length === 0) {
+            if (collections.length === 0) {
                 await interaction.reply({
                     content: 'No collections are currently being tracked. Use `/add` to add one.',
                     ephemeral: true
@@ -555,11 +506,11 @@ class NFTSalesBot {
                 title: '📋 Tracked NFT Collections',
                 color: 0x0099ff,
                 fields: [],
-                footer: { text: `Total: ${collectionsData.collections.length} collection(s)` },
+                footer: { text: `Total: ${collections.length} collection(s)` },
                 timestamp: new Date().toISOString()
             };
 
-            collectionsData.collections.forEach((collection, index) => {
+            collections.forEach((collection, index) => {
                 const status = collection.enabled ? '✅ Enabled' : '❌ Disabled';
                 embed.fields.push({
                     name: `${index + 1}. ${collection.name}`,
@@ -580,7 +531,7 @@ class NFTSalesBot {
     }
 
     async handleStatusSlashCommand(interaction) {
-        const serverConfigs = storage.getAllServerConfigs();
+        const serverConfigs = await storage.getAllServerConfigs();
         const hbarRate = await currencyService.getHbarToUsdRate();
 
         const embed = {
@@ -608,6 +559,17 @@ class NFTSalesBot {
         };
 
         await interaction.reply({ embeds: [embed] });
+    }
+
+    async initializeDatabase() {
+        try {
+            console.log('Initializing database storage...');
+            await storage.init();
+            console.log('Database storage ready');
+        } catch (error) {
+            console.error('Failed to initialize database:', error);
+            throw error;
+        }
     }
 
     delay(ms) {
