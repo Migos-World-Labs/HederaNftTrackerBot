@@ -5,16 +5,26 @@
 
 const bot = require('./bot');
 const config = require('./config');
-const storage = require('./utils/storage');
+const DatabaseStorage = require('./database-storage');
 
-// Initialize storage
-storage.init();
+// Initialize database storage
+const storage = new DatabaseStorage();
 
-// Start the bot
-bot.start().catch(error => {
-    console.error('Failed to start bot:', error);
-    process.exit(1);
-});
+async function initializeBot() {
+    try {
+        await storage.init();
+        console.log('Database storage initialized');
+        
+        // Start the bot
+        await bot.start();
+    } catch (error) {
+        console.error('Failed to initialize bot:', error);
+        process.exit(1);
+    }
+}
+
+// Initialize and start the bot
+initializeBot();
 
 // Graceful shutdown handling
 process.on('SIGINT', async () => {

@@ -8,10 +8,11 @@ const config = require('./config');
 const sentxService = require('./services/sentx');
 const currencyService = require('./services/currency');
 const embedUtils = require('./utils/embed');
-const storage = require('./database-storage');
+const DatabaseStorage = require('./database-storage');
 
 class NFTSalesBot {
     constructor() {
+        this.storage = new DatabaseStorage();
         this.client = new Client({
             intents: [
                 GatewayIntentBits.Guilds
@@ -59,6 +60,8 @@ class NFTSalesBot {
 
     async start() {
         try {
+            // Initialize database storage first
+            await this.storage.init();
             await this.client.login(config.DISCORD_TOKEN);
         } catch (error) {
             console.error('Failed to login to Discord:', error);
@@ -103,7 +106,7 @@ class NFTSalesBot {
             }
 
             // Get the timestamp of the last processed sale
-            const lastProcessedTimestamp = storage.getLastProcessedSale();
+            const lastProcessedTimestamp = await this.storage.getLastProcessedSale();
             
             // Filter for new sales only
             let newSales = recentSales.filter(sale => {
@@ -130,7 +133,7 @@ class NFTSalesBot {
                 
                 // Update last processed timestamp
                 const saleTimestamp = new Date(sale.timestamp).getTime();
-                storage.setLastProcessedSale(saleTimestamp);
+                await this.storage.setLastProcessedSale(saleTimestamp);
                 
                 // Small delay between messages to avoid rate limiting
                 await this.delay(1000);
@@ -144,7 +147,7 @@ class NFTSalesBot {
     async processSale(sale, hbarRate) {
         try {
             // Get all configured servers and channels
-            const serverConfigs = await storage.getAllServerConfigs();
+            const serverConfigs = await this.storage.getAllServerConfigs();
             let successCount = 0;
             
             if (serverConfigs.length === 0) {
@@ -158,7 +161,7 @@ class NFTSalesBot {
                     if (!serverConfig.enabled) continue;
                     
                     // Check if this server tracks the collection from this sale
-                    const isTracked = await storage.isCollectionTracked(sale.token_id, serverConfig.guildId);
+                    const isTracked = await this.storage.isCollectionTracked(sale.token_id, serverConfig.guildId);
                     
                     if (!isTracked) {
                         continue; // Skip this server, they don't track this collection
@@ -187,7 +190,7 @@ class NFTSalesBot {
 
     async handleStatusCommand(message) {
         const embed = embedUtils.createStatusEmbed(this.isMonitoring);
-        const trackedCollections = storage.getTrackedCollections();
+        const trackedCollections = await this.storage.getTrackedCollections();
         
         if (trackedCollections.length > 0) {
             embed.addFields({

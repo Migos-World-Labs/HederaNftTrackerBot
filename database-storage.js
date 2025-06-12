@@ -353,4 +353,4 @@ class DatabaseStorage {
     }
 }
 
-module.exports = new DatabaseStorage();
+module.exports = DatabaseStorage;
