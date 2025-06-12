@@ -59,10 +59,11 @@ class DatabaseStorage {
     }
 
     // Collection management
-    async addCollection(tokenId, name, enabled = true) {
+    async addCollection(guildId, tokenId, name, enabled = true) {
         try {
             const result = await db.insert(collections)
                 .values({
+                    guildId,
                     tokenId,
                     name,
                     enabled
@@ -70,17 +71,18 @@ class DatabaseStorage {
                 .returning();
             return result[0];
         } catch (error) {
-            if (error.constraint === 'collections_token_id_unique') {
-                return null; // Collection already exists
-            }
-            throw error;
+            console.error('Error adding collection:', error);
+            return null;
         }
     }
 
-    async removeCollection(tokenId) {
+    async removeCollection(guildId, tokenId) {
         try {
             const result = await db.delete(collections)
-                .where(eq(collections.tokenId, tokenId))
+                .where(and(
+                    eq(collections.guildId, guildId),
+                    eq(collections.tokenId, tokenId)
+                ))
                 .returning();
             return result.length > 0;
         } catch (error) {
@@ -89,12 +91,22 @@ class DatabaseStorage {
         }
     }
 
-    async getCollections(enabledOnly = false) {
+    async getCollections(guildId = null, enabledOnly = false) {
         try {
             let query = db.select().from(collections);
-            if (enabledOnly) {
-                query = query.where(eq(collections.enabled, true));
+            const conditions = [];
+            
+            if (guildId) {
+                conditions.push(eq(collections.guildId, guildId));
             }
+            if (enabledOnly) {
+                conditions.push(eq(collections.enabled, true));
+            }
+            
+            if (conditions.length > 0) {
+                query = query.where(and(...conditions));
+            }
+            
             return await query.orderBy(collections.addedDate);
         } catch (error) {
             console.error('Error getting collections:', error);

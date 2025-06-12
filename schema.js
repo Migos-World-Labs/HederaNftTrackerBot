@@ -1,9 +1,10 @@
 const { pgTable, text, boolean, timestamp, integer, jsonb } = require('drizzle-orm/pg-core');
 
-// Collections table
+// Collections table - now per server
 const collections = pgTable('collections', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
-  tokenId: text('token_id').notNull().unique(),
+  guildId: text('guild_id').notNull(),
+  tokenId: text('token_id').notNull(),
   name: text('name').notNull(),
   enabled: boolean('enabled').notNull().default(true),
   addedDate: timestamp('added_date').defaultNow().notNull(),
