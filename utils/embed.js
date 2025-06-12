@@ -52,21 +52,21 @@ class EmbedUtils {
         });
 
         // Buyer and Seller
-        // Get account holdings for buyer and seller
-        const buyerInfo = await hederaService.getAccountInfo(sale.buyer);
-        const sellerInfo = await hederaService.getAccountInfo(sale.seller);
+        // Get NFT holdings for buyer and seller in this collection
+        const buyerHoldings = await hederaService.getAccountNFTHoldings(sale.buyer, sale.token_id);
+        const sellerHoldings = await hederaService.getAccountNFTHoldings(sale.seller, sale.token_id);
 
-        const buyerTier = buyerInfo ? hederaService.getWhaleTier(buyerInfo.balance) : null;
-        const sellerTier = sellerInfo ? hederaService.getWhaleTier(sellerInfo.balance) : null;
+        const buyerTier = buyerHoldings ? hederaService.getCollectorTier(buyerHoldings.nft_count) : null;
+        const sellerTier = sellerHoldings ? hederaService.getCollectorTier(sellerHoldings.nft_count) : null;
 
-        // Buyer information with whale tier
+        // Buyer information with collector tier
         const buyerText = buyerTier 
-            ? `\`${sale.buyer}\`\n${buyerTier.emoji} **${buyerTier.name}** (${hederaService.formatHbarBalance(buyerInfo.balance)})`
+            ? `\`${sale.buyer}\`\n${buyerTier.emoji} **${buyerTier.name}** (${hederaService.formatNFTCount(buyerHoldings.nft_count)})`
             : `\`${sale.buyer}\``;
 
-        // Seller information with whale tier
+        // Seller information with collector tier
         const sellerText = sellerTier 
-            ? `\`${sale.seller}\`\n${sellerTier.emoji} **${sellerTier.name}** (${hederaService.formatHbarBalance(sellerInfo.balance)})`
+            ? `\`${sale.seller}\`\n${sellerTier.emoji} **${sellerTier.name}** (${hederaService.formatNFTCount(sellerHoldings.nft_count)})`
             : `\`${sale.seller}\``;
 
         embed.addFields(

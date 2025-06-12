@@ -12,36 +12,40 @@ class HederaService {
     }
 
     /**
-     * Get account balance and information
+     * Get account NFT holdings for a specific token
      * @param {string} accountId - Hedera account ID (e.g., "0.0.123456")
-     * @returns {Object} Account information including balance
+     * @param {string} tokenId - Token ID to check holdings for
+     * @returns {Object} Account NFT holdings information
      */
-    async getAccountInfo(accountId) {
+    async getAccountNFTHoldings(accountId, tokenId) {
         try {
             // Check cache first
-            const cacheKey = `account_${accountId}`;
+            const cacheKey = `nft_holdings_${accountId}_${tokenId}`;
             const cached = this.cache.get(cacheKey);
             if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
                 return cached.data;
             }
 
-            console.log(`Fetching account info for ${accountId}`);
+            console.log(`Fetching NFT holdings for ${accountId} in token ${tokenId}`);
             
-            const response = await axios.get(`${this.baseUrl}/accounts/${accountId}`, {
+            const response = await axios.get(`${this.baseUrl}/accounts/${accountId}/nfts`, {
                 timeout: 10000,
                 headers: {
                     'Accept': 'application/json'
+                },
+                params: {
+                    'token.id': tokenId,
+                    limit: 100 // Get up to 100 NFTs to count
                 }
             });
 
-            if (response.data) {
+            if (response.data && response.data.nfts) {
+                const nftCount = response.data.nfts.length;
                 const accountData = {
-                    account_id: response.data.account,
-                    balance: this.parseHbarBalance(response.data.balance?.balance),
-                    created_timestamp: response.data.created_timestamp,
-                    auto_renew_period: response.data.auto_renew_period,
-                    key: response.data.key,
-                    memo: response.data.memo
+                    account_id: accountId,
+                    token_id: tokenId,
+                    nft_count: nftCount,
+                    nfts: response.data.nfts
                 };
 
                 // Cache the result
@@ -53,10 +57,10 @@ class HederaService {
                 return accountData;
             }
 
-            return null;
+            return { account_id: accountId, token_id: tokenId, nft_count: 0, nfts: [] };
         } catch (error) {
-            console.error(`Error fetching account info for ${accountId}:`, error.message);
-            return null;
+            console.error(`Error fetching NFT holdings for ${accountId}:`, error.message);
+            return { account_id: accountId, token_id: tokenId, nft_count: 0, nfts: [] };
         }
     }
 
@@ -71,33 +75,29 @@ class HederaService {
     }
 
     /**
-     * Get whale tier based on HBAR holdings
-     * @param {number} hbarBalance - Account balance in HBAR
+     * Get whale tier based on NFT holdings count
+     * @param {number} nftCount - Number of NFTs owned from the collection
      * @returns {Object} Tier information with emoji and name
      */
-    getWhaleTier(hbarBalance) {
-        if (hbarBalance >= 1000000) return { emoji: '🐋', name: 'Blue Whale', color: '#1E90FF' };
-        if (hbarBalance >= 500000) return { emoji: '🐳', name: 'Whale', color: '#4169E1' };
-        if (hbarBalance >= 100000) return { emoji: '🦈', name: 'Shark', color: '#2E8B57' };
-        if (hbarBalance >= 50000) return { emoji: '🐬', name: 'Dolphin', color: '#20B2AA' };
-        if (hbarBalance >= 10000) return { emoji: '🐟', name: 'Fish', color: '#FFD700' };
-        if (hbarBalance >= 1000) return { emoji: '🦐', name: 'Shrimp', color: '#FF6347' };
-        return { emoji: '🦠', name: 'Plankton', color: '#808080' };
+    getCollectorTier(nftCount) {
+        if (nftCount >= 50) return { emoji: '🐋', name: 'Whale', color: '#1E90FF' };
+        if (nftCount >= 20) return { emoji: '🐬', name: 'Dolphin', color: '#20B2AA' };
+        if (nftCount >= 10) return { emoji: '🐟', name: 'Fish', color: '#FFD700' };
+        if (nftCount >= 5) return { emoji: '🦐', name: 'Shrimp', color: '#FF6347' };
+        if (nftCount >= 2) return { emoji: '🦠', name: 'Plankton', color: '#808080' };
+        if (nftCount === 1) return { emoji: '🪙', name: 'Holder', color: '#C0C0C0' };
+        return null; // No NFTs
     }
 
     /**
-     * Format HBAR balance for display
-     * @param {number} balance - Balance in HBAR
-     * @returns {string} Formatted balance string
+     * Format NFT count for display
+     * @param {number} count - Number of NFTs owned
+     * @returns {string} Formatted NFT count string
      */
-    formatHbarBalance(balance) {
-        if (balance >= 1000000) {
-            return `${(balance / 1000000).toFixed(1)}M ℏ`;
-        }
-        if (balance >= 1000) {
-            return `${(balance / 1000).toFixed(1)}K ℏ`;
-        }
-        return `${balance.toFixed(0)} ℏ`;
+    formatNFTCount(count) {
+        if (count === 0) return '0 NFTs';
+        if (count === 1) return '1 NFT';
+        return `${count} NFTs`;
     }
 
     /**
