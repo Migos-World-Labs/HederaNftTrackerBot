@@ -384,7 +384,7 @@ class NFTSalesBot {
                             }
                         ],
                         timestamp: new Date().toISOString(),
-                        footer: { text: 'Ready to track your favorite NFT collections!' }
+                        footer: { text: 'Built for Hedera by Mauii - Migos World Labs Inc' }
                     };
                     await firstChannel.send({ embeds: [welcomeEmbed] });
                 }
