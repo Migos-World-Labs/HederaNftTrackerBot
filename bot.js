@@ -309,7 +309,15 @@ class NFTSalesBot {
                     if (channel) {
                         // Create Discord embed for the sale
                         const embed = await embedUtils.createSaleEmbed(sale, hbarRate);
-                        await channel.send({ embeds: [embed] });
+                        const message = await channel.send({ embeds: [embed] });
+                        
+                        // Add fire emoji reaction
+                        try {
+                            await message.react('🔥');
+                        } catch (error) {
+                            console.log('Could not add reaction:', error.message);
+                        }
+                        
                         successCount++;
                     }
                 } catch (error) {
