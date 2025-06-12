@@ -29,6 +29,7 @@ class NFTSalesBot {
             console.log(`Bot is in ${this.client.guilds.cache.size} servers`);
             this.generateInviteLink();
             await this.initializeDatabase();
+            await this.configureExistingServers();
             await this.registerSlashCommands();
             this.startMonitoring();
         });
@@ -276,7 +277,26 @@ class NFTSalesBot {
         }
     }
 
-    async handleNewGuild(guild) {
+    async configureExistingServers() {
+        try {
+            console.log('Checking existing servers for configuration...');
+            const guilds = this.client.guilds.cache;
+            
+            for (const [guildId, guild] of guilds) {
+                // Check if server is already configured
+                const existingConfig = await storage.getServerConfig(guildId);
+                
+                if (!existingConfig) {
+                    console.log(`Configuring server: ${guild.name}`);
+                    await this.setupServerConfig(guild, false); // Don't send welcome message for existing servers
+                }
+            }
+        } catch (error) {
+            console.error('Error configuring existing servers:', error);
+        }
+    }
+
+    async setupServerConfig(guild, sendWelcome = true) {
         try {
             // Find the first text channel where the bot can send messages
             const textChannels = guild.channels.cache.filter(channel => 
@@ -290,40 +310,47 @@ class NFTSalesBot {
                 // Save server configuration
                 await storage.setServerConfig(guild.id, firstChannel.id, guild.name, true);
                 
-                // Send welcome message
-                const welcomeEmbed = {
-                    title: '🤖 NFT Sales Bot Added!',
-                    description: `Thank you for adding the NFT Sales Bot to **${guild.name}**!`,
-                    color: 0x00ff00,
-                    fields: [
-                        {
-                            name: '📈 What I Do',
-                            value: 'I track real-time NFT sales from SentX marketplace on Hedera and post detailed notifications here.',
-                            inline: false
-                        },
-                        {
-                            name: '⚙️ Setup Instructions',
-                            value: '1. Use `/add` to add NFT collections to track\n2. Use `/list` to see tracked collections\n3. Use `/remove` to stop tracking collections\n4. Use `/status` to check bot status',
-                            inline: false
-                        },
-                        {
-                            name: '💰 Features',
-                            value: '• Real-time sale notifications\n• HBAR to USD conversion\n• NFT images and details\n• Buyer/seller information\n• Collection filtering',
-                            inline: false
-                        }
-                    ],
-                    timestamp: new Date().toISOString(),
-                    footer: { text: 'Ready to track your favorite NFT collections!' }
-                };
-                await firstChannel.send({ embeds: [welcomeEmbed] });
+                if (sendWelcome) {
+                    // Send welcome message
+                    const welcomeEmbed = {
+                        title: '🤖 NFT Sales Bot Added!',
+                        description: `Thank you for adding the NFT Sales Bot to **${guild.name}**!`,
+                        color: 0x00ff00,
+                        fields: [
+                            {
+                                name: '📈 What I Do',
+                                value: 'I track real-time NFT sales from SentX marketplace on Hedera and post detailed notifications here.',
+                                inline: false
+                            },
+                            {
+                                name: '⚙️ Setup Instructions',
+                                value: '1. Use `/add` to add NFT collections to track\n2. Use `/list` to see tracked collections\n3. Use `/remove` to stop tracking collections\n4. Use `/status` to check bot status',
+                                inline: false
+                            },
+                            {
+                                name: '💰 Features',
+                                value: '• Real-time sale notifications\n• HBAR to USD conversion\n• NFT images and details\n• Buyer/seller information\n• Collection filtering',
+                                inline: false
+                            }
+                        ],
+                        timestamp: new Date().toISOString(),
+                        footer: { text: 'Ready to track your favorite NFT collections!' }
+                    };
+                    await firstChannel.send({ embeds: [welcomeEmbed] });
+                }
                 
                 console.log(`Configured server ${guild.name} with channel #${firstChannel.name}`);
             } else {
                 console.log(`No suitable channel found in server ${guild.name} - bot needs Send Messages permission`);
             }
         } catch (error) {
-            console.error(`Error setting up new guild ${guild.name}:`, error);
+            console.error(`Error setting up guild ${guild.name}:`, error);
         }
+    }
+
+    async handleNewGuild(guild) {
+        console.log(`✅ Bot added to new server: ${guild.name} (${guild.id})`);
+        await this.setupServerConfig(guild, true);
     }
 
     async registerSlashCommands() {
