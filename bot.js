@@ -6,6 +6,7 @@ const { Client, GatewayIntentBits, Events } = require('discord.js');
 const cron = require('node-cron');
 const config = require('./config');
 const sentxService = require('./services/sentx');
+const kabilaService = require('./services/kabila');
 const currencyService = require('./services/currency');
 const embedUtils = require('./utils/embed');
 const DatabaseStorage = require('./database-storage');
@@ -153,11 +154,32 @@ class NFTSalesBot {
         try {
             console.log('Checking for new NFT sales...');
             
-            // Get recent sales from SentX
-            const recentSales = await sentxService.getRecentSales();
+            // Get recent sales from both marketplaces simultaneously
+            const [sentxSales, kabilaSales] = await Promise.allSettled([
+                sentxService.getRecentSales(),
+                kabilaService.getRecentSales()
+            ]);
+
+            let allSales = [];
+
+            // Process SentX sales
+            if (sentxSales.status === 'fulfilled' && sentxSales.value) {
+                console.log(`Found ${sentxSales.value.length} sales from SentX`);
+                allSales.push(...sentxSales.value);
+            } else {
+                console.log('SentX sales fetch failed:', sentxSales.reason?.message || 'Unknown error');
+            }
+
+            // Process Kabila sales
+            if (kabilaSales.status === 'fulfilled' && kabilaSales.value) {
+                console.log(`Found ${kabilaSales.value.length} sales from Kabila`);
+                allSales.push(...kabilaSales.value);
+            } else {
+                console.log('Kabila sales fetch failed:', kabilaSales.reason?.message || 'Unknown error');
+            }
             
-            if (!recentSales || recentSales.length === 0) {
-                console.log('No recent sales found');
+            if (allSales.length === 0) {
+                console.log('No recent sales found from any marketplace');
                 return;
             }
 
@@ -165,7 +187,7 @@ class NFTSalesBot {
             const lastProcessedTimestamp = await this.storage.getLastProcessedSale();
             
             // Filter for truly new sales only (sales that happened after our last check)
-            let newSales = recentSales.filter(sale => {
+            let newSales = allSales.filter(sale => {
                 const saleTimestamp = new Date(sale.timestamp).getTime();
                 const isNewer = saleTimestamp > lastProcessedTimestamp;
                 
@@ -176,35 +198,39 @@ class NFTSalesBot {
                 return isNewer && isRecent;
             });
 
-            console.log(`Found ${newSales.length} new live sales to process`);
+            console.log(`Found ${newSales.length} new live sales to process from all marketplaces`);
 
             if (newSales.length === 0) {
                 console.log('No new live sales to process');
                 return;
             }
 
+            // Remove duplicates based on token_id, serial_number, and timestamp
+            const uniqueSales = this.removeDuplicateSales(newSales);
+            console.log(`After removing duplicates: ${uniqueSales.length} unique sales`);
+
             // Sort by timestamp to process oldest first
-            newSales.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            uniqueSales.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
             // Get current HBAR to USD rate
             const hbarRate = await currencyService.getHbarToUsdRate();
 
             // Process each new sale
-            for (const sale of newSales) {
+            for (const sale of uniqueSales) {
                 // Create unique sale ID to prevent duplicates
-                const saleId = `${sale.token_id}_${sale.serial_number}_${sale.timestamp}`;
+                const saleId = `${sale.tokenId || sale.token_id}_${sale.serialNumber || sale.serial_number}_${sale.timestamp}_${sale.marketplace}`;
                 
                 // Check if we've already processed this sale
                 const alreadyProcessed = await this.storage.isSaleProcessed(saleId);
                 if (alreadyProcessed) {
-                    console.log(`Skipping duplicate sale: ${sale.nft_name}`);
+                    console.log(`Skipping duplicate sale: ${sale.nftName || sale.nft_name} from ${sale.marketplace}`);
                     continue;
                 }
                 
                 await this.processSale(sale, hbarRate);
                 
                 // Mark sale as processed to prevent duplicates
-                await this.storage.markSaleProcessed(saleId, sale.token_id);
+                await this.storage.markSaleProcessed(saleId, sale.tokenId || sale.token_id);
                 
                 // Update last processed timestamp
                 const saleTimestamp = new Date(sale.timestamp).getTime();
@@ -217,6 +243,33 @@ class NFTSalesBot {
         } catch (error) {
             console.error('Error checking for new sales:', error);
         }
+    }
+
+    /**
+     * Remove duplicate sales that might appear across multiple marketplaces
+     * @param {Array} sales - Array of sales from all marketplaces
+     * @returns {Array} Deduplicated sales array
+     */
+    removeDuplicateSales(sales) {
+        const seen = new Set();
+        return sales.filter(sale => {
+            // Create a unique key based on token, serial, and timestamp
+            const tokenId = sale.tokenId || sale.token_id;
+            const serialNumber = sale.serialNumber || sale.serial_number;
+            const timestamp = new Date(sale.timestamp).getTime();
+            
+            // Round timestamp to nearest minute to catch sales that might have slightly different timestamps
+            const roundedTimestamp = Math.floor(timestamp / 60000) * 60000;
+            const key = `${tokenId}_${serialNumber}_${roundedTimestamp}`;
+            
+            if (seen.has(key)) {
+                console.log(`Removing duplicate sale: ${sale.nftName || sale.nft_name} from ${sale.marketplace}`);
+                return false;
+            }
+            
+            seen.add(key);
+            return true;
+        });
     }
 
     async processSale(sale, hbarRate) {
