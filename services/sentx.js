@@ -10,10 +10,12 @@ class SentXService {
         this.baseURL = 'https://api.sentx.io';
         this.axiosInstance = axios.create({
             baseURL: this.baseURL,
-            timeout: 10000,
+            timeout: 15000,
             headers: {
                 'User-Agent': 'Discord-NFT-Bot/1.0',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-API-KEY': process.env.SENTX_API_KEY || ''
             }
         });
     }
