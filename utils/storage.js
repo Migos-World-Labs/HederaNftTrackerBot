@@ -14,6 +14,7 @@ class StorageService {
             lastProcessedSale: 0,
             processedSales: new Set(),
             trackedCollections: [],
+            serverConfigs: [],
             botStats: {
                 totalSalesProcessed: 0,
                 startTime: Date.now(),
@@ -282,6 +283,85 @@ class StorageService {
      */
     forceSave() {
         this.saveData();
+    }
+
+    /**
+     * Add or update server configuration
+     * @param {string} guildId - Discord guild/server ID
+     * @param {string} channelId - Discord channel ID
+     * @param {string} guildName - Server name
+     * @param {boolean} enabled - Whether notifications are enabled
+     * @returns {boolean} True if successful
+     */
+    setServerConfig(guildId, channelId, guildName, enabled = true) {
+        const existingIndex = this.data.serverConfigs.findIndex(config => config.guildId === guildId);
+        
+        const serverConfig = {
+            guildId,
+            channelId,
+            guildName,
+            enabled,
+            addedDate: existingIndex === -1 ? Date.now() : this.data.serverConfigs[existingIndex].addedDate,
+            lastUpdated: Date.now()
+        };
+
+        if (existingIndex !== -1) {
+            this.data.serverConfigs[existingIndex] = serverConfig;
+        } else {
+            this.data.serverConfigs.push(serverConfig);
+        }
+
+        this.saveData();
+        return true;
+    }
+
+    /**
+     * Get all server configurations
+     * @returns {Array} Array of server configuration objects
+     */
+    getAllServerConfigs() {
+        return this.data.serverConfigs || [];
+    }
+
+    /**
+     * Get server configuration by guild ID
+     * @param {string} guildId - Discord guild/server ID
+     * @returns {Object|null} Server configuration or null if not found
+     */
+    getServerConfig(guildId) {
+        return this.data.serverConfigs.find(config => config.guildId === guildId) || null;
+    }
+
+    /**
+     * Remove server configuration
+     * @param {string} guildId - Discord guild/server ID
+     * @returns {boolean} True if removed, false if not found
+     */
+    removeServerConfig(guildId) {
+        const initialLength = this.data.serverConfigs.length;
+        this.data.serverConfigs = this.data.serverConfigs.filter(config => config.guildId !== guildId);
+        
+        if (this.data.serverConfigs.length < initialLength) {
+            this.saveData();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Toggle server notifications
+     * @param {string} guildId - Discord guild/server ID
+     * @returns {boolean} New enabled state, or null if server not found
+     */
+    toggleServerNotifications(guildId) {
+        const config = this.data.serverConfigs.find(config => config.guildId === guildId);
+        if (config) {
+            config.enabled = !config.enabled;
+            config.lastUpdated = Date.now();
+            this.saveData();
+            return config.enabled;
+        }
+        return null;
     }
 }
 

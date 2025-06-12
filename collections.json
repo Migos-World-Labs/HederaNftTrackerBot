@@ -1,14 +1,3 @@
 {
-  "collections": [
-    {
-      "tokenId": "0.0.878200",
-      "name": "Dead Pixels Ghost Club",
-      "enabled": false
-    },
-    {
-      "tokenId": "0.0.2173899",
-      "name": "HashAxis",
-      "enabled": false
-    }
-  ]
+  "collections": []
 }

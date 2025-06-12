@@ -26,11 +26,25 @@ class NFTSalesBot {
     setupEventHandlers() {
         this.client.once(Events.ClientReady, () => {
             console.log(`Bot logged in as ${this.client.user.tag}!`);
+            console.log(`Bot is in ${this.client.guilds.cache.size} servers`);
+            this.generateInviteLink();
             this.startMonitoring();
         });
 
         this.client.on(Events.Error, (error) => {
             console.error('Discord client error:', error);
+        });
+
+        // Handle when bot joins a new server
+        this.client.on(Events.GuildCreate, (guild) => {
+            console.log(`✅ Bot added to new server: ${guild.name} (${guild.id})`);
+            this.handleNewGuild(guild);
+        });
+
+        // Handle when bot leaves a server
+        this.client.on(Events.GuildDelete, (guild) => {
+            console.log(`❌ Bot removed from server: ${guild.name} (${guild.id})`);
+            storage.removeServerConfig(guild.id);
         });
 
         // Commands disabled temporarily due to Discord permissions
@@ -149,26 +163,41 @@ class NFTSalesBot {
             // Create Discord embed for the sale
             const embed = embedUtils.createSaleEmbed(sale, hbarRate);
             
-            // Get the channel to post to
-            const channel = this.client.channels.cache.get(config.DISCORD_CHANNEL_ID);
+            // Get all configured servers and channels
+            const serverConfigs = storage.getAllServerConfigs();
+            let successCount = 0;
             
-            if (!channel) {
-                console.error(`Channel with ID ${config.DISCORD_CHANNEL_ID} not found`);
+            if (serverConfigs.length === 0) {
+                // Fallback to original single channel config for backwards compatibility
+                const channel = this.client.channels.cache.get(config.DISCORD_CHANNEL_ID);
+                if (channel) {
+                    await channel.send({ embeds: [embed] });
+                    console.log(`✅ Posted sale notification: ${sale.nft_name} sold for ${sale.price_hbar} HBAR`);
+                } else {
+                    console.error(`Channel with ID ${config.DISCORD_CHANNEL_ID} not found`);
+                }
                 return;
             }
 
-            // Send the embed to the channel
-            await channel.send({ embeds: [embed] });
+            // Post to all configured servers
+            for (const serverConfig of serverConfigs) {
+                try {
+                    const channel = this.client.channels.cache.get(serverConfig.channelId);
+                    if (channel && serverConfig.enabled) {
+                        await channel.send({ embeds: [embed] });
+                        successCount++;
+                    }
+                } catch (error) {
+                    console.error(`Failed to post to server ${serverConfig.guildId}:`, error.message);
+                }
+            }
             
-            console.log(`✅ Posted sale notification: ${sale.nft_name} sold for ${sale.price_hbar} HBAR`);
+            if (successCount > 0) {
+                console.log(`✅ Posted sale notification to ${successCount} servers: ${sale.nft_name} sold for ${sale.price_hbar} HBAR`);
+            }
 
         } catch (error) {
-            if (error.code === 50013) {
-                console.error(`❌ Missing permissions to send messages in channel ${config.DISCORD_CHANNEL_ID}`);
-                console.error('Please ensure the bot has "Send Messages" and "Embed Links" permissions in the Discord channel.');
-            } else {
-                console.error('Error processing sale:', error.message);
-            }
+            console.error('Error processing sale:', error.message);
         }
     }
 
@@ -242,6 +271,53 @@ class NFTSalesBot {
     async handleHelpCommand(message) {
         const embed = embedUtils.createHelpEmbed();
         await message.reply({ embeds: [embed] });
+    }
+
+    generateInviteLink() {
+        try {
+            // Generate invite link with necessary permissions
+            const permissions = [
+                'SendMessages',
+                'EmbedLinks',
+                'ViewChannel'
+            ];
+            
+            const inviteLink = `https://discord.com/api/oauth2/authorize?client_id=${this.client.user.id}&permissions=19456&scope=bot`;
+            console.log('\n🔗 Invite Link for Other Servers:');
+            console.log(inviteLink);
+            console.log('\nRequired Permissions: Send Messages, Embed Links, View Channel\n');
+            
+            return inviteLink;
+        } catch (error) {
+            console.error('Error generating invite link:', error);
+        }
+    }
+
+    async handleNewGuild(guild) {
+        try {
+            // Find the first text channel where the bot can send messages
+            const textChannels = guild.channels.cache.filter(channel => 
+                channel.type === 0 && // Text channel
+                channel.permissionsFor(guild.members.me).has(['SendMessages', 'EmbedLinks'])
+            );
+
+            if (textChannels.size > 0) {
+                const firstChannel = textChannels.first();
+                
+                // Save server configuration
+                storage.setServerConfig(guild.id, firstChannel.id, guild.name, true);
+                
+                // Send welcome message
+                const welcomeEmbed = embedUtils.createWelcomeEmbed(guild.name);
+                await firstChannel.send({ embeds: [welcomeEmbed] });
+                
+                console.log(`Configured server ${guild.name} with channel #${firstChannel.name}`);
+            } else {
+                console.log(`No suitable channel found in server ${guild.name} - bot needs Send Messages permission`);
+            }
+        } catch (error) {
+            console.error(`Error setting up new guild ${guild.name}:`, error);
+        }
     }
 
     delay(ms) {
