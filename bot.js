@@ -14,9 +14,7 @@ class NFTSalesBot {
     constructor() {
         this.client = new Client({
             intents: [
-                GatewayIntentBits.Guilds,
-                GatewayIntentBits.GuildMessages,
-                GatewayIntentBits.MessageContent
+                GatewayIntentBits.Guilds
             ]
         });
         
@@ -35,16 +33,8 @@ class NFTSalesBot {
             console.error('Discord client error:', error);
         });
 
-        this.client.on(Events.MessageCreate, async (message) => {
-            // Handle bot commands if needed
-            if (message.author.bot) return;
-            
-            // Simple command to check bot status
-            if (message.content === '!nft-status') {
-                const embed = embedUtils.createStatusEmbed(this.isMonitoring);
-                await message.reply({ embeds: [embed] });
-            }
-        });
+        // Remove message handling since we don't need MessageContent intent
+        // The bot will only post sale notifications, not respond to commands
     }
 
     async start() {

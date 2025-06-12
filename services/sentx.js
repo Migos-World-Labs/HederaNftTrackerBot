@@ -7,7 +7,7 @@ const config = require('../config');
 
 class SentXService {
     constructor() {
-        this.baseURL = 'https://api.sentx.io/v1';
+        this.baseURL = 'https://api.sentx.io';
         this.axiosInstance = axios.create({
             baseURL: this.baseURL,
             timeout: 10000,
@@ -27,26 +27,83 @@ class SentXService {
         try {
             console.log('Fetching recent sales from SentX...');
             
-            const response = await this.axiosInstance.get('/sales/recent', {
+            // Try different possible endpoints for SentX API
+            const endpoints = [
+                '/v1/nft/sales',
+                '/v1/sales',
+                '/api/v1/sales',
+                '/nft/sales',
+                '/sales'
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log(`Trying endpoint: ${endpoint}`);
+                    const response = await this.axiosInstance.get(endpoint, {
+                        params: {
+                            limit: limit,
+                            network: 'hedera',
+                            sort: 'created_at',
+                            order: 'desc'
+                        }
+                    });
+
+                    if (response.data) {
+                        console.log(`Success with endpoint: ${endpoint}`);
+                        console.log('Response structure:', Object.keys(response.data));
+                        
+                        // Handle different possible response structures
+                        let salesData = [];
+                        if (response.data.sales) {
+                            salesData = response.data.sales;
+                        } else if (response.data.data) {
+                            salesData = response.data.data;
+                        } else if (Array.isArray(response.data)) {
+                            salesData = response.data;
+                        } else {
+                            console.log('Unknown response structure:', response.data);
+                            continue;
+                        }
+
+                        if (salesData && salesData.length > 0) {
+                            return this.formatSalesData(salesData);
+                        }
+                    }
+                } catch (endpointError) {
+                    console.log(`Endpoint ${endpoint} failed:`, endpointError.response?.status || endpointError.message);
+                    continue;
+                }
+            }
+            
+            console.log('All endpoints failed, trying direct marketplace query...');
+            
+            // Try a more general marketplace query
+            const marketplaceResponse = await this.axiosInstance.get('/v1/marketplace/activity', {
                 params: {
                     limit: limit,
+                    type: 'sale',
                     network: 'hedera'
                 }
             });
-
-            if (!response.data || !response.data.sales) {
-                console.log('No sales data received from SentX API');
-                return [];
+            
+            if (marketplaceResponse.data) {
+                console.log('Marketplace endpoint response:', Object.keys(marketplaceResponse.data));
+                const salesData = marketplaceResponse.data.activities || marketplaceResponse.data.data || marketplaceResponse.data;
+                if (salesData && salesData.length > 0) {
+                    return this.formatSalesData(salesData);
+                }
             }
 
-            return this.formatSalesData(response.data.sales);
+            console.log('No sales data received from any SentX API endpoint');
+            return [];
 
         } catch (error) {
             if (error.response) {
                 console.error('SentX API error:', {
                     status: error.response.status,
                     statusText: error.response.statusText,
-                    data: error.response.data
+                    url: error.config?.url,
+                    data: typeof error.response.data === 'string' ? error.response.data.substring(0, 200) : error.response.data
                 });
             } else if (error.request) {
                 console.error('SentX API request failed - no response received');
