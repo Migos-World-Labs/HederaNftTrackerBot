@@ -132,7 +132,7 @@ class EmbedUtils {
 
         // Footer with timestamp and branding
         embed.setFooter({
-            text: `Hedera NFT Sales Tracker • ${new Date(sale.timestamp).toLocaleString()}`
+            text: `Built for Hedera by Mauii - Migos World Labs Inc • ${new Date(sale.timestamp).toLocaleString()}`
         });
 
         return embed;
