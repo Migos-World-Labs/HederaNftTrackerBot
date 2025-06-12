@@ -205,6 +205,28 @@ class EmbedUtils {
     }
 
     /**
+     * Convert IPFS URL to HTTP URL for Discord compatibility
+     * @param {string} ipfsUrl - IPFS URL
+     * @returns {string|null} HTTP URL or null if invalid
+     */
+    convertIpfsToHttp(ipfsUrl) {
+        if (!ipfsUrl) return null;
+        
+        // If already HTTP/HTTPS, return as is
+        if (ipfsUrl.startsWith('http://') || ipfsUrl.startsWith('https://')) {
+            return ipfsUrl;
+        }
+        
+        // Convert IPFS URLs to HTTP gateway URLs
+        if (ipfsUrl.startsWith('ipfs://')) {
+            const hash = ipfsUrl.replace('ipfs://', '');
+            return `https://ipfs.io/ipfs/${hash}`;
+        }
+        
+        return null;
+    }
+
+    /**
      * Format attributes for display
      * @param {Array} attributes - NFT attributes
      * @returns {string} Formatted attributes string

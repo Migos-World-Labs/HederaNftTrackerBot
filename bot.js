@@ -134,10 +134,15 @@ class NFTSalesBot {
             // Send the embed to the channel
             await channel.send({ embeds: [embed] });
             
-            console.log(`Posted sale notification for NFT: ${sale.nft_name}`);
+            console.log(`✅ Posted sale notification: ${sale.nft_name} sold for ${sale.price_hbar} HBAR`);
 
         } catch (error) {
-            console.error('Error processing sale:', error);
+            if (error.code === 50013) {
+                console.error(`❌ Missing permissions to send messages in channel ${config.DISCORD_CHANNEL_ID}`);
+                console.error('Please ensure the bot has "Send Messages" and "Embed Links" permissions in the Discord channel.');
+            } else {
+                console.error('Error processing sale:', error.message);
+            }
         }
     }
 
