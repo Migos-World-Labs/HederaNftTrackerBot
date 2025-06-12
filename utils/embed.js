@@ -1,0 +1,219 @@
+/**
+ * Discord embed utilities for formatting NFT sale messages
+ */
+
+const { EmbedBuilder } = require('discord.js');
+const currencyService = require('../services/currency');
+
+class EmbedUtils {
+    /**
+     * Create a Discord embed for an NFT sale
+     * @param {Object} sale - Sale data object
+     * @param {number} hbarRate - Current HBAR to USD rate
+     * @returns {EmbedBuilder} Discord embed object
+     */
+    createSaleEmbed(sale, hbarRate) {
+        const usdValue = sale.price_hbar * hbarRate;
+        
+        const embed = new EmbedBuilder()
+            .setTitle(`🔥 NFT Sale: ${sale.nft_name}`)
+            .setColor('#00ff00') // Green for sales
+            .setTimestamp(new Date(sale.timestamp));
+
+        // Add collection info if available
+        if (sale.collection_name && sale.collection_name !== 'Unknown Collection') {
+            embed.setAuthor({
+                name: sale.collection_name,
+                iconURL: null // Could add collection icon if available
+            });
+        }
+
+        // Add NFT image if available
+        if (sale.image_url) {
+            embed.setThumbnail(sale.image_url);
+        }
+
+        // Price information (most important, so it goes first)
+        embed.addFields({
+            name: '💰 Sale Price',
+            value: `${currencyService.formatCurrency(sale.price_hbar, 'HBAR')}\n${currencyService.formatCurrency(usdValue, 'USD')}`,
+            inline: true
+        });
+
+        // Buyer and Seller
+        embed.addFields(
+            {
+                name: '👤 Buyer',
+                value: `\`${sale.buyer}\``,
+                inline: true
+            },
+            {
+                name: '👤 Seller',
+                value: `\`${sale.seller}\``,
+                inline: true
+            }
+        );
+
+        // Rarity and Rank if available
+        if (sale.rarity || sale.rank) {
+            let rarityText = '';
+            if (sale.rarity) rarityText += `**Rarity:** ${sale.rarity}`;
+            if (sale.rank) {
+                if (rarityText) rarityText += '\n';
+                rarityText += `**Rank:** #${sale.rank}`;
+            }
+            
+            embed.addFields({
+                name: '🏆 Rarity Info',
+                value: rarityText,
+                inline: true
+            });
+        }
+
+        // Token ID and Marketplace
+        embed.addFields(
+            {
+                name: '🔗 Token ID',
+                value: `\`${sale.token_id}\``,
+                inline: true
+            },
+            {
+                name: '🏪 Marketplace',
+                value: sale.marketplace,
+                inline: true
+            }
+        );
+
+        // Transaction hash if available
+        if (sale.transaction_hash) {
+            embed.addFields({
+                name: '📝 Transaction',
+                value: `[View on HashScan](https://hashscan.io/mainnet/transaction/${sale.transaction_hash})`,
+                inline: false
+            });
+        }
+
+        // Add footer with additional info
+        embed.setFooter({
+            text: `SentX • HBAR Rate: ${currencyService.formatCurrency(hbarRate, 'USD')}/ℏ`
+        });
+
+        return embed;
+    }
+
+    /**
+     * Create a status embed for the bot
+     * @param {boolean} isMonitoring - Whether the bot is currently monitoring
+     * @returns {EmbedBuilder} Status embed
+     */
+    createStatusEmbed(isMonitoring) {
+        const embed = new EmbedBuilder()
+            .setTitle('🤖 NFT Sales Bot Status')
+            .setColor(isMonitoring ? '#00ff00' : '#ff0000')
+            .setTimestamp();
+
+        embed.addFields({
+            name: '🔍 Monitoring Status',
+            value: isMonitoring ? '✅ Active - Tracking SentX sales' : '❌ Inactive',
+            inline: false
+        });
+
+        embed.addFields({
+            name: '⚙️ Configuration',
+            value: `**Marketplace:** SentX\n**Network:** Hedera\n**Check Interval:** 30 seconds`,
+            inline: false
+        });
+
+        return embed;
+    }
+
+    /**
+     * Create an error embed
+     * @param {string} title - Error title
+     * @param {string} description - Error description
+     * @param {string} details - Additional error details
+     * @returns {EmbedBuilder} Error embed
+     */
+    createErrorEmbed(title, description, details = null) {
+        const embed = new EmbedBuilder()
+            .setTitle(`❌ ${title}`)
+            .setDescription(description)
+            .setColor('#ff0000')
+            .setTimestamp();
+
+        if (details) {
+            embed.addFields({
+                name: 'Details',
+                value: `\`\`\`${details}\`\`\``,
+                inline: false
+            });
+        }
+
+        return embed;
+    }
+
+    /**
+     * Create a collection stats embed
+     * @param {Object} stats - Collection statistics
+     * @returns {EmbedBuilder} Stats embed
+     */
+    createStatsEmbed(stats) {
+        const embed = new EmbedBuilder()
+            .setTitle('📊 NFT Sales Statistics')
+            .setColor('#0099ff')
+            .setTimestamp();
+
+        if (stats.totalSales) {
+            embed.addFields({
+                name: '📈 Total Sales (24h)',
+                value: stats.totalSales.toString(),
+                inline: true
+            });
+        }
+
+        if (stats.totalVolume) {
+            embed.addFields({
+                name: '💎 Total Volume (24h)',
+                value: currencyService.formatCurrency(stats.totalVolume, 'HBAR'),
+                inline: true
+            });
+        }
+
+        if (stats.averagePrice) {
+            embed.addFields({
+                name: '📊 Average Price',
+                value: currencyService.formatCurrency(stats.averagePrice, 'HBAR'),
+                inline: true
+            });
+        }
+
+        return embed;
+    }
+
+    /**
+     * Truncate text to fit Discord limits
+     * @param {string} text - Text to truncate
+     * @param {number} maxLength - Maximum length
+     * @returns {string} Truncated text
+     */
+    truncateText(text, maxLength = 1024) {
+        if (!text || text.length <= maxLength) return text;
+        return text.substring(0, maxLength - 3) + '...';
+    }
+
+    /**
+     * Format attributes for display
+     * @param {Array} attributes - NFT attributes
+     * @returns {string} Formatted attributes string
+     */
+    formatAttributes(attributes) {
+        if (!attributes || attributes.length === 0) return 'None';
+        
+        return attributes
+            .slice(0, 5) // Limit to first 5 attributes
+            .map(attr => `**${attr.trait_type}:** ${attr.value}`)
+            .join('\n');
+    }
+}
+
+module.exports = new EmbedUtils();
