@@ -167,7 +167,7 @@ class NFTSalesBot {
                     const channel = this.client.channels.cache.get(serverConfig.channelId);
                     if (channel) {
                         // Create Discord embed for the sale
-                        const embed = embedUtils.createSaleEmbed(sale, hbarRate);
+                        const embed = await embedUtils.createSaleEmbed(sale, hbarRate);
                         await channel.send({ embeds: [embed] });
                         successCount++;
                     }

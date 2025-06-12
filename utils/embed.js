@@ -4,6 +4,7 @@
 
 const { EmbedBuilder } = require('discord.js');
 const currencyService = require('../services/currency');
+const hederaService = require('../services/hedera');
 
 class EmbedUtils {
     /**
@@ -12,7 +13,7 @@ class EmbedUtils {
      * @param {number} hbarRate - Current HBAR to USD rate
      * @returns {EmbedBuilder} Discord embed object
      */
-    createSaleEmbed(sale, hbarRate) {
+    async createSaleEmbed(sale, hbarRate) {
         const usdValue = sale.price_hbar * hbarRate;
         
         const embed = new EmbedBuilder()
@@ -51,15 +52,32 @@ class EmbedUtils {
         });
 
         // Buyer and Seller
+        // Get account holdings for buyer and seller
+        const buyerInfo = await hederaService.getAccountInfo(sale.buyer);
+        const sellerInfo = await hederaService.getAccountInfo(sale.seller);
+
+        const buyerTier = buyerInfo ? hederaService.getWhaleTier(buyerInfo.balance) : null;
+        const sellerTier = sellerInfo ? hederaService.getWhaleTier(sellerInfo.balance) : null;
+
+        // Buyer information with whale tier
+        const buyerText = buyerTier 
+            ? `\`${sale.buyer}\`\n${buyerTier.emoji} **${buyerTier.name}** (${hederaService.formatHbarBalance(buyerInfo.balance)})`
+            : `\`${sale.buyer}\``;
+
+        // Seller information with whale tier
+        const sellerText = sellerTier 
+            ? `\`${sale.seller}\`\n${sellerTier.emoji} **${sellerTier.name}** (${hederaService.formatHbarBalance(sellerInfo.balance)})`
+            : `\`${sale.seller}\``;
+
         embed.addFields(
             {
                 name: '🛒 Buyer',
-                value: `\`${sale.buyer}\``,
+                value: buyerText,
                 inline: true
             },
             {
                 name: '🏪 Seller',
-                value: `\`${sale.seller}\``,
+                value: sellerText,
                 inline: true
             }
         );
