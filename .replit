@@ -25,6 +25,8 @@ args = "node index.js"
 
 [deployment]
 run = ["sh", "-c", "npm install discord.js axios node-cron dotenv && node index.js"]
+deploymentTarget = "gce"
+ignorePorts = true
 
 [[ports]]
 localPort = 3000
