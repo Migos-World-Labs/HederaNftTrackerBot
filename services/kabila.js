@@ -40,85 +40,79 @@ class KabilaService {
             console.log('Fetching recent sales from Kabila...');
             console.log('Kabila API Key available: Yes');
             
-            // Try different base URLs and endpoints with authentication
-            const endpointCombinations = [
-                { baseURL: 'https://api.kabila.app/marketplace/analytics', endpoint: '/sales' },
-                { baseURL: 'https://api.kabila.app', endpoint: '/marketplace/analytics/sales' },
-                { baseURL: 'https://labs.kabila.app/api/marketplace/analytics', endpoint: '/sales' },
-                { baseURL: 'https://labs.kabila.app/api', endpoint: '/marketplace/analytics/sales' },
-                { baseURL: 'https://api.kabila.app', endpoint: '/v1/sales' },
-                { baseURL: 'https://api.kabila.app', endpoint: '/sales' },
-                { baseURL: 'https://api.kabila.app', endpoint: '/activities' },
-                { baseURL: 'https://labs.kabila.app/api', endpoint: '/sales' },
-                { baseURL: 'https://labs.kabila.app/api', endpoint: '/activities' }
-            ];
+            // Use the correct Kabila Market Analytics API endpoint
+            const baseURL = 'https://labs.kabila.app';
+            const endpoint = '/api/marketplace/analytics/activity';
+            
+            const headers = {
+                'User-Agent': 'Discord-NFT-Bot/1.0',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            };
 
-            let response = null;
-            let usedCombination = null;
-
-            for (const combination of endpointCombinations) {
-                try {
-                    const headers = {
-                        'User-Agent': 'Discord-NFT-Bot/1.0',
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    };
-
-                    // Add API key to headers if available
-                    if (apiKey) {
-                        headers['Authorization'] = `Bearer ${apiKey}`;
-                        headers['X-API-Key'] = apiKey;
-                        headers['x-api-key'] = apiKey;
-                    }
-
-                    const params = {
-                        limit: limit,
-                        size: limit,
-                        type: 'sale',
-                        activity: 'sale',
-                        ...(apiKey && { apikey: apiKey, api_key: apiKey })
-                    };
-
-                    console.log(`Trying Kabila: ${combination.baseURL}${combination.endpoint}`);
-                    
-                    response = await axios.get(`${combination.baseURL}${combination.endpoint}`, {
-                        params,
-                        headers,
-                        timeout: 10000
-                    });
-                    
-                    usedCombination = combination;
-                    console.log(`Successfully connected to Kabila at: ${combination.baseURL}${combination.endpoint}`);
-                    break;
-                } catch (error) {
-                    const status = error.response?.status;
-                    const message = error.response?.data?.message || error.message;
-                    console.log(`${combination.baseURL}${combination.endpoint} failed: ${status} - ${message}`);
-                    continue;
-                }
+            // Add API key to headers for authentication
+            if (apiKey) {
+                headers['Authorization'] = `Bearer ${apiKey}`;
+                headers['X-API-Key'] = apiKey;
             }
 
-            if (!response) {
-                console.log('No working Kabila endpoint found');
+            // Set up parameters according to Kabila API specification
+            const params = {
+                limit: limit,
+                activityType: 'sale', // Filter for sales only
+                timeRange: '1w', // Get sales from last week
+                format: 'JSON'
+            };
+
+            console.log(`Fetching from Kabila API: ${baseURL}${endpoint}`);
+            
+            let response;
+            try {
+                response = await axios.get(`${baseURL}${endpoint}`, {
+                    params,
+                    headers,
+                    timeout: 15000
+                });
+                
+                console.log(`Successfully connected to Kabila Market Analytics API`);
+            } catch (error) {
+                const status = error.response?.status;
+                const message = error.response?.data?.message || error.message;
+                console.log(`Kabila API request failed: ${status} - ${message}`);
+                
+                if (status === 401 || status === 403) {
+                    console.log('Kabila API requires valid authentication. Please check your API key.');
+                }
+                
                 return [];
             }
 
             const data = response.data;
-            console.log(`Found ${data?.sales?.length || data?.length || 0} activities from Kabila`);
-
-            // Handle different response formats
-            let sales = [];
+            
+            // Handle Kabila API response format
+            let activities = [];
             if (Array.isArray(data)) {
-                sales = data;
-            } else if (data.sales && Array.isArray(data.sales)) {
-                sales = data.sales;
+                activities = data;
             } else if (data.data && Array.isArray(data.data)) {
-                sales = data.data;
+                activities = data.data;
             } else if (data.activities && Array.isArray(data.activities)) {
-                sales = data.activities.filter(activity => 
-                    activity.type === 'sale' || activity.activity_type === 'sale'
-                );
+                activities = data.activities;
+            } else if (data.results && Array.isArray(data.results)) {
+                activities = data.results;
+            } else {
+                console.log('Unexpected Kabila API response format:', Object.keys(data));
+                return [];
             }
+
+            console.log(`Found ${activities.length} activities from Kabila`);
+            
+            // Filter for sales activities only
+            const sales = activities.filter(activity => {
+                const type = activity.activityType || activity.type || activity.activity_type;
+                return type === 'sale' || type === 'Sale' || type === 'SALE';
+            });
+            
+            console.log(`Filtered to ${sales.length} sale activities from Kabila`);
 
             // Format the sales data
             const formattedSales = this.formatSalesData(sales);
