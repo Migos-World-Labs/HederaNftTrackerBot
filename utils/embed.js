@@ -41,19 +41,7 @@ class EmbedUtils {
             }
         }
 
-        // Use collection image as thumbnail if available
-        if (sale.collection_image_url) {
-            const collectionImageUrl = this.convertIpfsToHttp(sale.collection_image_url);
-            if (collectionImageUrl) {
-                embed.setThumbnail(collectionImageUrl);
-            }
-        } else if (sale.image_url && !sale.collection_image_url) {
-            // Fallback to NFT image as thumbnail if no collection image
-            const imageUrl = this.convertIpfsToHttp(sale.image_url);
-            if (imageUrl) {
-                embed.setThumbnail(imageUrl);
-            }
-        }
+        // Thumbnail removed to prevent text overlap issues
 
         // Price information (most important, so it goes first)
         embed.addFields({
