@@ -1,0 +1,17 @@
+🔥 Hedera NFT Sales Tracker - Real-time notifications for SentX & Kabila marketplaces
+
+📊 FEATURES:
+• Live NFT sale alerts with HBAR/USD pricing
+• NFT images & buyer/seller whale tiers
+• Dual marketplace coverage (SentX + Kabila)
+• 10-second monitoring, 5-minute live detection
+
+⚡ COMMANDS:
+/add <token_id> <name> - Track SentX collection
+/remove <token_id> - Stop tracking collection
+/list - View tracked collections
+/status - Bot monitoring status
+
+🚀 SETUP: Invite bot → Auto-configures channel → Add collections → Get alerts!
+
+Built for Hedera NFT community • Zero config • Enterprise reliability
