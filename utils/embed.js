@@ -28,12 +28,24 @@ class EmbedUtils {
             });
         }
 
-        // Add NFT image if available (convert IPFS to HTTP URL)
+        // Add NFT image as main image and collection image as thumbnail
         if (sale.image_url) {
             const imageUrl = this.convertIpfsToHttp(sale.image_url);
             if (imageUrl) {
-                // Use both thumbnail and image for maximum visibility
                 embed.setImage(imageUrl);
+            }
+        }
+
+        // Use collection image as thumbnail if available
+        if (sale.collection_image_url) {
+            const collectionImageUrl = this.convertIpfsToHttp(sale.collection_image_url);
+            if (collectionImageUrl) {
+                embed.setThumbnail(collectionImageUrl);
+            }
+        } else if (sale.image_url && !sale.collection_image_url) {
+            // Fallback to NFT image as thumbnail if no collection image
+            const imageUrl = this.convertIpfsToHttp(sale.image_url);
+            if (imageUrl) {
                 embed.setThumbnail(imageUrl);
             }
         }
@@ -62,10 +74,13 @@ class EmbedUtils {
         // Rarity and Rank if available
         if (sale.rarity || sale.rank) {
             let rarityText = '';
-            if (sale.rarity) rarityText += `**Rarity:** ${sale.rarity}`;
             if (sale.rank) {
-                if (rarityText) rarityText += '\n';
                 rarityText += `**Rank:** #${sale.rank}`;
+            }
+            if (sale.rarity) {
+                if (rarityText) rarityText += '\n';
+                const rarityPercentage = (sale.rarity * 100).toFixed(1);
+                rarityText += `**Rarity:** ${rarityPercentage}%`;
             }
             
             embed.addFields({
