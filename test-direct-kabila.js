@@ -65,10 +65,10 @@ async function testDirectKabilaPost() {
         
         console.log(`Found target guild: ${targetGuild.name}`);
         
-        // Find the sales channel specifically
+        // Find the bot-test channel for testing
         const channel = targetGuild.channels.cache.find(ch => 
             ch.type === 0 && // Text channel
-            (ch.name.includes('𝐌𝐢𝐠𝐨𝐬-𝐒𝐚𝐥𝐞𝐬') || ch.id === '910963234209673232')
+            (ch.name.includes('bot-test') || ch.id === '1377333371423817798')
         );
         
         if (!channel) {
