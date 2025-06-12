@@ -1,42 +1,34 @@
-# Discord NFT Sales Bot Description
+# Hedera NFT Sales Tracker
 
-## Short Bio (190 characters max for Discord):
-Real-time NFT sales tracker for SentX marketplace on Hedera. Get instant notifications with prices, rarity ranks, collection info, and USD conversions in your Discord server.
+**Track NFT sales across SentX and Kabila marketplaces with real-time Discord notifications**
 
-## Extended Description:
-🚀 **NFT Sales Tracker for Hedera Network**
+## Short Description
+Professional Discord bot providing instant notifications for NFT sales on Hedera blockchain. Monitors SentX and Kabila marketplaces with rich embeds showing prices in HBAR/USD, buyer/seller details, and NFT images.
 
-Track real-time NFT sales from SentX marketplace directly in your Discord server! Get instant notifications whenever NFTs are bought or sold, complete with:
+## Features
+🔥 **Dual Marketplace Coverage** - SentX & Kabila integration  
+💰 **Live Price Data** - Real-time HBAR to USD conversion  
+🖼️ **NFT Images** - Automatic metadata fetching from Hedera Mirror Node  
+👑 **Collector Tiers** - Whale badges based on NFT holdings  
+⚡ **Instant Alerts** - 10-second monitoring with 5-minute live sale detection  
+🎯 **Collection Filtering** - Server-specific tracking for SentX collections  
+🌐 **Multi-Server** - Unlimited Discord server support  
 
-✨ **Key Features:**
-• Real-time sale notifications from SentX marketplace
-• Automatic HBAR to USD price conversions
-• Rarity ranks and trait information display
-• Collection tracking and filtering
-• Beautiful embedded sale cards with NFT images
-• Easy slash commands for configuration
-• Multi-server support
+## Setup
+1. Invite bot to your Discord server
+2. Bot auto-configures notification channel
+3. Use `/add <token_id> <name>` to track SentX collections
+4. Kabila sales post automatically to all servers
 
-🎯 **Perfect For:**
-• NFT collectors and traders
-• Discord communities focused on Hedera NFTs
-• Project teams wanting to track their collections
-• Marketplace activity monitoring
+## Commands
+- `/add` - Track NFT collection
+- `/remove` - Stop tracking collection  
+- `/list` - View tracked collections
+- `/status` - Bot monitoring status
 
-💎 **What You Get:**
-• Instant sale alerts with buyer/seller info
-• Current market prices in HBAR and USD
-• NFT metadata, rarity ranks, and trait information
-• Clean, professional Discord embeds
-• Reliable 24/7 monitoring
+## Permissions Required
+- Send Messages
+- Embed Links  
+- View Channel
 
-Set up tracking for your favorite collections with simple commands and never miss another sale!
-
-## Bot Tags/Keywords:
-NFT, Hedera, SentX, Sales Tracker, Marketplace, HBAR, Real-time, Notifications, Discord Bot, Crypto, Trading
-
-## Permissions Needed:
-• Send Messages
-• Embed Links  
-• View Channel
-• Use Slash Commands
+**Built for Hedera NFT community • Zero setup required • Enterprise-grade reliability**
