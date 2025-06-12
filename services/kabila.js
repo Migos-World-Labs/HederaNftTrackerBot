@@ -30,15 +30,7 @@ class KabilaService {
      */
     async getRecentSales(limit = 50) {
         try {
-            const apiKey = process.env.KABILA_API_KEY;
-            
-            if (!apiKey) {
-                console.log('Kabila API Key not provided - skipping Kabila monitoring');
-                return [];
-            }
-            
             console.log('Fetching recent sales from Kabila...');
-            console.log('Kabila API Key available: Yes');
             
             // Use the correct Kabila Market Analytics API endpoint
             const baseURL = 'https://labs.kabila.app';
@@ -50,16 +42,10 @@ class KabilaService {
                 'Accept': 'application/json'
             };
 
-            // Add API key to headers for authentication
-            if (apiKey) {
-                headers['Authorization'] = `Bearer ${apiKey}`;
-                headers['X-API-Key'] = apiKey;
-            }
-
             // Set up parameters according to Kabila API specification
             const params = {
                 limit: limit,
-                activityType: 'sale', // Filter for sales only
+                activityType: 'SALE', // Filter for sales only (must be uppercase)
                 timeRange: '1w', // Get sales from last week
                 format: 'JSON'
             };
@@ -87,32 +73,34 @@ class KabilaService {
                 return [];
             }
 
-            const data = response.data;
+            const responseData = response.data;
             
-            // Handle Kabila API response format
-            let activities = [];
-            if (Array.isArray(data)) {
-                activities = data;
-            } else if (data.data && Array.isArray(data.data)) {
-                activities = data.data;
-            } else if (data.activities && Array.isArray(data.activities)) {
-                activities = data.activities;
-            } else if (data.results && Array.isArray(data.results)) {
-                activities = data.results;
-            } else {
-                console.log('Unexpected Kabila API response format:', Object.keys(data));
+            // Handle Kabila API response format: {meta: [...], data: [...], rows: number}
+            if (!responseData.data || !Array.isArray(responseData.data)) {
+                console.log('Unexpected Kabila API response format:', Object.keys(responseData));
                 return [];
             }
 
-            console.log(`Found ${activities.length} activities from Kabila`);
+            const rawSales = responseData.data;
+            console.log(`Found ${rawSales.length} sales from Kabila`);
             
-            // Filter for sales activities only
-            const sales = activities.filter(activity => {
-                const type = activity.activityType || activity.type || activity.activity_type;
-                return type === 'sale' || type === 'Sale' || type === 'SALE';
-            });
+            // All data returned is already filtered to SALE activity type
+            // Transform the raw sales data into our standard format
+            const sales = rawSales.map((sale, index) => ({
+                id: `kabila_${sale.createdAt}_${index}`,
+                timestamp: sale.createdAt,
+                price: sale.price,
+                marketplace: 'Kabila',
+                // Add default values for missing fields that will be populated by formatSalesData
+                tokenId: sale.tokenId || 'unknown',
+                serialNumber: sale.serialNumber || index,
+                seller: sale.seller || 'unknown',
+                buyer: sale.buyer || 'unknown',
+                nftName: sale.nftName || `NFT #${index}`,
+                collectionName: sale.collectionName || 'Unknown Collection'
+            }));
             
-            console.log(`Filtered to ${sales.length} sale activities from Kabila`);
+            console.log(`Processed ${sales.length} sales from Kabila`);
 
             // Format the sales data
             const formattedSales = this.formatSalesData(sales);
