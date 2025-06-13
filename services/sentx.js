@@ -126,58 +126,33 @@ class SentXService {
             
             const apiKey = process.env.SENTX_API_KEY;
             
-            // Get active listings and find cheapest
+            // Use the correct floor price endpoint
             const params = {
                 apikey: apiKey,
-                tokenId: tokenId,
-                activityFilter: 'Listings',
-                sortBy: 'price',
-                sortOrder: 'asc',
-                amount: 10 // Get more listings to ensure we find active ones
+                token: tokenId
             };
             
-            const response = await this.axiosInstance.get('/v1/public/market/activity', {
+            const response = await this.axiosInstance.get('/v1/public/market/floor', {
                 params: params
             });
 
             if (!response.data || !response.data.success) {
-                console.log('No successful response from SentX API for floor price');
+                console.log('No floor price data returned from SentX API');
                 return null;
             }
 
-            if (!response.data.marketActivity || response.data.marketActivity.length === 0) {
-                console.log('No active listings found for floor price');
-                return null;
-            }
-
-            // Filter for active listings only and find the cheapest
-            const activeListings = response.data.marketActivity.filter(listing => 
-                (listing.saletype === 'Listed' || listing.saletype === 'Listing') && 
-                listing.salePrice && 
-                listing.salePrice > 0 &&
-                listing.nftTokenAddress === tokenId
-            );
-            
-            if (activeListings.length === 0) {
-                console.log('No active listings with valid prices found');
+            if (!response.data.floor || response.data.floor <= 0) {
+                console.log('No valid floor price found');
                 return null;
             }
             
-            // Sort by price to get floor price
-            activeListings.sort((a, b) => {
-                const priceA = this.parseHbarAmount(a.salePrice);
-                const priceB = this.parseHbarAmount(b.salePrice);
-                return priceA - priceB;
-            });
+            const floorPriceHbar = this.parseHbarAmount(response.data.floor);
             
-            const cheapestListing = activeListings[0];
-            const floorPriceHbar = this.parseHbarAmount(cheapestListing.salePrice);
-            
-            console.log(`Floor price from listings for ${tokenId}: ${floorPriceHbar} HBAR`);
+            console.log(`Floor price for ${tokenId}: ${floorPriceHbar} HBAR`);
             
             const result = {
                 price_hbar: floorPriceHbar,
-                listing_count: activeListings.length,
+                listing_count: null, // Floor endpoint doesn't provide listing count
                 last_updated: new Date()
             };
             
