@@ -104,6 +104,57 @@ class SentXService {
     }
 
     /**
+     * Get collection floor price from SentX marketplace
+     * @param {string} tokenId - Token ID of the collection
+     * @returns {Object} Floor price information
+     */
+    async getCollectionFloorPrice(tokenId) {
+        try {
+            console.log(`Fetching floor price for collection ${tokenId}...`);
+            
+            const apiKey = process.env.SENTX_API_KEY;
+            
+            const params = {
+                apikey: apiKey,
+                tokenId: tokenId,
+                sortBy: 'price',
+                sortOrder: 'asc',
+                amount: 1, // Just get the cheapest listing
+                activityFilter: 'Listings'
+            };
+            
+            const response = await this.axiosInstance.get('/v1/public/market/activity', {
+                params: params
+            });
+
+            if (!response.data || !response.data.success) {
+                console.log('No successful response from SentX API for floor price');
+                return null;
+            }
+
+            if (!response.data.marketActivity || response.data.marketActivity.length === 0) {
+                console.log('No active listings found for floor price');
+                return null;
+            }
+
+            const cheapestListing = response.data.marketActivity[0];
+            const floorPriceHbar = this.parseHbarAmount(cheapestListing.salePrice);
+            
+            console.log(`Floor price for ${tokenId}: ${floorPriceHbar} HBAR`);
+            
+            return {
+                price_hbar: floorPriceHbar,
+                listing_count: response.data.marketActivity.length,
+                last_updated: new Date()
+            };
+
+        } catch (error) {
+            console.error(`Error fetching floor price for ${tokenId}:`, error.message);
+            return null;
+        }
+    }
+
+    /**
      * Format raw sales data from API into standardized format
      * @param {Array} rawSales - Raw sales data from API
      * @returns {Array} Formatted sales data

@@ -4,6 +4,7 @@
 
 const { EmbedBuilder } = require('discord.js');
 const currencyService = require('../services/currency');
+const sentxService = require('../services/sentx');
 const hederaService = require('../services/hedera');
 
 class EmbedUtils {
@@ -29,10 +30,19 @@ class EmbedUtils {
             .setColor('#FFFFFF')
             .setTimestamp(new Date(sale.timestamp));
 
-        // Add collection info prominently
+        // Add collection info prominently with floor price
         if (sale.collection_name && sale.collection_name !== 'Unknown Collection') {
+            // Fetch floor price for the collection
+            const floorPriceData = await sentxService.getCollectionFloorPrice(sale.token_id);
+            let collectionTitle = `${collectionName} Collection`;
+            
+            if (floorPriceData && floorPriceData.price_hbar) {
+                const floorUsdValue = floorPriceData.price_hbar * hbarRate;
+                collectionTitle += ` • Floor: ${floorPriceData.price_hbar} HBAR ($${floorUsdValue.toFixed(2)})`;
+            }
+            
             embed.setAuthor({
-                name: `${collectionName} Collection`,
+                name: collectionTitle,
                 iconURL: null
             });
         }

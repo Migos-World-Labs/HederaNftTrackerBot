@@ -515,6 +515,10 @@ class NFTSalesBot {
             {
                 name: 'status',
                 description: 'Show bot status and monitoring information'
+            },
+            {
+                name: 'test',
+                description: 'Test the bot by posting a recent sale with floor price'
             }
         ];
 
@@ -546,6 +550,9 @@ class NFTSalesBot {
                     break;
                 case 'status':
                     await this.handleStatusSlashCommand(interaction);
+                    break;
+                case 'test':
+                    await this.handleTestCommand(interaction);
                     break;
                 default:
                     await interaction.reply('Unknown command');
@@ -694,6 +701,52 @@ class NFTSalesBot {
         };
 
         await interaction.reply({ embeds: [embed] });
+    }
+
+    async handleTestCommand(interaction) {
+        try {
+            await interaction.deferReply();
+            
+            console.log('Testing floor price feature with recent sale...');
+            
+            // Get recent sales from SentX
+            const recentSales = await sentxService.getRecentSales(100);
+            
+            if (!recentSales || recentSales.length === 0) {
+                await interaction.editReply('❌ No recent sales found for testing');
+                return;
+            }
+            
+            // Try to find a Wild Tigers sale first, then any tracked collection
+            const trackedCollections = await this.storage.getCollections(interaction.guildId);
+            const trackedTokenIds = trackedCollections.map(c => c.token_id);
+            
+            let testSale = recentSales.find(sale => trackedTokenIds.includes(sale.token_id));
+            
+            if (!testSale) {
+                // If no tracked collection sales, use any recent sale for demo
+                testSale = recentSales[0];
+            }
+            
+            console.log(`Using sale for testing: ${testSale.nft_name} from ${testSale.collection_name}`);
+            
+            // Get HBAR rate and process the sale
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            
+            // Create embed with floor price
+            const embed = await embedUtils.createSaleEmbed(testSale, hbarRate);
+            
+            await interaction.editReply({ 
+                content: '🧪 **Test Sale with Floor Price Feature:**',
+                embeds: [embed] 
+            });
+            
+            console.log('Test sale with floor price posted successfully!');
+            
+        } catch (error) {
+            console.error('Error in test command:', error);
+            await interaction.editReply('❌ Error running test. Please try again.');
+        }
     }
 
     async initializeDatabase() {
