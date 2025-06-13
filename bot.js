@@ -518,7 +518,7 @@ class NFTSalesBot {
             },
             {
                 name: 'test',
-                description: 'Test the bot by posting a recent sale with floor price'
+                description: 'Test the bot by posting a recent Wild Tigers collection sale with floor price'
             }
         ];
 
@@ -733,15 +733,13 @@ class NFTSalesBot {
                 return;
             }
             
-            // Try to find a Wild Tigers sale first, then any tracked collection
-            const trackedCollections = await this.storage.getCollections(interaction.guildId);
-            const trackedTokenIds = trackedCollections.map(c => c.token_id);
-            
-            let testSale = recentSales.find(sale => trackedTokenIds.includes(sale.token_id));
+            // Find specifically Wild Tigers collection sales (token ID: 0.0.6024491)
+            const wildTigersTokenId = '0.0.6024491';
+            let testSale = recentSales.find(sale => sale.token_id === wildTigersTokenId);
             
             if (!testSale) {
-                // If no tracked collection sales, use any recent sale for demo
-                testSale = recentSales[0];
+                await interaction.editReply('❌ No Wild Tigers collection sales found in recent data. Try again later when there are new Wild Tigers sales.');
+                return;
             }
             
             console.log(`Using sale for testing: ${testSale.nft_name} from ${testSale.collection_name}`);
@@ -753,7 +751,7 @@ class NFTSalesBot {
             const embed = await embedUtils.createSaleEmbed(testSale, hbarRate);
             
             await interaction.editReply({ 
-                content: '🧪 **Test Sale with Floor Price Feature:**',
+                content: '🧪 **Test Wild Tigers Sale with Floor Price:**',
                 embeds: [embed] 
             });
             
