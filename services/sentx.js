@@ -126,43 +126,7 @@ class SentXService {
             
             const apiKey = process.env.SENTX_API_KEY;
             
-            // Try the collection stats endpoint first
-            try {
-                const statsParams = {
-                    apikey: apiKey,
-                    tokenId: tokenId
-                };
-                
-                const statsResponse = await this.axiosInstance.get('/v1/public/collection/stats', {
-                    params: statsParams
-                });
-                
-                if (statsResponse.data && statsResponse.data.success && statsResponse.data.stats) {
-                    const floorPrice = statsResponse.data.stats.floorPrice;
-                    if (floorPrice && floorPrice > 0) {
-                        const floorPriceHbar = this.parseHbarAmount(floorPrice);
-                        console.log(`Floor price from stats for ${tokenId}: ${floorPriceHbar} HBAR`);
-                        
-                        const result = {
-                            price_hbar: floorPriceHbar,
-                            listing_count: statsResponse.data.stats.totalListings || 0,
-                            last_updated: new Date()
-                        };
-                        
-                        // Cache the result
-                        this.floorPriceCache.set(cacheKey, {
-                            data: result,
-                            timestamp: Date.now()
-                        });
-                        
-                        return result;
-                    }
-                }
-            } catch (statsError) {
-                console.log('Stats endpoint failed, trying listings approach...');
-            }
-            
-            // Fallback: Get active listings and find cheapest
+            // Get active listings and find cheapest
             const params = {
                 apikey: apiKey,
                 tokenId: tokenId,
@@ -188,9 +152,10 @@ class SentXService {
 
             // Filter for active listings only and find the cheapest
             const activeListings = response.data.marketActivity.filter(listing => 
-                listing.saletype === 'Listing' && 
+                (listing.saletype === 'Listed' || listing.saletype === 'Listing') && 
                 listing.salePrice && 
-                listing.salePrice > 0
+                listing.salePrice > 0 &&
+                listing.nftTokenAddress === tokenId
             );
             
             if (activeListings.length === 0) {

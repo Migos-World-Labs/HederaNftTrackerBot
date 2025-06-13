@@ -33,12 +33,18 @@ class EmbedUtils {
         // Add collection info prominently with floor price
         if (sale.collection_name && sale.collection_name !== 'Unknown Collection') {
             // Fetch floor price for the collection
+            console.log(`Fetching floor price for embed: ${sale.token_id}`);
             const floorPriceData = await sentxService.getCollectionFloorPrice(sale.token_id);
+            console.log(`Floor price data received:`, floorPriceData);
+            
             let collectionTitle = `${collectionName} Collection`;
             
             if (floorPriceData && floorPriceData.price_hbar) {
                 const floorUsdValue = floorPriceData.price_hbar * hbarRate;
                 collectionTitle += ` • Floor: ${floorPriceData.price_hbar} HBAR ($${floorUsdValue.toFixed(2)})`;
+                console.log(`Updated collection title: ${collectionTitle}`);
+            } else {
+                console.log('No valid floor price data received');
             }
             
             embed.setAuthor({
