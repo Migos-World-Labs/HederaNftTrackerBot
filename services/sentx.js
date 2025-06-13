@@ -17,6 +17,10 @@ class SentXService {
                 'Accept': 'application/json'
             }
         });
+        
+        // Cache for floor prices (5 minute TTL)
+        this.floorPriceCache = new Map();
+        this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
     }
 
     /**
@@ -110,17 +114,62 @@ class SentXService {
      */
     async getCollectionFloorPrice(tokenId) {
         try {
-            console.log(`Fetching floor price for collection ${tokenId}...`);
+            // Check cache first
+            const cacheKey = `floor_${tokenId}`;
+            const cached = this.floorPriceCache.get(cacheKey);
+            if (cached && (Date.now() - cached.timestamp) < this.cacheTimeout) {
+                console.log(`Using cached floor price for ${tokenId}: ${cached.data.price_hbar} HBAR`);
+                return cached.data;
+            }
+            
+            console.log(`Fetching fresh floor price for collection ${tokenId}...`);
             
             const apiKey = process.env.SENTX_API_KEY;
             
+            // Try the collection stats endpoint first
+            try {
+                const statsParams = {
+                    apikey: apiKey,
+                    tokenId: tokenId
+                };
+                
+                const statsResponse = await this.axiosInstance.get('/v1/public/collection/stats', {
+                    params: statsParams
+                });
+                
+                if (statsResponse.data && statsResponse.data.success && statsResponse.data.stats) {
+                    const floorPrice = statsResponse.data.stats.floorPrice;
+                    if (floorPrice && floorPrice > 0) {
+                        const floorPriceHbar = this.parseHbarAmount(floorPrice);
+                        console.log(`Floor price from stats for ${tokenId}: ${floorPriceHbar} HBAR`);
+                        
+                        const result = {
+                            price_hbar: floorPriceHbar,
+                            listing_count: statsResponse.data.stats.totalListings || 0,
+                            last_updated: new Date()
+                        };
+                        
+                        // Cache the result
+                        this.floorPriceCache.set(cacheKey, {
+                            data: result,
+                            timestamp: Date.now()
+                        });
+                        
+                        return result;
+                    }
+                }
+            } catch (statsError) {
+                console.log('Stats endpoint failed, trying listings approach...');
+            }
+            
+            // Fallback: Get active listings and find cheapest
             const params = {
                 apikey: apiKey,
                 tokenId: tokenId,
+                activityFilter: 'Listings',
                 sortBy: 'price',
                 sortOrder: 'asc',
-                amount: 1, // Just get the cheapest listing
-                activityFilter: 'Listings'
+                amount: 10 // Get more listings to ensure we find active ones
             };
             
             const response = await this.axiosInstance.get('/v1/public/market/activity', {
@@ -137,16 +186,43 @@ class SentXService {
                 return null;
             }
 
-            const cheapestListing = response.data.marketActivity[0];
+            // Filter for active listings only and find the cheapest
+            const activeListings = response.data.marketActivity.filter(listing => 
+                listing.saletype === 'Listing' && 
+                listing.salePrice && 
+                listing.salePrice > 0
+            );
+            
+            if (activeListings.length === 0) {
+                console.log('No active listings with valid prices found');
+                return null;
+            }
+            
+            // Sort by price to get floor price
+            activeListings.sort((a, b) => {
+                const priceA = this.parseHbarAmount(a.salePrice);
+                const priceB = this.parseHbarAmount(b.salePrice);
+                return priceA - priceB;
+            });
+            
+            const cheapestListing = activeListings[0];
             const floorPriceHbar = this.parseHbarAmount(cheapestListing.salePrice);
             
-            console.log(`Floor price for ${tokenId}: ${floorPriceHbar} HBAR`);
+            console.log(`Floor price from listings for ${tokenId}: ${floorPriceHbar} HBAR`);
             
-            return {
+            const result = {
                 price_hbar: floorPriceHbar,
-                listing_count: response.data.marketActivity.length,
+                listing_count: activeListings.length,
                 last_updated: new Date()
             };
+            
+            // Cache the result
+            this.floorPriceCache.set(cacheKey, {
+                data: result,
+                timestamp: Date.now()
+            });
+            
+            return result;
 
         } catch (error) {
             console.error(`Error fetching floor price for ${tokenId}:`, error.message);
