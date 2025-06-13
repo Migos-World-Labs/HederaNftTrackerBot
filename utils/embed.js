@@ -78,7 +78,7 @@ class EmbedUtils {
             if (sale.rarity) {
                 const rarityPercentage = parseFloat((sale.rarity * 100).toFixed(1));
                 const rarityTier = this.getRarityTier(sale.rarity);
-                rarityInfo.push(`✨ **Rarity:** ${rarityTier} (${rarityPercentage}% rare)`);
+                rarityInfo.push(`✨ **Rarity:** ${rarityTier} (${rarityPercentage}%)`);
             }
             
             embed.addFields({
