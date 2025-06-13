@@ -733,12 +733,18 @@ class NFTSalesBot {
                 return;
             }
             
-            // Find specifically Wild Tigers collection sales (token ID: 0.0.6024491)
+            // Find Wild Tigers or Rooster Cartel Gen0 collection sales
             const wildTigersTokenId = '0.0.6024491';
+            const roosterCartelGen0TokenId = '0.0.2173899'; // Rooster Cartel Gen0
+            
             let testSale = recentSales.find(sale => sale.token_id === wildTigersTokenId);
             
             if (!testSale) {
-                await interaction.editReply('❌ No Wild Tigers collection sales found in recent data. Try again later when there are new Wild Tigers sales.');
+                testSale = recentSales.find(sale => sale.token_id === roosterCartelGen0TokenId);
+            }
+            
+            if (!testSale) {
+                await interaction.editReply('❌ No Wild Tigers or Rooster Cartel Gen0 collection sales found in recent data. Try again later when there are new sales.');
                 return;
             }
             
@@ -751,7 +757,7 @@ class NFTSalesBot {
             const embed = await embedUtils.createSaleEmbed(testSale, hbarRate);
             
             await interaction.editReply({ 
-                content: '🧪 **Test Wild Tigers Sale with Floor Price:**',
+                content: `🧪 **Test ${testSale.collection_name} Sale with Floor Price:**`,
                 embeds: [embed] 
             });
             
