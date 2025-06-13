@@ -524,10 +524,26 @@ class NFTSalesBot {
 
         try {
             console.log('Registering slash commands...');
+            
+            // Register commands globally
             await rest.put(
                 Routes.applicationCommands(this.client.user.id),
                 { body: commands }
             );
+            
+            // Also register commands for each guild for immediate availability
+            for (const guild of this.client.guilds.cache.values()) {
+                try {
+                    await rest.put(
+                        Routes.applicationGuildCommands(this.client.user.id, guild.id),
+                        { body: commands }
+                    );
+                    console.log(`Registered commands for guild: ${guild.name}`);
+                } catch (guildError) {
+                    console.error(`Error registering commands for guild ${guild.name}:`, guildError);
+                }
+            }
+            
             console.log('Successfully registered slash commands');
         } catch (error) {
             console.error('Error registering slash commands:', error);
