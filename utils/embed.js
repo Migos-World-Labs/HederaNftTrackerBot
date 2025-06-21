@@ -47,13 +47,30 @@ class EmbedUtils {
             });
         }
 
-        // Add NFT image
-        const imageUrl = sale.image_url || sale.imageUrl;
+        // Add NFT image with multiple fallback options
+        let imageUrl = sale.image_url || sale.imageUrl || sale.nftImage || sale.imageCDN;
+        
+        // If no image is available, try to fetch NFT details to get metadata
+        if (!imageUrl && sale.token_id && sale.serial_id) {
+            try {
+                console.log(`Fetching NFT details for missing image: ${sale.token_id}/${sale.serial_id}`);
+                const nftDetails = await sentxService.getNFTDetails(sale.token_id, sale.serial_id);
+                if (nftDetails && nftDetails.image) {
+                    imageUrl = nftDetails.image;
+                    console.log(`Found image from NFT details: ${imageUrl}`);
+                }
+            } catch (error) {
+                console.log(`Failed to fetch NFT details for image: ${error.message}`);
+            }
+        }
+        
         if (imageUrl) {
             const convertedImageUrl = this.convertIpfsToHttp(imageUrl);
             if (convertedImageUrl) {
                 embed.setImage(convertedImageUrl);
             }
+        } else {
+            console.log(`No image found for NFT: ${sale.nft_name} (${sale.token_id}/${sale.serial_id})`);
         }
 
         // Get collector information for context

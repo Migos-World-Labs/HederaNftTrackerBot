@@ -38,7 +38,7 @@ class SentXService {
             
             const params = {
                 apikey: apiKey,
-                activityFilter: 'Sales', // Only get sales, not listings
+                activityFilter: 'Sales', // Focus on sales but we'll also check separately for order fills
                 amount: limit,
                 page: 1,
                 hbarMarketOnly: 1 // Focus on HBAR market
@@ -62,12 +62,30 @@ class SentXService {
 
             console.log(`Found ${response.data.marketActivity.length} market activities`);
             
-            // Filter only actual sales (not price changes or listings)
-            const salesOnly = response.data.marketActivity.filter(activity => 
-                activity.saletype === 'Sale' || 
-                activity.saletype === 'Purchase' ||
-                (activity.buyerAddress && activity.buyerAddress !== null)
-            );
+            // Log all sale types to debug order fills
+            const saleTypes = [...new Set(response.data.marketActivity.map(a => a.saletype))];
+            console.log('Available sale types:', saleTypes);
+            
+            // Log sample activities for debugging
+            if (response.data.marketActivity.length > 0) {
+                console.log('Sample activity structure:');
+                console.log(JSON.stringify(response.data.marketActivity[0], null, 2));
+            }
+            
+            // Filter only actual completed sales (must have buyer address and completed transaction)
+            const salesOnly = response.data.marketActivity.filter(activity => {
+                const hasCompletedSale = activity.buyerAddress && 
+                    activity.buyerAddress !== null && 
+                    activity.salePrice && 
+                    activity.salePrice > 0 &&
+                    activity.saleTransactionId !== null; // Must have transaction ID for completed sales
+                
+                if (hasCompletedSale) {
+                    console.log(`Including completed sale ${activity.saletype}: ${activity.nftName} - Image: ${activity.nftImage ? 'Yes' : 'No'}`);
+                }
+                
+                return hasCompletedSale;
+            });
 
             console.log(`Filtered to ${salesOnly.length} actual sales`);
             
@@ -93,16 +111,35 @@ class SentXService {
     }
 
     /**
-     * Get detailed NFT information
+     * Get detailed NFT information including metadata
      * @param {string} tokenId - Token ID of the NFT
+     * @param {string} serialId - Serial ID of the NFT
      * @returns {Object} NFT details object
      */
-    async getNFTDetails(tokenId) {
+    async getNFTDetails(tokenId, serialId = null) {
         try {
-            const response = await this.axiosInstance.get(`/nft/${tokenId}`);
-            return response.data;
+            const apiKey = process.env.SENTX_API_KEY;
+            
+            const params = {
+                apikey: apiKey,
+                token: tokenId
+            };
+            
+            if (serialId) {
+                params.serial = serialId;
+            }
+            
+            const response = await this.axiosInstance.get('/v1/public/nft/details', {
+                params: params
+            });
+            
+            if (response.data && response.data.success && response.data.nft) {
+                return response.data.nft;
+            }
+            
+            return null;
         } catch (error) {
-            console.error(`Error fetching NFT details for ${tokenId}:`, error.message);
+            console.error(`Error fetching NFT details for ${tokenId}/${serialId}:`, error.message);
             return null;
         }
     }
@@ -177,6 +214,9 @@ class SentXService {
      */
     formatSalesData(rawSales) {
         return rawSales.map(sale => {
+            // Debug log each sale to identify missing images
+            console.log(`Processing ${sale.saletype}: ${sale.nftName}, Image: ${sale.nftImage ? 'Present' : 'Missing'}`);
+            
             return {
                 id: `${sale.nftTokenAddress}-${sale.nftSerialId}-${sale.saleDate}`,
                 nft_name: sale.nftName || 'Unknown NFT',
@@ -187,7 +227,7 @@ class SentXService {
                 buyer: this.formatAddress(sale.buyerAddress),
                 seller: this.formatAddress(sale.sellerAddress),
                 timestamp: sale.saleDate,
-                image_url: sale.nftImage || null,
+                image_url: sale.nftImage || sale.imageCDN || sale.nftImageUrl || sale.image || null,
                 collection_image_url: sale.collectionImage || sale.collectionIcon || null,
                 rarity: sale.rarityPct || null,
                 rank: sale.rarityRank || null,

@@ -1,0 +1,107 @@
+# Discord NFT Sales Bot for Hedera
+
+## Overview
+
+This is a Discord bot application that provides real-time NFT marketplace analytics for the Hedera blockchain ecosystem. The bot monitors NFT sales across multiple marketplaces (SentX and Kabila) and sends rich notifications to Discord servers with comprehensive sales data including pricing, buyer/seller information, and NFT metadata.
+
+## System Architecture
+
+### Backend Architecture
+- **Node.js Application**: Built with Node.js 20 using Discord.js v14 for Discord API integration
+- **Database Layer**: PostgreSQL with Drizzle ORM for type-safe database operations
+- **Cron-based Monitoring**: Uses node-cron for scheduled marketplace monitoring every 10 seconds
+- **API Integration**: Axios-based HTTP client for external API calls
+
+### Data Storage Solutions
+- **PostgreSQL Database**: Primary data store using Neon Database serverless PostgreSQL
+- **Drizzle ORM**: Type-safe database operations with schema migrations
+- **File-based Fallback**: JSON file storage for bot state as backup/migration path
+- **In-memory Caching**: Rate limiting and currency exchange rate caching
+
+### Authentication and Authorization
+- **Discord Bot Token**: Standard Discord bot authentication
+- **API Key Management**: Secure storage of marketplace API keys (SentX)
+- **Server-based Permissions**: Discord role-based command access
+
+## Key Components
+
+### Discord Bot Implementation (`bot.js`)
+- Multi-server Discord bot with slash command support
+- Auto-configuration of notification channels
+- Rich embed generation for NFT sales notifications
+- Rate limiting and error handling for Discord API compliance
+
+### Marketplace Services
+- **SentX Service** (`services/sentx.js`): API integration for SentX marketplace sales data
+- **Hedera Service** (`services/hedera.js`): Integration with Hedera Mirror Node for NFT metadata
+- **Currency Service** (`services/currency.js`): Real-time HBAR to USD conversion using CoinGecko/CoinMarketCap APIs
+
+### Database Schema
+- **Collections Table**: Per-server NFT collection tracking
+- **Server Configs**: Discord server configuration and channel mappings
+- **Bot State**: Application state persistence
+- **Processed Sales**: Duplicate sale prevention tracking
+
+### Utility Services
+- **Embed Utils** (`utils/embed.js`): Discord embed formatting for NFT sales
+- **Storage Utils** (`utils/storage.js`): File-based storage fallback system
+
+## Data Flow
+
+1. **Monitoring Loop**: Cron job runs every 10 seconds to check for new NFT sales
+2. **API Fetching**: Retrieves recent sales from SentX and Kabila marketplaces
+3. **Data Processing**: 
+   - Filters sales to only recent transactions (last 5 minutes)
+   - Prevents duplicate notifications using processed sales tracking
+   - Enriches data with USD pricing and NFT metadata
+4. **Notification Generation**: Creates rich Discord embeds with sale information
+5. **Multi-server Distribution**: Posts notifications to all configured Discord servers
+6. **State Persistence**: Updates database with processed sales and bot state
+
+## External Dependencies
+
+### APIs and Services
+- **Discord API**: Bot interactions and message posting
+- **SentX API**: NFT marketplace sales data retrieval
+- **Kabila API**: Secondary marketplace monitoring
+- **Hedera Mirror Node**: NFT metadata and holder information
+- **CoinGecko/CoinMarketCap**: Cryptocurrency exchange rates
+- **Neon Database**: Serverless PostgreSQL hosting
+
+### NPM Dependencies
+- `discord.js`: Discord bot framework
+- `axios`: HTTP client for API requests
+- `node-cron`: Scheduled task execution
+- `drizzle-orm`: Database ORM
+- `@neondatabase/serverless`: Neon database connector
+- `dotenv`: Environment variable management
+- `express`: Web interface (optional)
+- `ws`: WebSocket support for database connections
+
+## Deployment Strategy
+
+### Environment Configuration
+- **Replit Deployment**: Configured for Google Compute Engine deployment
+- **Environment Variables**: Secure storage of API keys and database credentials
+- **Auto-installation**: Automatic dependency installation on deployment
+- **Health Monitoring**: Built-in error handling and graceful shutdown
+
+### Scaling Considerations
+- **Multi-server Support**: Designed to work across unlimited Discord servers
+- **Rate Limiting**: Built-in delays to respect API rate limits
+- **Database Connection Pooling**: Efficient database connection management
+- **Caching Strategy**: API response caching to reduce external API calls
+
+### Monitoring and Maintenance
+- **Error Logging**: Comprehensive error tracking and reporting
+- **Bot Statistics**: Usage metrics and performance monitoring
+- **Database Migrations**: Version-controlled schema changes with Drizzle Kit
+- **Graceful Shutdown**: Proper cleanup on application termination
+
+## Changelog
+
+- June 21, 2025. Initial setup
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
