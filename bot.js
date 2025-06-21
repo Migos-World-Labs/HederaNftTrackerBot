@@ -743,9 +743,12 @@ class NFTSalesBot {
             
             // Check if user specified orderfill test
             const testType = interaction.options?.getString('type') || 'sale';
+            console.log(`Test command triggered with type: ${testType}`);
             
             if (testType === 'orderfill') {
+                console.log('Executing order fill test...');
                 await this.testOrderFill(interaction);
+                return;
             } else {
                 console.log('Testing floor price feature with recent sale...');
                 
@@ -796,15 +799,16 @@ class NFTSalesBot {
 
     async testOrderFill(interaction) {
         try {
-            console.log('Testing order fill notification...');
+            console.log('=== EXECUTING ORDER FILL TEST ===');
             
-            // Create a mock order fill based on real Wild Tigers collection
+            // Create a mock order fill with proper structure
             const mockOrderFill = {
                 id: 'test-order-fill-' + Date.now(),
-                nft_name: 'Wild Tigers #1234',
+                nft_name: 'Wild Tigers #1234 (Test Order Fill)',
                 collection_name: 'Wild Tigers',
-                token_id: '0.0.6024491', // Wild Tigers token ID
+                token_id: '0.0.6024491', // Wild Tigers token ID  
                 serial_id: 1234,
+                serial_number: 1234,
                 price_hbar: 150,
                 buyer: '0.0.789012',
                 seller: '0.0.345678',
@@ -817,24 +821,25 @@ class NFTSalesBot {
                 rank: 150
             };
             
-            console.log('Processing mock order fill:', mockOrderFill.nft_name);
+            console.log('Mock order fill data:', JSON.stringify(mockOrderFill, null, 2));
             
             // Get current HBAR rate
             const hbarRate = await currencyService.getHbarToUsdRate();
+            console.log(`Using HBAR rate: ${hbarRate}`);
             
             // Create the embed
             const embed = await embedUtils.createSaleEmbed(mockOrderFill, hbarRate);
             
             await interaction.editReply({ 
-                content: `📋 **Test Order Fill Notification:**`,
+                content: `📋 **Test Order Fill Notification (Mock Data):**\nThis simulates how an order fill would appear with images.`,
                 embeds: [embed] 
             });
             
-            console.log('Mock order fill test posted successfully');
+            console.log('=== ORDER FILL TEST COMPLETED SUCCESSFULLY ===');
             
         } catch (error) {
-            console.error('Error testing order fill:', error);
-            await interaction.editReply('❌ Error testing order fill. Please try again.');
+            console.error('Error in order fill test:', error);
+            await interaction.editReply(`❌ Error testing order fill: ${error.message}`);
         }
     }
 
