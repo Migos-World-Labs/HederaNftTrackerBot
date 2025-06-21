@@ -100,7 +100,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
 
 ## Changelog
 
-- June 21, 2025. Initial setup
+- June 21, 2025: Initial setup
+- June 21, 2025: Fixed image display issue for order fills
+  - Modified SentX API filtering to properly capture order fills vs regular sales
+  - Added fallback image retrieval from multiple sources (nftImage, imageCDN, etc.)
+  - Enhanced sale type detection to distinguish between order fills and direct sales
+  - Added transaction ID validation for completed sales
+  - Improved debugging logging for sale type and image availability
 
 ## User Preferences
 

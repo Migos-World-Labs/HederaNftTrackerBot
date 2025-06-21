@@ -518,7 +518,25 @@ class NFTSalesBot {
             },
             {
                 name: 'test',
-                description: 'Test the bot by posting a recent Wild Tigers collection sale with floor price'
+                description: 'Test the bot functionality',
+                options: [
+                    {
+                        name: 'type',
+                        type: 3, // STRING
+                        description: 'Type of test to run',
+                        required: false,
+                        choices: [
+                            {
+                                name: 'Regular Sale',
+                                value: 'sale'
+                            },
+                            {
+                                name: 'Order Fill',
+                                value: 'orderfill'
+                            }
+                        ]
+                    }
+                ]
             }
         ];
 
@@ -723,49 +741,100 @@ class NFTSalesBot {
         try {
             await interaction.deferReply();
             
-            console.log('Testing floor price feature with recent sale...');
+            // Check if user specified orderfill test
+            const testType = interaction.options?.getString('type') || 'sale';
             
-            // Get recent sales from SentX
-            const recentSales = await sentxService.getRecentSales(100);
-            
-            if (!recentSales || recentSales.length === 0) {
-                await interaction.editReply('❌ No recent sales found for testing');
-                return;
+            if (testType === 'orderfill') {
+                await this.testOrderFill(interaction);
+            } else {
+                console.log('Testing floor price feature with recent sale...');
+                
+                // Get recent sales from SentX
+                const recentSales = await sentxService.getRecentSales(100);
+                
+                if (!recentSales || recentSales.length === 0) {
+                    await interaction.editReply('❌ No recent sales found for testing');
+                    return;
+                }
+                
+                // Find Wild Tigers or Rooster Cartel Gen0 collection sales
+                const wildTigersTokenId = '0.0.6024491';
+                const roosterCartelGen0TokenId = '0.0.2173899';
+                
+                let testSale = recentSales.find(sale => sale.token_id === wildTigersTokenId);
+                
+                if (!testSale) {
+                    testSale = recentSales.find(sale => sale.token_id === roosterCartelGen0TokenId);
+                }
+                
+                if (!testSale) {
+                    await interaction.editReply('❌ No Wild Tigers or Rooster Cartel Gen0 collection sales found in recent data. Try again later when there are new sales.');
+                    return;
+                }
+                
+                console.log(`Using sale for testing: ${testSale.nft_name} from ${testSale.collection_name}`);
+                
+                // Get HBAR rate and process the sale
+                const hbarRate = await currencyService.getHbarToUsdRate();
+                
+                // Create embed with floor price
+                const embed = await embedUtils.createSaleEmbed(testSale, hbarRate);
+                
+                await interaction.editReply({ 
+                    content: `🧪 **Test ${testSale.collection_name} Sale with Floor Price:**`,
+                    embeds: [embed] 
+                });
+                
+                console.log('Test sale with floor price posted successfully!');
             }
-            
-            // Find Wild Tigers or Rooster Cartel Gen0 collection sales
-            const wildTigersTokenId = '0.0.6024491';
-            const roosterCartelGen0TokenId = '0.0.2173899'; // Rooster Cartel Gen0
-            
-            let testSale = recentSales.find(sale => sale.token_id === wildTigersTokenId);
-            
-            if (!testSale) {
-                testSale = recentSales.find(sale => sale.token_id === roosterCartelGen0TokenId);
-            }
-            
-            if (!testSale) {
-                await interaction.editReply('❌ No Wild Tigers or Rooster Cartel Gen0 collection sales found in recent data. Try again later when there are new sales.');
-                return;
-            }
-            
-            console.log(`Using sale for testing: ${testSale.nft_name} from ${testSale.collection_name}`);
-            
-            // Get HBAR rate and process the sale
-            const hbarRate = await currencyService.getHbarToUsdRate();
-            
-            // Create embed with floor price
-            const embed = await embedUtils.createSaleEmbed(testSale, hbarRate);
-            
-            await interaction.editReply({ 
-                content: `🧪 **Test ${testSale.collection_name} Sale with Floor Price:**`,
-                embeds: [embed] 
-            });
-            
-            console.log('Test sale with floor price posted successfully!');
             
         } catch (error) {
             console.error('Error in test command:', error);
             await interaction.editReply('❌ Error running test. Please try again.');
+        }
+    }
+
+    async testOrderFill(interaction) {
+        try {
+            console.log('Testing order fill notification...');
+            
+            // Create a mock order fill based on real Wild Tigers collection
+            const mockOrderFill = {
+                id: 'test-order-fill-' + Date.now(),
+                nft_name: 'Wild Tigers #1234',
+                collection_name: 'Wild Tigers',
+                token_id: '0.0.6024491', // Wild Tigers token ID
+                serial_id: 1234,
+                price_hbar: 150,
+                buyer: '0.0.789012',
+                seller: '0.0.345678',
+                timestamp: new Date().toISOString(),
+                image_url: 'https://sentx.b-cdn.net/bafybeic4afq3co6h7mfedqayovn6zt7w4bnhj6e3vhzecrlnk5k4xjhqay',
+                marketplace: 'SentX',
+                sale_type: 'Order', // This marks it as an order fill
+                transaction_hash: '0.0.12345@1640995200.123456789',
+                rarity: 0.15,
+                rank: 150
+            };
+            
+            console.log('Processing mock order fill:', mockOrderFill.nft_name);
+            
+            // Get current HBAR rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            
+            // Create the embed
+            const embed = await embedUtils.createSaleEmbed(mockOrderFill, hbarRate);
+            
+            await interaction.editReply({ 
+                content: `📋 **Test Order Fill Notification:**`,
+                embeds: [embed] 
+            });
+            
+            console.log('Mock order fill test posted successfully');
+            
+        } catch (error) {
+            console.error('Error testing order fill:', error);
+            await interaction.editReply('❌ Error testing order fill. Please try again.');
         }
     }
 

@@ -24,9 +24,15 @@ class EmbedUtils {
             ? sale.collection_name 
             : 'NFT Collection';
         
+        // Determine if this was an order fill or direct sale
+        const saleType = sale.sale_type || 'Sale';
+        const isOrderFill = saleType === 'Order' || saleType === 'OrderFill';
+        const saleTypeText = isOrderFill ? 'order was filled' : 'just sold';
+        const emoji = isOrderFill ? '📋' : '🎉';
+        
         const embed = new EmbedBuilder()
-            .setTitle(`🎉 ${nftName} just sold!`)
-            .setDescription(`A new sale happened on ${marketplace} for **$${usdValue.toFixed(2)} USD** (${sale.price_hbar} HBAR)`)
+            .setTitle(`${emoji} ${nftName} ${saleTypeText}!`)
+            .setDescription(`A new ${isOrderFill ? 'order fill' : 'sale'} happened on ${marketplace} for **$${usdValue.toFixed(2)} USD** (${sale.price_hbar} HBAR)`)
             .setColor('#FFFFFF')
             .setTimestamp(new Date(sale.timestamp));
 
