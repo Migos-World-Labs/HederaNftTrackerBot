@@ -794,6 +794,11 @@ class NFTSalesBot {
                 
                 console.log(`Using sale for testing: ${testSale.nft_name} from ${testSale.collection_name}`);
                 
+                // Add collection URL to test sale data
+                testSale.collection_url = testSale.token_id === wildTigersTokenId 
+                    ? 'https://sentx.io/nft-marketplace/wild-tigers'
+                    : 'https://sentx.io/nft-marketplace/rooster-cartel-gen0';
+                
                 // Get HBAR rate and process the sale
                 const hbarRate = await currencyService.getHbarToUsdRate();
                 

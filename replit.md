@@ -116,7 +116,7 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
 - June 21, 2025: Added SentX collection links to sale notifications
   - Collection names in sale embeds are now clickable links to the SentX marketplace
   - Uses collectionFriendlyurl from API when available, falls back to token ID format
-  - Updated both regular sales and test command mock data with collection URLs
+  - Updated both regular sales and all test commands with collection URLs for easy marketplace navigation
 
 ## User Preferences
 
