@@ -246,6 +246,7 @@ class SentXService {
                 attributes: sale.attributes || [],
                 payment_token: sale.paymentToken || { symbol: 'HBAR' },
                 listing_url: sale.listingUrl ? `https://sentx.io${sale.listingUrl}` : null,
+                collection_url: sale.collectionFriendlyurl ? `https://sentx.io/nft-marketplace/${sale.collectionFriendlyurl}` : `https://sentx.io/nft-marketplace/collection/${sale.nftTokenAddress}`,
                 previous_price: sale.previousPrice || null
             };
         });

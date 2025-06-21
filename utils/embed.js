@@ -109,10 +109,15 @@ class EmbedUtils {
         const buyerTier = buyerHoldings ? hederaService.getCollectorTier(buyerHoldings.nft_count) : null;
         const sellerTier = sellerHoldings ? hederaService.getCollectorTier(sellerHoldings.nft_count) : null;
 
-        // Main sale information section
+        // Main sale information section with collection link
+        const collectionLink = sale.collection_url 
+            ? `📦 **Collection:** [${sale.collection_name}](${sale.collection_url})`
+            : `📦 **Collection:** ${sale.collection_name}`;
+            
         const saleInfo = [
             `💰 **Sale Price:** ${sale.price_hbar} HBAR ≈ $${usdValue.toFixed(2)} USD`,
             `🏪 **Marketplace:** ${marketplace}`,
+            collectionLink
         ];
 
         if (sale.serial_number) {

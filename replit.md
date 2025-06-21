@@ -113,6 +113,10 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced IPFS URL conversion to handle CIDv0, CIDv1, and bare hash formats
   - Added dedicated test command "/test type:Rooster Cartel Order Fill" for debugging
   - Updated slash command registration with new test options
+- June 21, 2025: Added SentX collection links to sale notifications
+  - Collection names in sale embeds are now clickable links to the SentX marketplace
+  - Uses collectionFriendlyurl from API when available, falls back to token ID format
+  - Updated both regular sales and test command mock data with collection URLs
 
 ## User Preferences
 

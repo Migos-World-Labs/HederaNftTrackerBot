@@ -831,6 +831,7 @@ class NFTSalesBot {
                 seller: '0.0.345678',
                 timestamp: new Date().toISOString(),
                 image_url: 'https://sentx.b-cdn.net/bafybeic4afq3co6h7mfedqayovn6zt7w4bnhj6e3vhzecrlnk5k4xjhqay',
+                collection_url: 'https://sentx.io/nft-marketplace/wild-tigers',
                 marketplace: 'SentX',
                 sale_type: 'Order', // This marks it as an order fill
                 transaction_hash: '0.0.12345@1640995200.123456789',
@@ -879,6 +880,7 @@ class NFTSalesBot {
                 imageCDN: 'https://sentx.b-cdn.net/bafybeia5grwrbz3k6ngxcabnsuwpo2yitpqbwbufwd5c7dmjx55ppy7ste/52.png?optimizer=image',
                 nftImage: 'ipfs://bafybeia5grwrbz3k6ngxcabnsuwpo2yitpqbwbufwd5c7dmjx55ppy7ste/52.png',
                 image_url: 'https://sentx.b-cdn.net/bafybeia5grwrbz3k6ngxcabnsuwpo2yitpqbwbufwd5c7dmjx55ppy7ste/52.png?optimizer=image',
+                collection_url: 'https://sentx.io/nft-marketplace/rooster-cartel-breeding-hens',
                 marketplace: 'SentX',
                 sale_type: 'Order',
                 transaction_hash: '0.0.1064038@1750487213.602045476',
