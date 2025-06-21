@@ -533,6 +533,14 @@ class NFTSalesBot {
                             {
                                 name: 'Order Fill',
                                 value: 'orderfill'
+                            },
+                            {
+                                name: 'Rooster Cartel Order Fill',
+                                value: 'roosterorderfill'
+                            },
+                            {
+                                name: 'Rooster Cartel Order Fill',
+                                value: 'roosterorderfill'
                             }
                         ]
                     }
@@ -827,7 +835,7 @@ class NFTSalesBot {
             
             console.log('Mock order fill data:', JSON.stringify(mockOrderFill, null, 2));
             
-            // Get current HBAR rate
+            // Get current HBAR rate  
             const hbarRate = await currencyService.getHbarToUsdRate();
             console.log(`Using HBAR rate: ${hbarRate}`);
             

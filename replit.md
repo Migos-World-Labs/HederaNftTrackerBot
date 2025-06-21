@@ -107,6 +107,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced sale type detection to distinguish between order fills and direct sales
   - Added transaction ID validation for completed sales
   - Improved debugging logging for sale type and image availability
+- June 21, 2025: Enhanced Rooster Cartel image handling
+  - Added special debugging for Rooster Cartel collections to identify image field variations
+  - Fixed image URL prioritization to use CDN URLs first for better Discord compatibility
+  - Enhanced IPFS URL conversion to handle CIDv0, CIDv1, and bare hash formats
+  - Added dedicated test command "/test type:Rooster Cartel Order Fill" for debugging
+  - Updated slash command registration with new test options
 
 ## User Preferences
 
