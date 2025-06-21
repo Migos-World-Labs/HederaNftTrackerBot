@@ -54,13 +54,25 @@ class EmbedUtils {
         }
 
         // Add NFT image with multiple fallback options
-        let imageUrl = sale.image_url || sale.imageUrl || sale.nftImage || sale.imageCDN;
+        // Priority: CDN URL > IPFS URL > Other sources
+        let imageUrl = sale.imageCDN || sale.image_url || sale.imageUrl || sale.nftImage;
+        
+        // Special debugging for Rooster Cartel images
+        if (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) {
+            console.log(`ROOSTER CARTEL - Processing image for ${sale.nft_name}`);
+            console.log(`  Selected imageUrl: ${imageUrl}`);
+            console.log(`  imageCDN: ${sale.imageCDN}`);
+            console.log(`  nftImage: ${sale.nftImage}`);
+        }
         
         // If no image is available, try to fetch NFT details to get metadata
-        if (!imageUrl && sale.token_id && sale.serial_id) {
+        if (!imageUrl && sale.token_id && (sale.serial_id || sale.serial_number)) {
             try {
-                console.log(`Fetching NFT details for missing image: ${sale.token_id}/${sale.serial_id}`);
-                const nftDetails = await sentxService.getNFTDetails(sale.token_id, sale.serial_id);
+                const serialId = sale.serial_id || sale.serial_number;
+                console.log(`Fetching NFT details for missing image: ${sale.token_id}/${serialId}`);
+                const SentXService = require('../services/sentx.js');
+                const sentxService = new SentXService();
+                const nftDetails = await sentxService.getNFTDetails(sale.token_id, serialId);
                 if (nftDetails && nftDetails.image) {
                     imageUrl = nftDetails.image;
                     console.log(`Found image from NFT details: ${imageUrl}`);
@@ -74,9 +86,20 @@ class EmbedUtils {
             const convertedImageUrl = this.convertIpfsToHttp(imageUrl);
             if (convertedImageUrl) {
                 embed.setImage(convertedImageUrl);
+                if (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) {
+                    console.log(`ROOSTER CARTEL - Successfully set image: ${convertedImageUrl}`);
+                }
+            } else {
+                console.log(`Failed to convert image URL: ${imageUrl}`);
+                if (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) {
+                    console.log(`ROOSTER CARTEL - Failed to convert URL: ${imageUrl}`);
+                }
             }
         } else {
-            console.log(`No image found for NFT: ${sale.nft_name} (${sale.token_id}/${sale.serial_id})`);
+            console.log(`No image found for NFT: ${sale.nft_name} (${sale.token_id}/${sale.serial_id || sale.serial_number})`);
+            if (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) {
+                console.log(`ROOSTER CARTEL - NO IMAGE FOUND for ${sale.nft_name}`);
+            }
         }
 
         // Get collector information for context

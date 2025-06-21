@@ -749,6 +749,10 @@ class NFTSalesBot {
                 console.log('Executing order fill test...');
                 await this.testOrderFill(interaction);
                 return;
+            } else if (testType === 'roosterorderfill') {
+                console.log('Executing Rooster Cartel order fill test...');
+                await this.testRoosterCartelOrderFill(interaction);
+                return;
             } else {
                 console.log('Testing floor price feature with recent sale...');
                 
@@ -840,6 +844,54 @@ class NFTSalesBot {
         } catch (error) {
             console.error('Error in order fill test:', error);
             await interaction.editReply(`❌ Error testing order fill: ${error.message}`);
+        }
+    }
+
+    async testRoosterCartelOrderFill(interaction) {
+        try {
+            console.log('=== EXECUTING ROOSTER CARTEL ORDER FILL TEST ===');
+            
+            // Create a mock Rooster Cartel order fill with real API data structure
+            const mockOrderFill = {
+                id: 'test-rooster-' + Date.now(),
+                nft_name: 'Rooster Cartel Breeding Hen #72 (Test Order Fill)',
+                collection_name: 'Rooster Cartel Hens',
+                token_id: '0.0.1110608',
+                serial_id: 59,
+                serial_number: 59,
+                price_hbar: 100,
+                buyer: '0.0.453351',
+                seller: '0.0.812534',
+                timestamp: new Date().toISOString(),
+                imageCDN: 'https://sentx.b-cdn.net/bafybeia5grwrbz3k6ngxcabnsuwpo2yitpqbwbufwd5c7dmjx55ppy7ste/52.png?optimizer=image',
+                nftImage: 'ipfs://bafybeia5grwrbz3k6ngxcabnsuwpo2yitpqbwbufwd5c7dmjx55ppy7ste/52.png',
+                image_url: 'https://sentx.b-cdn.net/bafybeia5grwrbz3k6ngxcabnsuwpo2yitpqbwbufwd5c7dmjx55ppy7ste/52.png?optimizer=image',
+                marketplace: 'SentX',
+                sale_type: 'Order',
+                transaction_hash: '0.0.1064038@1750487213.602045476',
+                rarity: 0.7545,
+                rank: 83
+            };
+            
+            console.log('Mock Rooster Cartel order fill data:', JSON.stringify(mockOrderFill, null, 2));
+            
+            // Get current HBAR rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            console.log(`Using HBAR rate: ${hbarRate}`);
+            
+            // Create the embed
+            const embed = await embedUtils.createSaleEmbed(mockOrderFill, hbarRate);
+            
+            await interaction.editReply({ 
+                content: `📋 **Test Rooster Cartel Order Fill (Mock Data):**\nTesting image display for Rooster Cartel NFTs.`,
+                embeds: [embed] 
+            });
+            
+            console.log('=== ROOSTER CARTEL ORDER FILL TEST COMPLETED ===');
+            
+        } catch (error) {
+            console.error('Error in Rooster Cartel order fill test:', error);
+            await interaction.editReply(`❌ Error testing Rooster Cartel order fill: ${error.message}`);
         }
     }
 

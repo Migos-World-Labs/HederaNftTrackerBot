@@ -215,7 +215,16 @@ class SentXService {
     formatSalesData(rawSales) {
         return rawSales.map(sale => {
             // Debug log each sale to identify missing images
-            console.log(`Processing ${sale.saletype}: ${sale.nftName}, Image: ${sale.nftImage ? 'Present' : 'Missing'}`);
+            const hasImage = sale.nftImage || sale.imageCDN || sale.nftImageUrl || sale.image;
+            if (sale.collectionName && sale.collectionName.includes('Rooster Cartel')) {
+                console.log(`ROOSTER CARTEL DEBUG - ${sale.saletype}: ${sale.nftName}`);
+                console.log(`  nftImage: ${sale.nftImage || 'MISSING'}`);
+                console.log(`  imageCDN: ${sale.imageCDN || 'MISSING'}`);
+                console.log(`  nftImageUrl: ${sale.nftImageUrl || 'MISSING'}`);
+                console.log(`  image: ${sale.image || 'MISSING'}`);
+                console.log(`  nftMetadata: ${sale.nftMetadata || 'MISSING'}`);
+            }
+            console.log(`Processing ${sale.saletype}: ${sale.nftName}, Image: ${hasImage ? 'Present' : 'Missing'}`);
             
             return {
                 id: `${sale.nftTokenAddress}-${sale.nftSerialId}-${sale.saleDate}`,
