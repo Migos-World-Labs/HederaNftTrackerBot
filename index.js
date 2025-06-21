@@ -3,12 +3,16 @@
  * Initializes the bot and starts monitoring SentX marketplace
  */
 
-const bot = require('./bot');
+const NFTSalesBot = require('./bot');
 const config = require('./config');
 const DatabaseStorage = require('./database-storage');
+const sentxService = require('./services/sentx');
+const currencyService = require('./services/currency');
+const embedUtils = require('./utils/embed');
 
-// Initialize database storage
+// Initialize services
 const storage = new DatabaseStorage();
+const bot = new NFTSalesBot(sentxService, embedUtils, currencyService, storage);
 
 async function initializeBot() {
     try {

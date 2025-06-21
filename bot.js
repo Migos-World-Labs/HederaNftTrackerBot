@@ -12,8 +12,13 @@ const embedUtils = require('./utils/embed');
 const DatabaseStorage = require('./database-storage');
 
 class NFTSalesBot {
-    constructor() {
-        this.storage = new DatabaseStorage();
+    constructor(sentxService, embedUtils, currencyService, storage) {
+        // Initialize services
+        this.sentxService = sentxService;
+        this.embedUtils = embedUtils; 
+        this.currencyService = currencyService;
+        this.storage = storage || new DatabaseStorage();
+        
         this.client = new Client({
             intents: [
                 GatewayIntentBits.Guilds
@@ -884,11 +889,11 @@ class NFTSalesBot {
             console.log('Mock Rooster Cartel order fill data:', JSON.stringify(mockOrderFill, null, 2));
             
             // Get current HBAR rate
-            const hbarRate = await currencyService.getHbarToUsdRate();
+            const hbarRate = await this.currencyService.getHbarToUsdRate();
             console.log(`Using HBAR rate: ${hbarRate}`);
             
             // Create the embed
-            const embed = await embedUtils.createSaleEmbed(mockOrderFill, hbarRate);
+            const embed = await this.embedUtils.createSaleEmbed(mockOrderFill, hbarRate);
             
             await interaction.editReply({ 
                 content: `📋 **Test Rooster Cartel Order Fill (Mock Data):**\nTesting image display for Rooster Cartel NFTs.`,
@@ -967,4 +972,4 @@ class NFTSalesBot {
     }
 }
 
-module.exports = new NFTSalesBot();
+module.exports = NFTSalesBot;
