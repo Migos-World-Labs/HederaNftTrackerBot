@@ -550,10 +550,6 @@ class NFTSalesBot {
                             {
                                 name: 'Rooster Cartel Order Fill',
                                 value: 'roosterorderfill'
-                            },
-                            {
-                                name: 'Rooster Cartel Order Fill',
-                                value: 'roosterorderfill'
                             }
                         ]
                     }
@@ -562,28 +558,28 @@ class NFTSalesBot {
         ];
 
         try {
-            console.log('Registering slash commands...');
+            console.log('Cleaning up and registering slash commands...');
             
-            // Register commands globally
+            // First, clear all existing guild commands to remove duplicates
+            for (const guild of this.client.guilds.cache.values()) {
+                try {
+                    await rest.put(
+                        Routes.applicationGuildCommands(this.client.user.id, guild.id),
+                        { body: [] }
+                    );
+                    console.log(`Cleared guild commands for: ${guild.name}`);
+                } catch (guildError) {
+                    console.error(`Error clearing guild commands for ${guild.name}:`, guildError);
+                }
+            }
+            
+            // Register commands globally only (avoids duplicates)
             await rest.put(
                 Routes.applicationCommands(this.client.user.id),
                 { body: commands }
             );
             
-            // Also register commands for each guild for immediate availability
-            for (const guild of this.client.guilds.cache.values()) {
-                try {
-                    await rest.put(
-                        Routes.applicationGuildCommands(this.client.user.id, guild.id),
-                        { body: commands }
-                    );
-                    console.log(`Registered commands for guild: ${guild.name}`);
-                } catch (guildError) {
-                    console.error(`Error registering commands for guild ${guild.name}:`, guildError);
-                }
-            }
-            
-            console.log('Successfully registered slash commands');
+            console.log('Successfully registered slash commands globally');
         } catch (error) {
             console.error('Error registering slash commands:', error);
         }
