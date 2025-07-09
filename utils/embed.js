@@ -53,9 +53,14 @@ class EmbedUtils {
             });
         }
 
-        // Add NFT image with multiple fallback options
-        // Priority: CDN URL > IPFS URL > Other sources
-        let imageUrl = sale.imageCDN || sale.image_url || sale.imageUrl || sale.nftImage;
+        // Add NFT image with comprehensive fallback options
+        // Priority: imageCDN > nftImage > image_url > imageUrl > imageFile > image
+        let imageUrl = sale.imageCDN || 
+                       sale.nftImage || 
+                       sale.image_url || 
+                       sale.imageUrl || 
+                       sale.imageFile ||
+                       sale.image;
         
         // Special debugging for Rooster Cartel images
         if (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) {

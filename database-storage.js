@@ -1,4 +1,4 @@
-const { eq, desc, and } = require('drizzle-orm');
+const { eq, desc, and, sql } = require('drizzle-orm');
 const { db } = require('./db');
 const { collections, serverConfigs, botState, processedSales } = require('./schema');
 
@@ -322,13 +322,13 @@ class DatabaseStorage {
         }
     }
 
-    // Cleanup old processed sales (older than 7 days)
+    // Cleanup old processed sales (older than 3 days)
     async cleanupOldProcessedSales() {
         try {
-            const weekAgo = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000));
+            const threeDaysAgo = new Date(Date.now() - (3 * 24 * 60 * 60 * 1000));
             const result = await db.delete(processedSales)
-                .where(eq(processedSales.processedAt, weekAgo));
-            console.log(`Cleaned up ${result.rowCount || 0} old processed sales`);
+                .where(sql`processed_at < ${threeDaysAgo}`);
+            console.log(`Cleaned up ${result.rowCount || 0} old processed sales (older than 3 days)`);
         } catch (error) {
             console.error('Error cleaning up old processed sales:', error);
         }

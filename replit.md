@@ -117,6 +117,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Collection names in sale embeds are now clickable links to the SentX marketplace
   - Uses collectionFriendlyurl from API when available, falls back to token ID format
   - Updated both regular sales and all test commands with collection URLs for easy marketplace navigation
+- July 9, 2025: Fixed duplicate messages and improved image display
+  - Enhanced sale ID generation using transaction IDs for better duplicate prevention
+  - Improved image URL detection with comprehensive fallback options (imageCDN, nftImage, imageFile, image)
+  - Added automatic cleanup of old processed sales (older than 3 days) on startup
+  - Better logging and debugging for sale processing and image detection
+  - Enhanced Rooster Cartel image debugging with detailed field logging
 
 ## User Preferences
 

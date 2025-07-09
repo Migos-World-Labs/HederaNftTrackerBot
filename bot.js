@@ -203,15 +203,23 @@ class NFTSalesBot {
 
             // Process each new sale
             for (const sale of uniqueSales) {
-                // Create unique sale ID to prevent duplicates
-                const saleId = `${sale.tokenId || sale.token_id}_${sale.serialNumber || sale.serial_number}_${sale.timestamp}_${sale.marketplace}`;
+                // Create more specific unique sale ID to prevent duplicates
+                const tokenId = sale.tokenId || sale.token_id;
+                const serialNumber = sale.serialNumber || sale.serial_number;
+                const saleTsMs = new Date(sale.timestamp).getTime();
+                const transactionId = sale.saleTransactionId || sale.transaction_id || '';
+                const saleId = `${tokenId}_${serialNumber}_${saleTsMs}_${transactionId}`;
+                
+                console.log(`Checking sale ID: ${saleId}`);
                 
                 // Check if we've already processed this sale
                 const alreadyProcessed = await this.storage.isSaleProcessed(saleId);
                 if (alreadyProcessed) {
-                    console.log(`Skipping duplicate sale: ${sale.nftName || sale.nft_name} from ${sale.marketplace}`);
+                    console.log(`✓ Skipping already processed sale: ${sale.nftName || sale.nft_name} (${saleId})`);
                     continue;
                 }
+                
+                console.log(`→ Processing new sale: ${sale.nftName || sale.nft_name}`);
                 
                 await this.processSale(sale, hbarRate);
                 
@@ -219,8 +227,8 @@ class NFTSalesBot {
                 await this.storage.markSaleProcessed(saleId, sale.tokenId || sale.token_id);
                 
                 // Update last processed timestamp
-                const saleTimestamp = new Date(sale.timestamp).getTime();
-                await this.storage.setLastProcessedSale(saleTimestamp);
+                const processedTsMs = new Date(sale.timestamp).getTime();
+                await this.storage.setLastProcessedSale(processedTsMs);
                 
                 // Small delay between messages to avoid rate limiting
                 await this.delay(1000);
@@ -919,6 +927,11 @@ class NFTSalesBot {
         try {
             console.log('Initializing database storage...');
             await this.storage.init();
+            
+            // Clean up old processed sales on startup (older than 3 days)
+            console.log('Cleaning up old processed sales...');
+            await this.storage.cleanupOldProcessedSales();
+            
             console.log('Database storage ready');
         } catch (error) {
             console.error('Failed to initialize database:', error);
