@@ -827,7 +827,7 @@ class NFTSalesBot {
         try {
             console.log('=== EXECUTING ORDER FILL TEST ===');
             
-            // Create a mock order fill with proper structure
+            // Create a mock order fill with proper structure and real Wild Tigers image data
             const mockOrderFill = {
                 id: 'test-order-fill-' + Date.now(),
                 nft_name: 'Wild Tigers #1234 (Test Order Fill)',
@@ -839,7 +839,10 @@ class NFTSalesBot {
                 buyer: '0.0.789012',
                 seller: '0.0.345678',
                 timestamp: new Date().toISOString(),
-                image_url: 'https://sentx.b-cdn.net/bafybeic4afq3co6h7mfedqayovn6zt7w4bnhj6e3vhzecrlnk5k4xjhqay',
+                // Use actual Wild Tigers image data from live API
+                nftImage: 'ipfs://bafybeidxxnqpp2sxul24xot7n6behrwad4p236bzbislk2kpirpgzho7lm',
+                imageCDN: 'https://sentx.b-cdn.net/bafybeidxxnqpp2sxul24xot7n6behrwad4p236bzbislk2kpirpgzho7lm?optimizer=image',
+                image_url: 'https://sentx.b-cdn.net/bafybeidxxnqpp2sxul24xot7n6behrwad4p236bzbislk2kpirpgzho7lm?optimizer=image',
                 collection_url: 'https://sentx.io/nft-marketplace/wild-tigers',
                 marketplace: 'SentX',
                 sale_type: 'Order', // This marks it as an order fill
