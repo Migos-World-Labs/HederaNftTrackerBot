@@ -123,6 +123,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added automatic cleanup of old processed sales (older than 3 days) on startup
   - Better logging and debugging for sale processing and image detection
   - Enhanced Rooster Cartel image debugging with detailed field logging
+- July 9, 2025: Fixed order fill images not showing
+  - Changed API filter from 'Sales' to 'All' to capture order fills
+  - Modified filter logic to allow order fills with null transaction IDs
+  - Enhanced image detection priority to use imageCDN first for order fills
+  - Added comprehensive debugging for order fill image field detection
+  - Order fills now properly display images with same fallback options as regular sales
 
 ## User Preferences
 

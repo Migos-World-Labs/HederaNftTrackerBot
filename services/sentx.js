@@ -38,7 +38,7 @@ class SentXService {
             
             const params = {
                 apikey: apiKey,
-                activityFilter: 'Sales', // Focus on sales but we'll also check separately for order fills
+                activityFilter: 'All', // Get all activity types to capture order fills
                 amount: limit,
                 page: 1,
                 hbarMarketOnly: 1 // Focus on HBAR market
@@ -72,13 +72,24 @@ class SentXService {
                 console.log(JSON.stringify(response.data.marketActivity[0], null, 2));
             }
             
+            // Log order fills specifically for debugging
+            const orderFills = response.data.marketActivity.filter(a => a.saletype === 'Order');
+            if (orderFills.length > 0) {
+                console.log('=== ORDER FILL DEBUGGING ===');
+                console.log(`Found ${orderFills.length} order fills`);
+                orderFills.slice(0, 3).forEach((orderFill, index) => {
+                    console.log(`ORDER FILL ${index + 1}:`, JSON.stringify(orderFill, null, 2));
+                });
+            }
+            
             // Filter only actual completed sales (must have buyer address and completed transaction)
             const salesOnly = response.data.marketActivity.filter(activity => {
                 const hasCompletedSale = activity.buyerAddress && 
                     activity.buyerAddress !== null && 
                     activity.salePrice && 
                     activity.salePrice > 0 &&
-                    activity.saleTransactionId !== null; // Must have transaction ID for completed sales
+                    // Order fills may not have transaction ID but are still valid completed sales
+                    (activity.saleTransactionId !== null || activity.saletype === 'Order');
                 
                 if (hasCompletedSale) {
                     console.log(`Including completed sale ${activity.saletype}: ${activity.nftName} - Image: ${activity.nftImage ? 'Yes' : 'No'}`);
@@ -226,6 +237,20 @@ class SentXService {
             }
             console.log(`Processing ${sale.saletype}: ${sale.nftName}, Image: ${hasImage ? 'Present' : 'Missing'}`);
             
+            // Enhanced debugging for order fills specifically
+            if (sale.saletype === 'Order') {
+                console.log(`ORDER FILL IMAGE DEBUG - ${sale.nftName}`);
+                console.log(`  All possible image fields:`, {
+                    nftImage: sale.nftImage,
+                    imageCDN: sale.imageCDN,
+                    nftImageUrl: sale.nftImageUrl,
+                    image: sale.image,
+                    imageFile: sale.imageFile,
+                    imageUrl: sale.imageUrl,
+                    nftMetadata: sale.nftMetadata
+                });
+            }
+            
             return {
                 id: `${sale.nftTokenAddress}-${sale.nftSerialId}-${sale.saleDate}`,
                 nft_name: sale.nftName || 'Unknown NFT',
@@ -237,11 +262,12 @@ class SentXService {
                 buyer: this.formatAddress(sale.buyerAddress),
                 seller: this.formatAddress(sale.sellerAddress),
                 timestamp: sale.saleDate,
-                image_url: sale.nftImage || sale.imageCDN || sale.nftImageUrl || sale.image || sale.imageFile || null,
+                image_url: sale.imageCDN || sale.nftImage || sale.nftImageUrl || sale.image || sale.imageFile || sale.imageUrl || null,
                 imageCDN: sale.imageCDN,
                 nftImage: sale.nftImage,
                 imageFile: sale.imageFile,
                 image: sale.image,
+                imageUrl: sale.imageUrl,
                 collection_image_url: sale.collectionImage || sale.collectionIcon || null,
                 rarity: sale.rarityPct || null,
                 rank: sale.rarityRank || null,
