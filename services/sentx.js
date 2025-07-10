@@ -169,7 +169,7 @@ class SentXService {
             
             const params = {
                 apikey: apiKey,
-                activityFilter: 'Listed', // Filter specifically for listings
+                activityFilter: 'All', // Get all activities to debug what's available
                 amount: limit,
                 page: 1,
                 hbarMarketOnly: 1 // Focus on HBAR market
@@ -193,16 +193,31 @@ class SentXService {
 
             console.log(`Found ${response.data.marketActivity.length} market activities for listings`);
             
-            // Filter only actual listings (must have listing price and be active)
+            // Debug: Log all sale types to see what's available for listings
+            const listingSaleTypes = [...new Set(response.data.marketActivity.map(a => a.saletype))];
+            console.log('Available listing sale types:', listingSaleTypes);
+            
+            // Debug: Log sample listing activities
+            if (response.data.marketActivity.length > 0) {
+                console.log('Sample listing activity structure:');
+                console.log(JSON.stringify(response.data.marketActivity[0], null, 2));
+            }
+            
+            // Filter only actual listings (look for any listing-related activity)
             const listingsOnly = response.data.marketActivity.filter(activity => {
-                const isValidListing = activity.listingPrice && 
-                    activity.listingPrice > 0 &&
+                const hasListingData = activity.salePrice && 
+                    activity.salePrice > 0 &&
                     activity.sellerAddress &&
                     activity.sellerAddress !== null &&
-                    activity.saletype === 'Listed'; // Only actual listings
+                    !activity.buyerAddress; // No buyer means it's still listed, not sold
                 
-                if (isValidListing) {
-                    console.log(`Including listing: ${activity.nftName} for ${activity.listingPrice} HBAR`);
+                // Accept various listing-related sale types
+                const isListingType = activity.saletype && activity.saletype === 'Listed';
+                
+                const isValidListing = hasListingData && isListingType;
+                
+                if (activity.saletype === 'Listed') {
+                    console.log(`Found listing: ${activity.nftName} - saletype: "${activity.saletype}" - salePrice: ${activity.salePrice} HBAR - buyerAddress: ${activity.buyerAddress || 'none'} - Valid: ${isValidListing}`);
                 }
                 
                 return isValidListing;
