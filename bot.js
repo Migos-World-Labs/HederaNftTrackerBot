@@ -399,10 +399,10 @@ class NFTSalesBot {
                 'ViewChannel'
             ];
             
-            const inviteLink = `https://discord.com/api/oauth2/authorize?client_id=${this.client.user.id}&permissions=19456&scope=bot`;
+            const inviteLink = `https://discord.com/api/oauth2/authorize?client_id=${this.client.user.id}&permissions=19520&scope=bot%20applications.commands`;
             console.log('\n🔗 Invite Link for Other Servers:');
             console.log(inviteLink);
-            console.log('\nRequired Permissions: Send Messages, Embed Links, View Channel\n');
+            console.log('\nRequired Permissions: View Channel, Send Messages, Embed Links, Add Reactions, Use Slash Commands\n');
             
             return inviteLink;
         } catch (error) {
