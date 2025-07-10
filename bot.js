@@ -1256,47 +1256,78 @@ class NFTSalesBot {
             const testType = interaction.options?.getString('type') || 'tracked-sale';
             console.log(`Test command triggered with type: ${testType}`);
             
-            // Check if interaction is still valid before deferring
+            // Check if interaction is still valid and defer immediately
             if (!interaction.isRepliable()) {
                 console.log('Interaction expired before test command could start');
                 return;
             }
             
-            // Defer reply once at the beginning
-            await interaction.deferReply();
+            // Defer reply immediately to prevent timeout
+            try {
+                await interaction.deferReply();
+            } catch (deferError) {
+                console.log('Failed to defer interaction:', deferError.message);
+                if (deferError.code === 10062 || deferError.code === 40060) {
+                    console.log('Interaction already expired or acknowledged');
+                    return;
+                }
+                throw deferError;
+            }
             
+            // Route to appropriate test method
+            let embed;
             if (testType === 'tracked-listing') {
                 console.log('Executing tracked collection listing test...');
-                await this.testLatestListing(interaction);
-                return;
+                embed = await this.getTestListingEmbed(interaction.guildId);
             } else if (testType === 'recent-sale') {
                 console.log('Testing most recent marketplace sale...');
-                await this.testMostRecentSale(interaction);
-                return;
+                embed = await this.getTestRecentSaleEmbed();
             } else if (testType === 'recent-listing') {
                 console.log('Testing most recent marketplace listing...');
-                await this.testMostRecentListing(interaction);
-                return;
+                embed = await this.getTestRecentListingEmbed();
             } else {
                 // Default: tracked-sale
                 console.log('Testing latest sale from tracked collections...');
-                await this.testTrackedCollectionsSale(interaction);
-                return;
+                embed = await this.getTestTrackedSaleEmbed(interaction.guildId);
+            }
+            
+            // Send the response with timeout protection
+            if (interaction.isRepliable()) {
+                try {
+                    await interaction.editReply({
+                        embeds: [embed]
+                    });
+                } catch (replyError) {
+                    if (replyError.code === 10062 || replyError.code === 40060) {
+                        console.log('Interaction expired while sending test result');
+                    } else {
+                        throw replyError;
+                    }
+                }
+            } else {
+                console.log('Interaction no longer repliable, skipping response');
             }
             
         } catch (error) {
             console.error('Error in test command:', error);
-            // Handle expired interactions gracefully
-            try {
-                if (error.code === 10062 || error.code === 40060) {
-                    // Interaction expired or already acknowledged - just log it
-                    console.log('Interaction expired during test command execution');
-                } else {
-                    await interaction.editReply('❌ Error running test. Please try again.');
+            
+            // Only try to reply if interaction is still valid
+            if (interaction.isRepliable() && error.code !== 10062 && error.code !== 40060) {
+                try {
+                    const errorEmbed = this.embedUtils.createErrorEmbed(
+                        'Test Command Failed',
+                        'An error occurred while running the test command.',
+                        error.message
+                    );
+                    
+                    await interaction.editReply({
+                        embeds: [errorEmbed]
+                    });
+                } catch (replyError) {
+                    console.error('Failed to send error reply:', replyError);
                 }
-            } catch (responseError) {
-                // If we can't respond, just log the error
-                console.error('Could not respond to interaction:', responseError.message);
+            } else {
+                console.log('Interaction expired, unable to send error message');
             }
         }
     }
@@ -1514,74 +1545,32 @@ class NFTSalesBot {
         }
     }
 
-    async testLatestListing(interaction) {
+    async getTestListingEmbed(guildId) {
         try {
-            console.log('Testing latest listing...');
-            
-            // Check if interaction is still valid
-            if (!interaction.deferred && !interaction.replied) {
-                console.log('Interaction not deferred, attempting to defer...');
-                try {
-                    await interaction.deferReply();
-                } catch (deferError) {
-                    console.error('Failed to defer interaction:', deferError);
-                    return;
-                }
-            }
+            console.log('Creating test listing embed...');
             
             // Get tracked collections for this server
-            const guildId = interaction.guildId;
             const trackedCollections = await this.storage.getCollections(guildId);
             
             if (!trackedCollections || trackedCollections.length === 0) {
-                try {
-                    await interaction.editReply('❌ No collections are being tracked in this server. Use `/add` to track collections first.');
-                } catch (editError) {
-                    console.error('Failed to edit reply - interaction expired:', editError);
-                }
-                return;
-            }
-            
-            // Check if user specified a specific collection
-            const specifiedCollection = interaction.options?.getString('collection');
-            let targetTokenIds;
-            let targetCollectionName;
-            
-            if (specifiedCollection) {
-                // Validate the specified collection is tracked
-                const matchingCollection = trackedCollections.find(c => 
-                    (c.token_id || c.tokenId) === specifiedCollection
+                return this.embedUtils.createErrorEmbed(
+                    'No Collections Tracked',
+                    'No collections are being tracked in this server. Use `/add` to track collections first.'
                 );
-                
-                if (!matchingCollection) {
-                    const trackedNames = trackedCollections.map(c => `${c.name} (${c.token_id || c.tokenId})`).join('\n');
-                    await interaction.editReply(`❌ Collection \`${specifiedCollection}\` is not tracked in this server.\n\n**Tracked collections:**\n${trackedNames}`);
-                    return;
-                }
-                
-                targetTokenIds = [specifiedCollection];
-                targetCollectionName = matchingCollection.name;
-                console.log(`Looking for listings from specific collection: ${targetCollectionName} (${specifiedCollection})`);
-            } else {
-                // Use all tracked collections
-                targetTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
-                console.log(`Looking for listings from ${targetTokenIds.length} tracked collections:`, targetTokenIds);
             }
             
-            // Show loading message
-            try {
-                await interaction.editReply('🔍 Searching marketplace for listings...');
-            } catch (editError) {
-                console.error('Failed to edit reply - interaction expired:', editError);
-                return;
-            }
+            // Use all tracked collections
+            const targetTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+            console.log(`Looking for listings from ${targetTokenIds.length} tracked collections:`, targetTokenIds);
             
             // Get all listings from SentX (without time filter for testing)
             const allListings = await sentxService.getRecentListings(100, true);
             
             if (!allListings || allListings.length === 0) {
-                await interaction.editReply('❌ No listings found from SentX marketplace');
-                return;
+                return this.embedUtils.createErrorEmbed(
+                    'No Listings Found',
+                    'No listings found from SentX marketplace'
+                );
             }
             
             // Filter for listings from target collections
@@ -1590,13 +1579,11 @@ class NFTSalesBot {
             );
             
             if (targetListings.length === 0) {
-                if (specifiedCollection) {
-                    await interaction.editReply(`❌ No listings found for ${targetCollectionName} on SentX marketplace.\n\nThis collection may not have any active listings currently.`);
-                } else {
-                    const collectionNames = trackedCollections.map(c => c.name).join(', ');
-                    await interaction.editReply(`❌ No listings found for your tracked collections: ${collectionNames}\n\nThese collections may not have any active listings currently.`);
-                }
-                return;
+                const collectionNames = trackedCollections.map(c => c.name).join(', ');
+                return this.embedUtils.createErrorEmbed(
+                    'No Listings From Tracked Collections',
+                    `No listings found for your tracked collections: ${collectionNames}\n\nThese collections may not have any active listings currently.`
+                );
             }
             
             // Get the most recent listing
@@ -1618,53 +1605,40 @@ class NFTSalesBot {
             }
             
             // Create a listing embed to test the formatting
-            const embed = await embedUtils.createListingEmbed(testListing, hbarRate);
-            
-            // Send test listing notification
-            const contentMessage = specifiedCollection 
-                ? `📝 **Test Listing from ${collectionName}:**\n*Latest listing from specified collection*`
-                : `📝 **Test Listing from Tracked Collection:**\n*Latest listing from ${collectionName}*`;
-            
-            await interaction.editReply({
-                content: contentMessage,
-                embeds: [embed]
-            });
-            
-            console.log('Test listing posted successfully!');
+            return await embedUtils.createListingEmbed(testListing, hbarRate);
             
         } catch (error) {
-            console.error('Error testing latest listing:', error);
-            try {
-                if (error.code === 10062 || error.code === 40060) {
-                    console.log('Interaction expired during listing test');
-                } else {
-                    await interaction.editReply(`❌ Error occurred while testing listing functionality: ${error.message}`);
-                }
-            } catch (responseError) {
-                console.error('Could not respond to listing test interaction:', responseError.message);
-            }
+            console.error('Error creating test listing embed:', error);
+            return this.embedUtils.createErrorEmbed(
+                'Test Failed',
+                'Error occurred while testing listing functionality',
+                error.message
+            );
         }
     }
 
-    async testTrackedCollectionsSale(interaction) {
+    async getTestTrackedSaleEmbed(guildId) {
         try {
-            console.log('Testing latest sale from tracked collections...');
+            console.log('Creating test sale embed from tracked collections...');
             
             // Get tracked collections for this server
-            const guildId = interaction.guildId;
             const trackedCollections = await this.storage.getCollections(guildId);
             
             if (!trackedCollections || trackedCollections.length === 0) {
-                await interaction.editReply('❌ No collections are being tracked in this server. Use `/add` to track collections first.');
-                return;
+                return this.embedUtils.createErrorEmbed(
+                    'No Collections Tracked',
+                    'No collections are being tracked in this server. Use `/add` to track collections first.'
+                );
             }
             
             // Get recent sales from SentX
             const recentSales = await sentxService.getRecentSales(100);
             
             if (!recentSales || recentSales.length === 0) {
-                await interaction.editReply('❌ No recent sales found on SentX marketplace');
-                return;
+                return this.embedUtils.createErrorEmbed(
+                    'No Recent Sales',
+                    'No recent sales found on SentX marketplace'
+                );
             }
             
             // Find sales from tracked collections
@@ -1673,8 +1647,10 @@ class NFTSalesBot {
             
             if (trackedSales.length === 0) {
                 const collectionNames = trackedCollections.map(c => c.name).join(', ');
-                await interaction.editReply(`❌ No recent sales found for your tracked collections: ${collectionNames}\n\nThese collections may not have had any sales recently.`);
-                return;
+                return this.embedUtils.createErrorEmbed(
+                    'No Sales From Tracked Collections',
+                    `No recent sales found for your tracked collections: ${collectionNames}\n\nThese collections may not have had any sales recently.`
+                );
             }
             
             // Use the most recent sale from tracked collections
@@ -1696,30 +1672,19 @@ class NFTSalesBot {
             const hbarRate = await currencyService.getHbarToUsdRate();
             
             // Create sale embed
-            const embed = await embedUtils.createSaleEmbed(testSale, hbarRate);
-            
-            await interaction.editReply({
-                content: `📈 **Test Sale from Tracked Collection:**\n*Latest sale from ${collectionName}*`,
-                embeds: [embed]
-            });
-            
-            console.log('Tracked collection sale test completed successfully!');
+            return await embedUtils.createSaleEmbed(testSale, hbarRate);
             
         } catch (error) {
-            console.error('Error testing tracked collection sale:', error);
-            try {
-                if (error.code === 10062 || error.code === 40060) {
-                    console.log('Interaction expired during tracked sale test');
-                } else {
-                    await interaction.editReply(`❌ Error testing tracked collection sale: ${error.message}`);
-                }
-            } catch (responseError) {
-                console.error('Could not respond to tracked sale test interaction:', responseError.message);
-            }
+            console.error('Error creating test sale embed:', error);
+            return this.embedUtils.createErrorEmbed(
+                'Test Failed',
+                'Error testing tracked collection sale',
+                error.message
+            );
         }
     }
 
-    async testMostRecentSale(interaction) {
+    async getTestRecentSaleEmbed() {
         try {
             console.log('Testing most recent sale from marketplace...');
             
@@ -1770,7 +1735,7 @@ class NFTSalesBot {
         }
     }
     
-    async testMostRecentListing(interaction) {
+    async getTestRecentListingEmbed() {
         try {
             console.log('Testing most recent listing from marketplace...');
             
