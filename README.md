@@ -1,213 +1,94 @@
 # Discord NFT Sales Bot for Hedera
 
-A sophisticated Discord bot that provides real-time NFT marketplace analytics for the Hedera blockchain ecosystem. Track sales across multiple marketplaces with comprehensive notifications and advanced market insights.
+> Real-time NFT marketplace notifications for Discord servers
 
-## 🌟 Key Features
+## What is this?
 
-### Multi-Marketplace Coverage
-- **SentX Marketplace Integration**: Full API integration with collection-specific tracking
-- **Kabila Marketplace Integration**: Real-time sales monitoring across all collections
-- **Unified Notifications**: Sales from both marketplaces post to the same Discord channels
+A Discord bot that monitors Hedera NFT marketplaces and sends instant notifications when:
+- NFTs are sold from your tracked collections
+- New NFTs are listed for sale
 
-### Advanced Sale Tracking
-- **Real-time Monitoring**: Checks for new sales every 10 seconds
-- **Duplicate Prevention**: Smart filtering to avoid posting the same sale multiple times
-- **Live Sale Detection**: Only posts sales that occurred within the last 5 minutes
-- **Collection Filtering**: Server-specific collection tracking for SentX sales
+## Quick Start
 
-### Rich Discord Embeds
-- **Detailed Sale Information**: Price in both HBAR and USD with live exchange rates
-- **NFT Images**: Automatic fetching of NFT metadata and images from Hedera Mirror Node
-- **Buyer/Seller Analytics**: Collector tier badges based on NFT holdings
-- **Marketplace Branding**: Color-coded embeds (white for SentX, green for Kabila)
-- **Transaction Links**: Direct links to marketplace listings and blockchain explorers
+1. **[Add to Discord](https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissions=19520&scope=bot%20applications.commands)**
+2. **Track a collection:** `/add token_id:0.0.6024491 name:Wild Tigers`
+3. **Test it:** `/test type:Latest Listing`
 
-### Professional Management
-- **Slash Commands**: Modern Discord command interface
-- **Multi-Server Support**: Deploy across unlimited Discord servers
-- **Database Storage**: PostgreSQL backend with Drizzle ORM
-- **Error Handling**: Robust error management and logging
-- **Rate Limiting**: Built-in delays to respect Discord API limits
+## Features
 
-## 🚀 Quick Start
+- 🔥 **Real-time sales alerts** with price and buyer info
+- 📝 **Listing notifications** when NFTs go up for sale
+- 💰 **USD conversion** from HBAR pricing
+- 🎯 **Multi-collection tracking** for all your favorite projects
+- 🏆 **Rarity information** and collection stats
+- 📱 **Separate channels** for sales vs listings
+- 🌐 **Multi-server support** across Discord communities
 
-### Prerequisites
-- Node.js 18+ 
-- PostgreSQL database
-- Discord Bot Token
-- SentX API Key
+## Popular Collections
 
-### Installation
+Track these trending Hedera NFT collections:
 
-1. **Clone the repository**
 ```bash
-git clone https://github.com/your-repo/hedera-nft-sales-bot.git
-cd hedera-nft-sales-bot
+# Wild Tigers
+/add token_id:0.0.6024491 name:Wild Tigers
+
+# Rooster Collections
+/add token_id:0.0.855050 name:Gen0
+/add token_id:0.0.1363572 name:Super Roosters
+/add token_id:0.0.993985 name:Rooster Pfp
+/add token_id:0.0.1110608 name:Rooster Hens
+
+# Other Collections
+/add token_id:0.0.2124637 name:Salsa Picante
 ```
 
-2. **Install dependencies**
-```bash
-npm install
-```
+## Commands
 
-3. **Configure environment variables**
-```bash
-# Copy and edit the configuration
-cp .env.example .env
+| Command | Description |
+|---------|-------------|
+| `/add` | Track new NFT collection |
+| `/remove` | Stop tracking collection |
+| `/list` | Show all tracked collections |
+| `/test` | Test bot notifications |
+| `/status` | Check bot status |
+| `/set-listings-channel` | Set separate channel for listings |
+| `/broadcast-test` | Send test to all servers |
 
-# Required variables:
-DISCORD_TOKEN=your_discord_bot_token
-SENTX_API_KEY=your_sentx_api_key
-DATABASE_URL=postgresql://user:password@localhost:5432/nft_sales_bot
-```
+## Documentation
 
-4. **Initialize database**
-```bash
-npm run db:push
-```
+- **[User Guide](USER_GUIDE.md)** - Complete feature documentation
+- **[Setup Guide](SETUP_GUIDE.md)** - Quick 5-minute setup
+- **[replit.md](replit.md)** - Technical architecture details
 
-5. **Start the bot**
-```bash
-npm start
-```
+## Supported Marketplaces
 
-## 🎮 Discord Commands
+- ✅ **SentX** - Primary marketplace integration
+- 🔄 **More coming soon**
 
-### Slash Commands
-- `/add <token_id> <collection_name>` - Track a new NFT collection
-- `/remove <token_id>` - Stop tracking a collection
-- `/list` - View all tracked collections for this server
-- `/status` - Check bot status and monitoring info
+## Requirements
 
-### Legacy Commands (for compatibility)
-- `!nft add <token_id> <collection_name>` - Track a new collection
-- `!nft remove <token_id>` - Remove collection tracking
-- `!nft list` - List tracked collections
-- `!nft status` - Bot status information
-- `!nft help` - Command help
+- Discord server with admin permissions
+- Text channel for notifications
+- Basic slash command permissions
 
-## 🔧 Configuration
+## Bot Permissions
 
-### Server Setup
-When the bot joins a Discord server, it automatically:
-1. Registers slash commands
-2. Configures the first available text channel for notifications
-3. Sends a welcome message with setup instructions
-4. Begins monitoring for sales
+- View Channel
+- Send Messages
+- Embed Links
+- Add Reactions
+- Use Slash Commands
 
-### Collection Tracking
-- **SentX**: Add specific collections using token IDs for targeted notifications
-- **Kabila**: All sales automatically post to configured channels (no collection filtering needed)
+## Community
 
-### Channel Configuration
-The bot posts to the first text channel it can access. To change the notification channel:
-1. Remove the bot from the server
-2. Re-invite it to automatically configure a new channel
-3. Ensure the bot has proper permissions in your desired channel
+Built for the Hedera NFT community by Migos World Labs Inc.
 
-## 🏗️ Architecture
-
-### Core Components
-```
-services/
-├── sentx.js          # SentX marketplace API integration
-├── kabila.js         # Kabila marketplace API integration
-├── currency.js       # HBAR to USD conversion
-└── hedera.js         # Hedera blockchain data
-
-utils/
-├── embed.js          # Discord embed formatting
-└── storage.js        # Database operations
-
-bot.js                # Main bot logic and event handling
-index.js              # Application entry point
-```
-
-### Database Schema
-- **server_configs**: Discord server and channel configurations
-- **collections**: Per-server collection tracking for SentX
-- **bot_state**: Bot operational state and timestamps
-- **processed_sales**: Duplicate prevention tracking
-
-### API Integrations
-- **SentX API**: Authenticated marketplace data with collection filtering
-- **Kabila Analytics API**: Public marketplace analytics endpoint
-- **Hedera Mirror Node**: NFT metadata and blockchain verification
-- **CoinGecko API**: Real-time HBAR price data
-
-## 📊 Monitoring Features
-
-### Sale Detection Logic
-1. Fetch recent sales from both marketplaces
-2. Filter for sales newer than last processed timestamp
-3. Remove duplicates across marketplaces
-4. Verify sales occurred within last 5 minutes (live sales only)
-5. Post to appropriate Discord channels based on server configuration
-
-### Data Quality
-- **Authentic Data Only**: All sales data sourced from official marketplace APIs
-- **Real-time Pricing**: Live HBAR/USD conversion rates
-- **Blockchain Verification**: NFT details verified against Hedera Mirror Node
-- **Error Handling**: Graceful fallbacks for missing data
-
-## 🛡️ Security & Reliability
-
-### Database Security
-- Connection pooling with automatic reconnection
-- Prepared statements to prevent SQL injection
-- Environment variable configuration for sensitive data
-
-### API Rate Limiting
-- Respectful API usage with built-in delays
-- Error handling for API failures
-- Automatic retry logic with exponential backoff
-
-### Discord Integration
-- Proper permission checks before posting
-- Rate limiting compliance
-- Graceful handling of server removal
-
-## 🔗 Useful Links
-
-- **SentX Marketplace**: https://sentx.io
-- **Kabila Marketplace**: https://kabila.app
-- **Hedera Network**: https://hedera.com
-- **Discord Developer Portal**: https://discord.com/developers/applications
-
-## 📈 Performance
-
-- **Response Time**: Sub-second sale detection and posting
-- **Uptime**: 99.9% availability with automatic restart capabilities
-- **Scalability**: Supports unlimited Discord servers
-- **Memory Usage**: Optimized for efficient long-running operation
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-### Development Setup
-```bash
-# Install development dependencies
-npm install --dev
-
-# Run tests
-npm test
-
-# Run in development mode with auto-restart
-npm run dev
-```
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
-
-For support, feature requests, or bug reports:
-- Create an issue on GitHub
-- Join our Discord community
-- Contact: support@migoslabs.com
+Perfect for:
+- NFT collectors tracking their favorite projects
+- Discord communities wanting marketplace updates
+- Traders monitoring floor prices and sales
+- Artists promoting their collections
 
 ---
 
-**Built with ❤️ for the Hedera NFT community by Migos World Labs**
+**[Add to your Discord server now!](https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissions=19520&scope=bot%20applications.commands)**
