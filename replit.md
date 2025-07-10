@@ -170,6 +170,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added validation to ensure specified collection is tracked in the server
   - Displays helpful error messages listing all tracked collections when invalid token ID provided
   - Supports both general listing tests (all collections) and specific collection tests
+- July 10, 2025: Fixed database constraint error and improved data validation
+  - Fixed null token_id database constraint violations when marking sales/listings as processed
+  - Added validation to skip processing items with missing essential data (token_id)
+  - Enhanced error handling in database storage with proper validation checks
+  - Improved Discord interaction timeout handling for test commands
+  - Added fallback values for ID generation to prevent malformed sale/listing IDs
 
 ## User Preferences
 

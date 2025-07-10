@@ -210,11 +210,17 @@ class NFTSalesBot {
             // Process each new sale
             for (const sale of uniqueSales) {
                 // Create more specific unique sale ID to prevent duplicates
-                const tokenId = sale.tokenId || sale.token_id;
-                const serialNumber = sale.serialNumber || sale.serial_number;
+                const tokenId = sale.tokenId || sale.token_id || 'unknown';
+                const serialNumber = sale.serialNumber || sale.serial_number || 'unknown';
                 const saleTsMs = new Date(sale.timestamp).getTime();
                 const transactionId = sale.saleTransactionId || sale.transaction_id || '';
                 const saleId = `${tokenId}_${serialNumber}_${saleTsMs}_${transactionId}`;
+                
+                // Skip processing if essential data is missing
+                if (!sale.tokenId && !sale.token_id) {
+                    console.log(`Skipping sale due to missing token_id: ${sale.collection_name || sale.nft_name}`);
+                    continue;
+                }
                 
                 // Check if we've already processed this sale
                 const alreadyProcessed = await this.storage.isSaleProcessed(saleId);
@@ -226,8 +232,9 @@ class NFTSalesBot {
                 
                 await this.processSale(sale, hbarRate);
                 
-                // Mark sale as processed to prevent duplicates
-                await this.storage.markSaleProcessed(saleId, sale.tokenId || sale.token_id);
+                // Mark sale as processed to prevent duplicates - use the actual token_id from sale
+                const actualTokenId = sale.tokenId || sale.token_id;
+                await this.storage.markSaleProcessed(saleId, actualTokenId);
                 
                 // Update last processed timestamp
                 const processedTsMs = new Date(sale.timestamp).getTime();
@@ -271,10 +278,16 @@ class NFTSalesBot {
             // Process each new listing
             for (const listing of uniqueListings) {
                 // Create more specific unique listing ID to prevent duplicates
-                const tokenId = listing.tokenId || listing.token_id;
-                const serialNumber = listing.serialNumber || listing.serial_number;
+                const tokenId = listing.tokenId || listing.token_id || 'unknown';
+                const serialNumber = listing.serialNumber || listing.serial_number || 'unknown';
                 const listingTsMs = new Date(listing.timestamp).getTime();
                 const listingId = listing.listing_id || `${tokenId}_${serialNumber}_${listingTsMs}`;
+                
+                // Skip processing if essential data is missing
+                if (!listing.tokenId && !listing.token_id) {
+                    console.log(`Skipping listing due to missing token_id: ${listing.collection_name || listing.nft_name}`);
+                    continue;
+                }
                 
                 // Check if we've already processed this listing
                 const alreadyProcessed = await this.storage.isListingProcessed(listingId);
@@ -286,8 +299,9 @@ class NFTSalesBot {
                 
                 await this.processListing(listing, hbarRate);
                 
-                // Mark listing as processed to prevent duplicates
-                await this.storage.markListingProcessed(listingId, listing.tokenId || listing.token_id);
+                // Mark listing as processed to prevent duplicates - use the actual token_id from listing
+                const actualTokenId = listing.tokenId || listing.token_id;
+                await this.storage.markListingProcessed(listingId, actualTokenId);
                 
                 // Update last processed timestamp
                 const processedTsMs = new Date(listing.timestamp).getTime();

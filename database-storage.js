@@ -323,6 +323,12 @@ class DatabaseStorage {
     // Processed sales management
     async markSaleProcessed(saleId, tokenId) {
         try {
+            // Validate that we have required data
+            if (!saleId || !tokenId) {
+                console.error('Cannot mark sale as processed - missing required data:', { saleId, tokenId });
+                return false;
+            }
+            
             await db.insert(processedSales)
                 .values({
                     saleId,
@@ -372,6 +378,12 @@ class DatabaseStorage {
     // Processed listings management
     async markListingProcessed(listingId, tokenId) {
         try {
+            // Validate that we have required data
+            if (!listingId || !tokenId) {
+                console.error('Cannot mark listing as processed - missing required data:', { listingId, tokenId });
+                return false;
+            }
+            
             await db.insert(processedSales)
                 .values({
                     saleId: `listing_${listingId}`,
