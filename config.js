@@ -77,9 +77,10 @@ function validateConfig() {
         errors.push('DISCORD_TOKEN is required');
     }
     
-    if (!config.DISCORD_CHANNEL_ID) {
-        errors.push('DISCORD_CHANNEL_ID is required');
-    }
+    // DISCORD_CHANNEL_ID is now optional as bot auto-configures channels per server
+    // if (!config.DISCORD_CHANNEL_ID) {
+    //     errors.push('DISCORD_CHANNEL_ID is required');
+    // }
     
     if (config.MONITORING_INTERVAL < 10) {
         errors.push('MONITORING_INTERVAL must be at least 10 seconds to avoid rate limiting');
@@ -98,7 +99,7 @@ if (configErrors.length > 0) {
     console.error('Configuration errors:');
     configErrors.forEach(error => console.error(`  - ${error}`));
     
-    if (!config.DISCORD_TOKEN || !config.DISCORD_CHANNEL_ID) {
+    if (!config.DISCORD_TOKEN) {
         console.error('Critical configuration missing. Bot cannot start.');
         process.exit(1);
     }

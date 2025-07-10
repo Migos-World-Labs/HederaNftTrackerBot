@@ -53,7 +53,7 @@ class NFTSalesBot {
             await this.initializeDatabase();
             await this.configureExistingServers();
             await this.registerSlashCommands();
-            this.startMonitoring();
+            await this.startMonitoring();
         });
 
         this.client.on(Events.Error, (error) => {
@@ -112,14 +112,14 @@ class NFTSalesBot {
         console.log('Bot stopped successfully');
     }
 
-    startMonitoring() {
+    async startMonitoring() {
         if (this.isMonitoring) return;
         
         this.isMonitoring = true;
         console.log('Starting NFT sales monitoring...');
         
         // Set initial timestamp to now to avoid posting old sales
-        this.initializeLastProcessedTimestamp();
+        await this.initializeLastProcessedTimestamp();
         
         // Monitor every 3 seconds for new sales
         this.monitoringTask = cron.schedule('*/3 * * * * *', async () => {

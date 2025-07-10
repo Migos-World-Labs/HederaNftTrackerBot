@@ -129,6 +129,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced image detection priority to use imageCDN first for order fills
   - Added comprehensive debugging for order fill image field detection
   - Order fills now properly display images with same fallback options as regular sales
+- July 10, 2025: Bug fixes and performance improvements
+  - Fixed database schema import path in server/db.ts
+  - Corrected async/await patterns in bot initialization to prevent race conditions
+  - Added JSON parsing error handling in collection migration to prevent crashes
+  - Updated configuration validation to reflect multi-server architecture
+  - Added duplicate collection prevention logic for better data integrity
+  - Enhanced error handling for corrupted migration files
 
 ## User Preferences
 

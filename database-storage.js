@@ -29,7 +29,13 @@ class DatabaseStorage {
             const collectionsPath = path.join(__dirname, 'collections.json');
             
             if (fs.existsSync(collectionsPath)) {
-                const collectionsData = JSON.parse(fs.readFileSync(collectionsPath, 'utf8'));
+                let collectionsData;
+                try {
+                    collectionsData = JSON.parse(fs.readFileSync(collectionsPath, 'utf8'));
+                } catch (parseError) {
+                    console.error('Failed to parse collections.json:', parseError);
+                    return; // Skip migration if file is corrupt
+                }
                 
                 for (const collection of collectionsData.collections) {
                     // Check if collection already exists in database
@@ -61,6 +67,20 @@ class DatabaseStorage {
     // Collection management
     async addCollection(guildId, tokenId, name, enabled = true) {
         try {
+            // Check if collection already exists for this guild
+            const existing = await db.select()
+                .from(collections)
+                .where(and(
+                    eq(collections.guildId, guildId),
+                    eq(collections.tokenId, tokenId)
+                ))
+                .limit(1);
+            
+            if (existing.length > 0) {
+                console.log(`Collection ${tokenId} already exists for guild ${guildId}`);
+                return existing[0];
+            }
+            
             const result = await db.insert(collections)
                 .values({
                     guildId,
