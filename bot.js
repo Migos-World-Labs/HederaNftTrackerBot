@@ -1536,12 +1536,27 @@ class NFTSalesBot {
         try {
             console.log('Testing latest listing...');
             
+            // Check if interaction is still valid
+            if (!interaction.deferred && !interaction.replied) {
+                console.log('Interaction not deferred, attempting to defer...');
+                try {
+                    await interaction.deferReply();
+                } catch (deferError) {
+                    console.error('Failed to defer interaction:', deferError);
+                    return;
+                }
+            }
+            
             // Get tracked collections for this server
             const guildId = interaction.guildId;
             const trackedCollections = await this.storage.getCollections(guildId);
             
             if (!trackedCollections || trackedCollections.length === 0) {
-                await interaction.editReply('❌ No collections are being tracked in this server. Use `/add` to track collections first.');
+                try {
+                    await interaction.editReply('❌ No collections are being tracked in this server. Use `/add` to track collections first.');
+                } catch (editError) {
+                    console.error('Failed to edit reply - interaction expired:', editError);
+                }
                 return;
             }
             
@@ -1572,7 +1587,12 @@ class NFTSalesBot {
             }
             
             // Show loading message
-            await interaction.editReply('🔍 Searching marketplace for listings...');
+            try {
+                await interaction.editReply('🔍 Searching marketplace for listings...');
+            } catch (editError) {
+                console.error('Failed to edit reply - interaction expired:', editError);
+                return;
+            }
             
             // Get all listings from SentX (without time filter for testing)
             const allListings = await sentxService.getRecentListings(100, true);
