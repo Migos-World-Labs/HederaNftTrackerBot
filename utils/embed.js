@@ -807,6 +807,348 @@ class EmbedUtils {
     }
 
     /**
+     * Create analytics core stats embed
+     * @param {Object} analytics - Analytics data from SentX
+     * @param {Array} collectionNames - Names of collections analyzed
+     * @returns {EmbedBuilder} Core stats embed
+     */
+    createCoreStatsEmbed(analytics, collectionNames = []) {
+        const coreStats = analytics.coreStats;
+        const collectionsText = collectionNames.length > 0 ? collectionNames.join(', ') : 'All Collections';
+        
+        const embed = new EmbedBuilder()
+            .setTitle('📊 Core Statistics')
+            .setDescription(`Analytics for: **${collectionsText}**`)
+            .setColor('#3498db')
+            .addFields(
+                {
+                    name: '💰 Total Volume',
+                    value: `${coreStats.totalVolume.toLocaleString()} HBAR`,
+                    inline: true
+                },
+                {
+                    name: '🔢 Total Sales',
+                    value: coreStats.totalSales.toLocaleString(),
+                    inline: true
+                },
+                {
+                    name: '📈 Average Price',
+                    value: `${coreStats.avgPrice.toFixed(2)} HBAR`,
+                    inline: true
+                },
+                {
+                    name: '👥 Unique Buyers',
+                    value: coreStats.uniqueBuyers.toLocaleString(),
+                    inline: true
+                },
+                {
+                    name: '🏪 Unique Sellers',
+                    value: coreStats.uniqueSellers.toLocaleString(),
+                    inline: true
+                },
+                {
+                    name: '📊 Market Activity',
+                    value: `${((coreStats.uniqueBuyers + coreStats.uniqueSellers) / Math.max(1, coreStats.totalSales) * 100).toFixed(1)}% diversity`,
+                    inline: true
+                }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Data from SentX Marketplace • Live Analytics' });
+
+        return embed;
+    }
+
+    /**
+     * Create advanced metrics embed
+     * @param {Object} analytics - Analytics data from SentX
+     * @returns {EmbedBuilder} Advanced metrics embed
+     */
+    createAdvancedMetricsEmbed(analytics) {
+        const metrics = analytics.advancedMetrics;
+        
+        const embed = new EmbedBuilder()
+            .setTitle('🔬 Advanced Metrics')
+            .setColor('#9b59b6')
+            .addFields(
+                {
+                    name: '⚡ Sales Velocity',
+                    value: `${metrics.salesVelocity.toFixed(1)} sales/day`,
+                    inline: true
+                },
+                {
+                    name: '📊 Price Volatility',
+                    value: `${(metrics.priceVolatility * 100).toFixed(1)}%`,
+                    inline: true
+                },
+                {
+                    name: '🐋 Whale Activity',
+                    value: `${(metrics.whaleActivity * 100).toFixed(1)}% of sales`,
+                    inline: true
+                },
+                {
+                    name: '💧 Liquidity Score',
+                    value: `${(analytics.marketHealth.liquidityScore * 100).toFixed(0)}%`,
+                    inline: true
+                },
+                {
+                    name: '🔄 Market Momentum',
+                    value: `${analytics.marketHealth.momentum > 0 ? '+' : ''}${(analytics.marketHealth.momentum * 100).toFixed(2)}%`,
+                    inline: true
+                },
+                {
+                    name: '🎯 Diversity Index',
+                    value: `${(analytics.marketHealth.diversityIndex * 100).toFixed(0)}%`,
+                    inline: true
+                }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Advanced market analysis • SentX Data' });
+
+        return embed;
+    }
+
+    /**
+     * Create price distribution embed
+     * @param {Object} analytics - Analytics data from SentX
+     * @returns {EmbedBuilder} Price distribution embed
+     */
+    createPriceDistributionEmbed(analytics) {
+        const distribution = analytics.priceDistribution;
+        const ranges = distribution.ranges;
+        
+        // Create a visual bar chart using Unicode characters
+        const total = Object.values(ranges).reduce((sum, count) => sum + count, 0);
+        const createBar = (count) => {
+            const percentage = total > 0 ? count / total : 0;
+            const barLength = Math.round(percentage * 20);
+            return '█'.repeat(barLength) + '░'.repeat(20 - barLength);
+        };
+        
+        const embed = new EmbedBuilder()
+            .setTitle('💹 Price Distribution')
+            .setColor('#e74c3c')
+            .addFields(
+                {
+                    name: '💰 Under 100 HBAR',
+                    value: `${createBar(ranges.under_100)}\n${ranges.under_100} sales (${total > 0 ? (ranges.under_100/total*100).toFixed(1) : 0}%)`,
+                    inline: false
+                },
+                {
+                    name: '💎 100-500 HBAR',
+                    value: `${createBar(ranges['100_500'])}\n${ranges['100_500']} sales (${total > 0 ? (ranges['100_500']/total*100).toFixed(1) : 0}%)`,
+                    inline: false
+                },
+                {
+                    name: '🏆 500-1000 HBAR',
+                    value: `${createBar(ranges['500_1000'])}\n${ranges['500_1000']} sales (${total > 0 ? (ranges['500_1000']/total*100).toFixed(1) : 0}%)`,
+                    inline: false
+                },
+                {
+                    name: '👑 1000-5000 HBAR',
+                    value: `${createBar(ranges['1000_5000'])}\n${ranges['1000_5000']} sales (${total > 0 ? (ranges['1000_5000']/total*100).toFixed(1) : 0}%)`,
+                    inline: false
+                },
+                {
+                    name: '🚀 Over 5000 HBAR',
+                    value: `${createBar(ranges.over_5000)}\n${ranges.over_5000} sales (${total > 0 ? (ranges.over_5000/total*100).toFixed(1) : 0}%)`,
+                    inline: false
+                }
+            )
+            .setTimestamp()
+            .setFooter({ text: `Total: ${total} sales analyzed` });
+
+        return embed;
+    }
+
+    /**
+     * Create market health embed
+     * @param {Object} analytics - Analytics data from SentX
+     * @returns {EmbedBuilder} Market health embed
+     */
+    createMarketHealthEmbed(analytics) {
+        const health = analytics.marketHealth;
+        
+        const trendEmoji = {
+            'up': '📈',
+            'down': '📉',
+            'stable': '➡️'
+        };
+        
+        const trendColor = {
+            'up': '#2ecc71',
+            'down': '#e74c3c',
+            'stable': '#f39c12'
+        };
+        
+        const embed = new EmbedBuilder()
+            .setTitle(`${trendEmoji[health.trend]} Market Health`)
+            .setColor(trendColor[health.trend])
+            .addFields(
+                {
+                    name: '📊 Overall Trend',
+                    value: `**${health.trend.toUpperCase()}** ${trendEmoji[health.trend]}`,
+                    inline: true
+                },
+                {
+                    name: '⚡ Momentum',
+                    value: `${health.momentum > 0 ? '+' : ''}${(health.momentum * 100).toFixed(2)}%`,
+                    inline: true
+                },
+                {
+                    name: '💧 Liquidity',
+                    value: `${(health.liquidityScore * 100).toFixed(0)}%`,
+                    inline: true
+                },
+                {
+                    name: '🎯 Market Diversity',
+                    value: `${(health.diversityIndex * 100).toFixed(0)}%`,
+                    inline: true
+                },
+                {
+                    name: '🔍 Analysis',
+                    value: this.getMarketHealthAnalysis(health),
+                    inline: false
+                }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Market health indicators • Real-time data' });
+
+        return embed;
+    }
+
+    /**
+     * Get market health analysis text
+     * @param {Object} health - Market health data
+     * @returns {string} Analysis text
+     */
+    getMarketHealthAnalysis(health) {
+        let analysis = '';
+        
+        if (health.trend === 'up') {
+            analysis += '✅ **Bullish market** - Prices trending upward\n';
+        } else if (health.trend === 'down') {
+            analysis += '⚠️ **Bearish market** - Prices trending downward\n';
+        } else {
+            analysis += '📊 **Stable market** - Prices holding steady\n';
+        }
+        
+        if (health.liquidityScore > 0.7) {
+            analysis += '💧 **High liquidity** - Active trading environment\n';
+        } else if (health.liquidityScore > 0.3) {
+            analysis += '💧 **Moderate liquidity** - Reasonable trading activity\n';
+        } else {
+            analysis += '💧 **Low liquidity** - Limited trading activity\n';
+        }
+        
+        if (health.diversityIndex > 0.6) {
+            analysis += '🎯 **Diverse market** - Many different participants';
+        } else {
+            analysis += '🎯 **Concentrated market** - Few major participants';
+        }
+        
+        return analysis;
+    }
+
+    /**
+     * Create quick buy recommendations embed
+     * @param {Object} analytics - Analytics data from SentX
+     * @returns {EmbedBuilder} Recommendations embed
+     */
+    createQuickBuyRecommendationsEmbed(analytics) {
+        const recommendations = analytics.quickBuyRecommendations;
+        
+        const embed = new EmbedBuilder()
+            .setTitle('💡 Quick Buy Recommendations')
+            .setDescription('Collections showing strong potential based on recent activity')
+            .setColor('#f1c40f');
+
+        if (recommendations.length === 0) {
+            embed.addFields({
+                name: '📊 No Recommendations',
+                value: 'Not enough recent trading data to generate recommendations. Check back after more market activity.',
+                inline: false
+            });
+        } else {
+            recommendations.forEach((rec, index) => {
+                const scoreBar = '⭐'.repeat(Math.ceil(rec.recommendationScore * 5));
+                
+                embed.addFields({
+                    name: `${index + 1}. ${rec.collectionName || rec.tokenId}`,
+                    value: `${scoreBar} (${(rec.recommendationScore * 100).toFixed(0)}%)\n` +
+                           `💰 **Avg Price:** ${rec.avgPrice.toFixed(2)} HBAR\n` +
+                           `🏆 **Floor:** ${rec.floorPrice > 0 ? rec.floorPrice.toFixed(2) : 'N/A'} HBAR\n` +
+                           `📊 **Volume:** ${rec.volume.toFixed(0)} HBAR (${rec.salesCount} sales)\n` +
+                           `🎯 **${rec.reason}**`,
+                    inline: false
+                });
+            });
+        }
+
+        embed.setTimestamp()
+            .setFooter({ text: 'AI-powered recommendations • Not financial advice' });
+
+        return embed;
+    }
+
+    /**
+     * Create market overview embed
+     * @param {Object} overview - Market overview data
+     * @param {number} hbarRate - Current HBAR/USD rate
+     * @returns {EmbedBuilder} Market overview embed
+     */
+    createMarketOverviewEmbed(overview, hbarRate) {
+        const trendEmoji = {
+            'bullish': '📈',
+            'bearish': '📉',
+            'neutral': '➡️',
+            'insufficient_data': '❓'
+        };
+        
+        const embed = new EmbedBuilder()
+            .setTitle('🌐 Market Overview (24h)')
+            .setColor('#3498db')
+            .addFields(
+                {
+                    name: '💰 Total Volume',
+                    value: `${overview.total24hVolume.toLocaleString()} HBAR\n$${(overview.total24hVolume * hbarRate).toLocaleString()} USD`,
+                    inline: true
+                },
+                {
+                    name: '🔢 Total Sales',
+                    value: overview.total24hSales.toLocaleString(),
+                    inline: true
+                },
+                {
+                    name: '📊 Avg Sale Price',
+                    value: `${overview.avgSalePrice24h.toFixed(2)} HBAR\n$${(overview.avgSalePrice24h * hbarRate).toFixed(2)} USD`,
+                    inline: true
+                },
+                {
+                    name: '📝 New Listings',
+                    value: overview.total24hListings.toLocaleString(),
+                    inline: true
+                },
+                {
+                    name: '📈 Market Trend',
+                    value: `${trendEmoji[overview.marketTrend]} ${overview.marketTrend.toUpperCase()}`,
+                    inline: true
+                },
+                {
+                    name: '🏆 Top Collections',
+                    value: overview.topCollections.length > 0 ? 
+                        overview.topCollections.slice(0, 3).map((col, i) => 
+                            `${i + 1}. **${col.name || col.tokenId}**\n   ${col.volume.toFixed(0)} HBAR (${col.sales} sales)`
+                        ).join('\n\n') : 'No recent activity',
+                    inline: false
+                }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Live market data from SentX • Updates every 3 seconds' });
+
+        return embed;
+    }
+
+    /**
      * Create a welcome embed for new servers
      * @param {string} serverName - Name of the Discord server
      * @returns {EmbedBuilder} Welcome embed

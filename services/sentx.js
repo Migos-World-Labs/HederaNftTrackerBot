@@ -404,6 +404,363 @@ class SentXService {
     }
 
     /**
+     * Get analytics data for collections
+     * @param {Array} tokenIds - Array of token IDs to analyze
+     * @param {number} days - Number of days to analyze (default 7)
+     * @returns {Object} Analytics data
+     */
+    async getCollectionAnalytics(tokenIds = [], days = 7) {
+        try {
+            const analyticsData = {
+                coreStats: {
+                    totalSales: 0,
+                    totalVolume: 0,
+                    avgPrice: 0,
+                    uniqueBuyers: new Set(),
+                    uniqueSellers: new Set()
+                },
+                advancedMetrics: {
+                    salesVelocity: 0, // sales per day
+                    priceVolatility: 0,
+                    marketCap: 0,
+                    whaleActivity: 0
+                },
+                priceDistribution: {
+                    ranges: {
+                        'under_100': 0,
+                        '100_500': 0,
+                        '500_1000': 0,
+                        '1000_5000': 0,
+                        'over_5000': 0
+                    },
+                    histogram: []
+                },
+                marketHealth: {
+                    trend: 'stable', // up, down, stable
+                    momentum: 0,
+                    liquidityScore: 0,
+                    diversityIndex: 0
+                },
+                quickBuyRecommendations: []
+            };
+
+            // Get recent sales data for analysis
+            const sales = await this.getRecentSales(200); // Get more data for analysis
+            
+            if (!sales || sales.length === 0) {
+                return analyticsData;
+            }
+
+            // Filter sales by token IDs if provided
+            const filteredSales = tokenIds.length > 0 
+                ? sales.filter(sale => tokenIds.includes(sale.token_id))
+                : sales;
+
+            // Filter by time range
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+            
+            const recentSales = filteredSales.filter(sale => {
+                const saleDate = new Date(sale.timestamp);
+                return saleDate >= cutoffDate;
+            });
+
+            if (recentSales.length === 0) {
+                return analyticsData;
+            }
+
+            // Calculate core statistics
+            this.calculateCoreStats(recentSales, analyticsData.coreStats);
+            
+            // Calculate advanced metrics
+            this.calculateAdvancedMetrics(recentSales, analyticsData.advancedMetrics, days);
+            
+            // Calculate price distribution
+            this.calculatePriceDistribution(recentSales, analyticsData.priceDistribution);
+            
+            // Calculate market health
+            this.calculateMarketHealth(recentSales, analyticsData.marketHealth, days);
+            
+            // Generate quick buy recommendations
+            await this.generateQuickBuyRecommendations(recentSales, analyticsData.quickBuyRecommendations);
+
+            return analyticsData;
+
+        } catch (error) {
+            console.error('Error generating analytics:', error.message);
+            return null;
+        }
+    }
+
+    /**
+     * Calculate core statistics
+     */
+    calculateCoreStats(sales, coreStats) {
+        sales.forEach(sale => {
+            coreStats.totalSales++;
+            coreStats.totalVolume += parseFloat(sale.price_hbar);
+            coreStats.uniqueBuyers.add(sale.buyer);
+            coreStats.uniqueSellers.add(sale.seller);
+        });
+
+        coreStats.avgPrice = coreStats.totalSales > 0 ? coreStats.totalVolume / coreStats.totalSales : 0;
+        coreStats.uniqueBuyers = coreStats.uniqueBuyers.size;
+        coreStats.uniqueSellers = coreStats.uniqueSellers.size;
+    }
+
+    /**
+     * Calculate advanced metrics
+     */
+    calculateAdvancedMetrics(sales, metrics, days) {
+        // Sales velocity (sales per day)
+        metrics.salesVelocity = sales.length / days;
+
+        // Price volatility (coefficient of variation)
+        const prices = sales.map(sale => parseFloat(sale.price_hbar));
+        const mean = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+        const variance = prices.reduce((sum, price) => sum + Math.pow(price - mean, 2), 0) / prices.length;
+        metrics.priceVolatility = mean > 0 ? Math.sqrt(variance) / mean : 0;
+
+        // Whale activity (percentage of sales by top 10% buyers)
+        const buyerPurchases = {};
+        sales.forEach(sale => {
+            buyerPurchases[sale.buyer] = (buyerPurchases[sale.buyer] || 0) + 1;
+        });
+        
+        const sortedBuyers = Object.entries(buyerPurchases).sort((a, b) => b[1] - a[1]);
+        const top10Percent = Math.max(1, Math.floor(sortedBuyers.length * 0.1));
+        const whalePurchases = sortedBuyers.slice(0, top10Percent).reduce((sum, [_, count]) => sum + count, 0);
+        metrics.whaleActivity = sales.length > 0 ? whalePurchases / sales.length : 0;
+    }
+
+    /**
+     * Calculate price distribution
+     */
+    calculatePriceDistribution(sales, distribution) {
+        sales.forEach(sale => {
+            const price = parseFloat(sale.price_hbar);
+            
+            if (price < 100) {
+                distribution.ranges.under_100++;
+            } else if (price < 500) {
+                distribution.ranges['100_500']++;
+            } else if (price < 1000) {
+                distribution.ranges['500_1000']++;
+            } else if (price < 5000) {
+                distribution.ranges['1000_5000']++;
+            } else {
+                distribution.ranges.over_5000++;
+            }
+        });
+
+        // Create histogram data
+        const prices = sales.map(sale => parseFloat(sale.price_hbar)).sort((a, b) => a - b);
+        const bucketCount = 10;
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        const bucketSize = (max - min) / bucketCount;
+
+        for (let i = 0; i < bucketCount; i++) {
+            const bucketMin = min + (i * bucketSize);
+            const bucketMax = bucketMin + bucketSize;
+            const count = prices.filter(price => price >= bucketMin && price < bucketMax).length;
+            
+            distribution.histogram.push({
+                range: `${bucketMin.toFixed(0)}-${bucketMax.toFixed(0)} HBAR`,
+                count: count
+            });
+        }
+    }
+
+    /**
+     * Calculate market health indicators
+     */
+    calculateMarketHealth(sales, health, days) {
+        // Sort sales by date to analyze trends
+        const sortedSales = sales.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        
+        // Calculate trend (compare first half vs second half average prices)
+        const halfPoint = Math.floor(sortedSales.length / 2);
+        const firstHalf = sortedSales.slice(0, halfPoint);
+        const secondHalf = sortedSales.slice(halfPoint);
+        
+        const firstHalfAvg = firstHalf.reduce((sum, sale) => sum + parseFloat(sale.price_hbar), 0) / firstHalf.length;
+        const secondHalfAvg = secondHalf.reduce((sum, sale) => sum + parseFloat(sale.price_hbar), 0) / secondHalf.length;
+        
+        const priceChange = (secondHalfAvg - firstHalfAvg) / firstHalfAvg;
+        
+        if (priceChange > 0.05) {
+            health.trend = 'up';
+        } else if (priceChange < -0.05) {
+            health.trend = 'down';
+        } else {
+            health.trend = 'stable';
+        }
+        
+        health.momentum = priceChange;
+
+        // Liquidity score based on sales frequency and volume consistency
+        health.liquidityScore = Math.min(1, sales.length / (days * 5)); // 5 sales per day = max liquidity
+
+        // Diversity index based on unique participants
+        const uniqueBuyers = new Set(sales.map(sale => sale.buyer)).size;
+        const uniqueSellers = new Set(sales.map(sale => sale.seller)).size;
+        health.diversityIndex = Math.min(1, (uniqueBuyers + uniqueSellers) / (sales.length * 0.5));
+    }
+
+    /**
+     * Generate quick buy recommendations
+     */
+    async generateQuickBuyRecommendations(sales, recommendations) {
+        try {
+            // Group sales by collection
+            const collectionSales = {};
+            sales.forEach(sale => {
+                if (!collectionSales[sale.token_id]) {
+                    collectionSales[sale.token_id] = {
+                        tokenId: sale.token_id,
+                        collectionName: sale.collection_name,
+                        sales: [],
+                        avgPrice: 0,
+                        volume: 0,
+                        lastSale: null
+                    };
+                }
+                collectionSales[sale.token_id].sales.push(sale);
+            });
+
+            // Calculate metrics for each collection
+            for (const [tokenId, data] of Object.entries(collectionSales)) {
+                data.volume = data.sales.reduce((sum, sale) => sum + parseFloat(sale.price_hbar), 0);
+                data.avgPrice = data.volume / data.sales.length;
+                data.lastSale = data.sales.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+                // Get current floor price
+                const floorData = await this.getCollectionFloorPrice(tokenId);
+                data.floorPrice = floorData?.floorPrice || 0;
+
+                // Calculate recommendation score
+                const volumeScore = Math.min(1, data.volume / 10000); // Normalize by 10k HBAR
+                const activityScore = Math.min(1, data.sales.length / 20); // Normalize by 20 sales
+                const priceScore = data.floorPrice > 0 && data.avgPrice > 0 ? 
+                    Math.max(0, 1 - (data.floorPrice / data.avgPrice)) : 0;
+
+                data.recommendationScore = (volumeScore + activityScore + priceScore) / 3;
+            }
+
+            // Sort by recommendation score and take top 5
+            const sortedCollections = Object.values(collectionSales)
+                .sort((a, b) => b.recommendationScore - a.recommendationScore)
+                .slice(0, 5);
+
+            sortedCollections.forEach(collection => {
+                recommendations.push({
+                    tokenId: collection.tokenId,
+                    collectionName: collection.collectionName,
+                    recommendationScore: collection.recommendationScore,
+                    avgPrice: collection.avgPrice,
+                    floorPrice: collection.floorPrice,
+                    volume: collection.volume,
+                    salesCount: collection.sales.length,
+                    reason: this.getRecommendationReason(collection)
+                });
+            });
+
+        } catch (error) {
+            console.error('Error generating recommendations:', error.message);
+        }
+    }
+
+    /**
+     * Get recommendation reason
+     */
+    getRecommendationReason(collection) {
+        if (collection.volume > 5000) {
+            return 'High trading volume';
+        } else if (collection.sales.length > 10) {
+            return 'High trading activity';
+        } else if (collection.floorPrice > 0 && collection.avgPrice > collection.floorPrice * 1.2) {
+            return 'Below average sale price';
+        } else {
+            return 'Emerging opportunity';
+        }
+    }
+
+    /**
+     * Get market overview statistics
+     * @returns {Object} Market overview data
+     */
+    async getMarketOverview() {
+        try {
+            const sales = await this.getRecentSales(100);
+            const listings = await this.getRecentListings(50);
+
+            const last24h = new Date();
+            last24h.setHours(last24h.getHours() - 24);
+
+            const recent24hSales = sales.filter(sale => new Date(sale.timestamp) >= last24h);
+            const recent24hListings = listings.filter(listing => new Date(listing.timestamp) >= last24h);
+
+            return {
+                total24hSales: recent24hSales.length,
+                total24hVolume: recent24hSales.reduce((sum, sale) => sum + parseFloat(sale.price_hbar), 0),
+                total24hListings: recent24hListings.length,
+                avgSalePrice24h: recent24hSales.length > 0 ? 
+                    recent24hSales.reduce((sum, sale) => sum + parseFloat(sale.price_hbar), 0) / recent24hSales.length : 0,
+                topCollections: await this.getTopCollections(sales),
+                marketTrend: this.calculateMarketTrend(sales)
+            };
+        } catch (error) {
+            console.error('Error getting market overview:', error.message);
+            return null;
+        }
+    }
+
+    /**
+     * Get top collections by volume
+     */
+    async getTopCollections(sales) {
+        const collectionData = {};
+        
+        sales.forEach(sale => {
+            if (!collectionData[sale.token_id]) {
+                collectionData[sale.token_id] = {
+                    tokenId: sale.token_id,
+                    name: sale.collection_name,
+                    volume: 0,
+                    sales: 0
+                };
+            }
+            collectionData[sale.token_id].volume += parseFloat(sale.price_hbar);
+            collectionData[sale.token_id].sales++;
+        });
+
+        return Object.values(collectionData)
+            .sort((a, b) => b.volume - a.volume)
+            .slice(0, 5);
+    }
+
+    /**
+     * Calculate overall market trend
+     */
+    calculateMarketTrend(sales) {
+        if (sales.length < 10) return 'insufficient_data';
+
+        const sortedSales = sales.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        const recentSales = sortedSales.slice(-Math.floor(sales.length / 3));
+        const olderSales = sortedSales.slice(0, Math.floor(sales.length / 3));
+
+        const recentAvg = recentSales.reduce((sum, sale) => sum + parseFloat(sale.price_hbar), 0) / recentSales.length;
+        const olderAvg = olderSales.reduce((sum, sale) => sum + parseFloat(sale.price_hbar), 0) / olderSales.length;
+
+        const change = (recentAvg - olderAvg) / olderAvg;
+
+        if (change > 0.1) return 'bullish';
+        if (change < -0.1) return 'bearish';
+        return 'neutral';
+    }
+
+    /**
      * Health check for SentX API
      * @returns {boolean} True if API is responsive
      */

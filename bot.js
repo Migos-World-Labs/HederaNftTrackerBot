@@ -812,6 +812,63 @@ class NFTSalesBot {
                         required: false
                     }
                 ]
+            },
+            {
+                name: 'analytics',
+                description: 'View comprehensive NFT analytics and market insights',
+                options: [
+                    {
+                        name: 'type',
+                        type: 3, // STRING
+                        description: 'Type of analytics to display',
+                        required: true,
+                        choices: [
+                            {
+                                name: 'Core Statistics',
+                                value: 'core-stats'
+                            },
+                            {
+                                name: 'Advanced Metrics',
+                                value: 'advanced-metrics'
+                            },
+                            {
+                                name: 'Price Distribution',
+                                value: 'price-distribution'
+                            },
+                            {
+                                name: 'Market Health',
+                                value: 'market-health'
+                            },
+                            {
+                                name: 'Quick Buy Recommendations',
+                                value: 'recommendations'
+                            },
+                            {
+                                name: 'Market Overview',
+                                value: 'market-overview'
+                            }
+                        ]
+                    },
+                    {
+                        name: 'collection',
+                        type: 3, // STRING
+                        description: 'Token ID to analyze (leave empty for all tracked collections)',
+                        required: false
+                    },
+                    {
+                        name: 'days',
+                        type: 4, // INTEGER
+                        description: 'Number of days to analyze (default: 7)',
+                        required: false,
+                        choices: [
+                            { name: '1 day', value: 1 },
+                            { name: '3 days', value: 3 },
+                            { name: '7 days', value: 7 },
+                            { name: '14 days', value: 14 },
+                            { name: '30 days', value: 30 }
+                        ]
+                    }
+                ]
             }
         ];
 
@@ -868,6 +925,9 @@ class NFTSalesBot {
                     break;
                 case 'set-listings-channel':
                     await this.handleSetListingsChannelCommand(interaction, options);
+                    break;
+                case 'analytics':
+                    await this.handleAnalyticsCommand(interaction, options);
                     break;
                 default:
                     await interaction.reply('Unknown command');
@@ -1612,6 +1672,128 @@ class NFTSalesBot {
                 }
             } catch (responseError) {
                 console.error('Could not respond to recent listing test interaction:', responseError.message);
+            }
+        }
+    }
+
+    async handleAnalyticsCommand(interaction, options) {
+        try {
+            if (!interaction.isRepliable()) {
+                console.log('Interaction expired before handling analytics command');
+                return;
+            }
+
+            await interaction.deferReply();
+
+            const analyticsType = options.getString('type');
+            const collectionTokenId = options.getString('collection');
+            const days = options.getInteger('days') || 7;
+            const guildId = interaction.guildId;
+
+            let tokenIds = [];
+            let collectionNames = [];
+
+            // If specific collection is requested, use that; otherwise use tracked collections
+            if (collectionTokenId) {
+                // Validate that the collection is tracked in this server
+                const trackedCollections = await this.storage.getCollections(guildId, true);
+                const isTracked = trackedCollections.some(col => col.token_id === collectionTokenId);
+                
+                if (!isTracked) {
+                    await interaction.editReply({
+                        content: `❌ Collection ${collectionTokenId} is not tracked in this server. Use \`/add\` to add it first or leave collection empty to analyze all tracked collections.`,
+                    });
+                    return;
+                }
+                
+                tokenIds = [collectionTokenId];
+                const collection = trackedCollections.find(col => col.token_id === collectionTokenId);
+                collectionNames = [collection.name || collectionTokenId];
+            } else {
+                // Use all tracked collections for this server
+                const trackedCollections = await this.storage.getCollections(guildId, true);
+                
+                if (trackedCollections.length === 0) {
+                    await interaction.editReply({
+                        content: '❌ No collections are currently tracked in this server. Use `/add` to add collections first.',
+                    });
+                    return;
+                }
+                
+                tokenIds = trackedCollections.map(col => col.token_id);
+                collectionNames = trackedCollections.map(col => col.name || col.token_id);
+            }
+
+            // Get analytics data from SentX
+            const analytics = await this.sentxService.getCollectionAnalytics(tokenIds, days);
+            
+            if (!analytics) {
+                await interaction.editReply({
+                    content: '❌ Failed to fetch analytics data. Please try again later.',
+                });
+                return;
+            }
+
+            let embed;
+            
+            switch (analyticsType) {
+                case 'core-stats':
+                    embed = this.embedUtils.createCoreStatsEmbed(analytics, collectionNames);
+                    break;
+                case 'advanced-metrics':
+                    embed = this.embedUtils.createAdvancedMetricsEmbed(analytics);
+                    break;
+                case 'price-distribution':
+                    embed = this.embedUtils.createPriceDistributionEmbed(analytics);
+                    break;
+                case 'market-health':
+                    embed = this.embedUtils.createMarketHealthEmbed(analytics);
+                    break;
+                case 'recommendations':
+                    embed = this.embedUtils.createQuickBuyRecommendationsEmbed(analytics);
+                    break;
+                case 'market-overview':
+                    const overview = await this.sentxService.getMarketOverview();
+                    if (!overview) {
+                        await interaction.editReply({
+                            content: '❌ Failed to fetch market overview data. Please try again later.',
+                        });
+                        return;
+                    }
+                    const hbarRate = await this.currencyService.getHbarToUsdRate();
+                    embed = this.embedUtils.createMarketOverviewEmbed(overview, hbarRate);
+                    break;
+                default:
+                    await interaction.editReply({
+                        content: '❌ Unknown analytics type.',
+                    });
+                    return;
+            }
+
+            if (!interaction.isRepliable()) {
+                console.log('Interaction expired while generating analytics');
+                return;
+            }
+
+            await interaction.editReply({ embeds: [embed] });
+
+        } catch (error) {
+            console.error('Error handling analytics command:', error);
+            try {
+                if (interaction.isRepliable()) {
+                    if (interaction.deferred) {
+                        await interaction.editReply({
+                            content: '❌ Error generating analytics. Please try again later.',
+                        });
+                    } else {
+                        await interaction.reply({
+                            content: '❌ Error generating analytics. Please try again later.',
+                            ephemeral: true
+                        });
+                    }
+                }
+            } catch (replyError) {
+                console.error('Failed to reply to analytics command error:', replyError.message);
             }
         }
     }
