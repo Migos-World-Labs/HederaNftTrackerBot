@@ -85,10 +85,13 @@ class NFTSalesBot {
             }
         });
 
-        // Handle slash commands
+        // Handle slash commands and autocomplete
         this.client.on(Events.InteractionCreate, async (interaction) => {
-            if (!interaction.isChatInputCommand()) return;
-            await this.handleSlashCommand(interaction);
+            if (interaction.isChatInputCommand()) {
+                await this.handleSlashCommand(interaction);
+            } else if (interaction.isAutocomplete()) {
+                await this.handleAutocomplete(interaction);
+            }
         });
     }
 
@@ -824,27 +827,27 @@ class NFTSalesBot {
                         required: true,
                         choices: [
                             {
-                                name: 'Core Statistics',
+                                name: '📊 Core Statistics - Volume, sales, prices, participants',
                                 value: 'core-stats'
                             },
                             {
-                                name: 'Advanced Metrics',
+                                name: '🔬 Advanced Metrics - Velocity, volatility, whale activity',
                                 value: 'advanced-metrics'
                             },
                             {
-                                name: 'Price Distribution',
+                                name: '💹 Price Distribution - Visual price range breakdown',
                                 value: 'price-distribution'
                             },
                             {
-                                name: 'Market Health',
+                                name: '📈 Market Health - Trends, momentum, liquidity',
                                 value: 'market-health'
                             },
                             {
-                                name: 'Quick Buy Recommendations',
+                                name: '💡 Quick Buy Recommendations - AI-powered suggestions',
                                 value: 'recommendations'
                             },
                             {
-                                name: 'Market Overview',
+                                name: '🌐 Market Overview - 24h marketplace summary',
                                 value: 'market-overview'
                             }
                         ]
@@ -852,20 +855,21 @@ class NFTSalesBot {
                     {
                         name: 'collection',
                         type: 3, // STRING
-                        description: 'Token ID to analyze (leave empty for all tracked collections)',
-                        required: false
+                        description: 'Select a specific collection (leave empty for all tracked)',
+                        required: false,
+                        autocomplete: true
                     },
                     {
-                        name: 'days',
-                        type: 4, // INTEGER
-                        description: 'Number of days to analyze (default: 7)',
+                        name: 'timeframe',
+                        type: 3, // STRING
+                        description: 'Analysis time period (default: 7 days)',
                         required: false,
                         choices: [
-                            { name: '1 day', value: 1 },
-                            { name: '3 days', value: 3 },
-                            { name: '7 days', value: 7 },
-                            { name: '14 days', value: 14 },
-                            { name: '30 days', value: 30 }
+                            { name: '⚡ Last 24 hours', value: '1' },
+                            { name: '📅 Last 3 days', value: '3' },
+                            { name: '📊 Last week (default)', value: '7' },
+                            { name: '📈 Last 2 weeks', value: '14' },
+                            { name: '📉 Last month', value: '30' }
                         ]
                     }
                 ]
@@ -1676,32 +1680,77 @@ class NFTSalesBot {
         }
     }
 
+    async handleAutocomplete(interaction) {
+        try {
+            if (interaction.commandName === 'analytics' && interaction.options.getFocused(true).name === 'collection') {
+                const guildId = interaction.guildId;
+                const focusedValue = interaction.options.getFocused().toLowerCase();
+                
+                // Get tracked collections for this server
+                const trackedCollections = await this.storage.getCollections(guildId, true);
+                
+                // Filter and format choices
+                const choices = trackedCollections
+                    .filter(col => {
+                        const name = col.name || col.token_id;
+                        return name.toLowerCase().includes(focusedValue) || 
+                               col.token_id.includes(focusedValue);
+                    })
+                    .slice(0, 25) // Discord limit
+                    .map(col => ({
+                        name: `${col.name || 'Unknown'} (${col.token_id})`.substring(0, 100),
+                        value: col.token_id
+                    }));
+
+                // Always include "All Collections" option
+                if (focusedValue === '' || 'all collections'.includes(focusedValue)) {
+                    choices.unshift({
+                        name: '📊 All Tracked Collections',
+                        value: 'all'
+                    });
+                }
+
+                await interaction.respond(choices);
+            }
+        } catch (error) {
+            console.error('Error handling autocomplete:', error);
+            try {
+                await interaction.respond([]);
+            } catch (responseError) {
+                // Ignore response errors for autocomplete
+            }
+        }
+    }
+
     async handleAnalyticsCommand(interaction, options) {
         try {
+            // Immediate validation before any async operations
             if (!interaction.isRepliable()) {
-                console.log('Interaction expired before handling analytics command');
+                console.log('Interaction expired before analytics processing');
                 return;
             }
 
+            // Defer immediately to prevent timeout
             await interaction.deferReply();
 
             const analyticsType = options.getString('type');
             const collectionTokenId = options.getString('collection');
-            const days = options.getInteger('days') || 7;
+            const days = parseInt(options.getString('timeframe')) || 7;
             const guildId = interaction.guildId;
 
             let tokenIds = [];
             let collectionNames = [];
 
             // If specific collection is requested, use that; otherwise use tracked collections
-            if (collectionTokenId) {
+            if (collectionTokenId && collectionTokenId !== 'all') {
                 // Validate that the collection is tracked in this server
                 const trackedCollections = await this.storage.getCollections(guildId, true);
                 const isTracked = trackedCollections.some(col => col.token_id === collectionTokenId);
                 
                 if (!isTracked) {
+                    const availableCollections = trackedCollections.map(col => `• ${col.name || 'Unknown'} (${col.token_id})`).join('\n');
                     await interaction.editReply({
-                        content: `❌ Collection ${collectionTokenId} is not tracked in this server. Use \`/add\` to add it first or leave collection empty to analyze all tracked collections.`,
+                        content: `❌ Collection ${collectionTokenId} is not tracked in this server.\n\n**Available Collections:**\n${availableCollections || 'None - use `/add` to add collections first'}`,
                     });
                     return;
                 }
