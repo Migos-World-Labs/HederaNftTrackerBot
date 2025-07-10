@@ -734,6 +734,10 @@ class NFTSalesBot {
                             {
                                 name: 'Rooster Cartel Order Fill',
                                 value: 'roosterorderfill'
+                            },
+                            {
+                                name: 'Latest Listing',
+                                value: 'listing'
                             }
                         ]
                     }
@@ -957,6 +961,10 @@ class NFTSalesBot {
                 console.log('Executing Rooster Cartel order fill test...');
                 await this.testRoosterCartelOrderFill(interaction);
                 return;
+            } else if (testType === 'listing') {
+                console.log('Executing listing test...');
+                await this.testLatestListing(interaction);
+                return;
             } else {
                 console.log('Testing floor price feature with recent sale...');
                 
@@ -1177,6 +1185,43 @@ class NFTSalesBot {
 
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async testLatestListing(interaction) {
+        try {
+            console.log('Testing latest listing...');
+            
+            // Get recent listings from SentX
+            const recentListings = await sentxService.getRecentListings(50);
+            
+            if (!recentListings || recentListings.length === 0) {
+                await interaction.editReply('❌ No recent listings found for testing');
+                return;
+            }
+            
+            // Get the most recent listing
+            const testListing = recentListings[0];
+            
+            console.log(`Using listing for testing: ${testListing.nftName || testListing.nft_name} from ${testListing.collectionName || testListing.collection_name}`);
+            
+            // Get HBAR rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            
+            // Create a mock listing embed to test the formatting
+            const embed = await embedUtils.createListingEmbed(testListing, hbarRate);
+            
+            // Send test listing notification
+            await interaction.editReply({
+                content: '📝 **Test Listing Notification** (Latest from marketplace):',
+                embeds: [embed]
+            });
+            
+            console.log('Test listing posted successfully!');
+            
+        } catch (error) {
+            console.error('Error testing latest listing:', error);
+            await interaction.editReply('❌ Error occurred while testing listing functionality');
+        }
     }
 
     async testLastSale() {
