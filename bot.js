@@ -827,27 +827,27 @@ class NFTSalesBot {
                         required: true,
                         choices: [
                             {
-                                name: '📊 Core Statistics - Volume, sales, prices, participants',
+                                name: '📊 Core Statistics - All-time volume, sales, prices',
                                 value: 'core-stats'
                             },
                             {
-                                name: '🔬 Advanced Metrics - Velocity, volatility, whale activity',
+                                name: '🔬 Advanced Metrics - Historical velocity, volatility, whale activity',
                                 value: 'advanced-metrics'
                             },
                             {
-                                name: '💹 Price Distribution - Visual price range breakdown',
+                                name: '💹 Price Distribution - All-time price range breakdown',
                                 value: 'price-distribution'
                             },
                             {
-                                name: '📈 Market Health - Trends, momentum, liquidity',
+                                name: '📈 Market Health - Historical trends, momentum, liquidity',
                                 value: 'market-health'
                             },
                             {
-                                name: '💡 Quick Buy Recommendations - AI-powered suggestions',
+                                name: '💡 Quick Buy Recommendations - AI-powered all-time analysis',
                                 value: 'recommendations'
                             },
                             {
-                                name: '🌐 Market Overview - 24h marketplace summary',
+                                name: '🌐 Market Overview - Complete marketplace summary',
                                 value: 'market-overview'
                             }
                         ]
@@ -858,19 +858,6 @@ class NFTSalesBot {
                         description: 'Select a specific collection (leave empty for all tracked)',
                         required: false,
                         autocomplete: true
-                    },
-                    {
-                        name: 'timeframe',
-                        type: 3, // STRING
-                        description: 'Analysis time period (default: 7 days)',
-                        required: false,
-                        choices: [
-                            { name: '⚡ Last 24 hours', value: '1' },
-                            { name: '📅 Last 3 days', value: '3' },
-                            { name: '📊 Last week (default)', value: '7' },
-                            { name: '📈 Last 2 weeks', value: '14' },
-                            { name: '📉 Last month', value: '30' }
-                        ]
                     }
                 ]
             }
@@ -1760,7 +1747,7 @@ class NFTSalesBot {
 
             const analyticsType = options.getString('type');
             const collectionTokenId = options.getString('collection');
-            const days = parseInt(options.getString('timeframe')) || 7;
+            const days = 365; // All-time data (1 year)
             const guildId = interaction.guildId;
 
             let tokenIds = [];
