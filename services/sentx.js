@@ -320,15 +320,15 @@ class SentXService {
             console.log(`Processing Listing: ${listing.nftName}, Image: ${hasImage ? 'Present' : 'Missing'}`);
             
             return {
-                id: `${listing.nftTokenAddress}-${listing.nftSerialId}-${listing.listingDate}`,
+                id: `${listing.nftTokenAddress}-${listing.nftSerialId}-${listing.saleDate}`,
                 nft_name: listing.nftName || 'Unknown NFT',
                 collection_name: listing.collectionName || 'Unknown Collection',
                 token_id: listing.nftTokenAddress,
                 serial_id: listing.nftSerialId,
                 serial_number: listing.nftSerialId,
-                price_hbar: this.parseHbarAmount(listing.listingPrice),
+                price_hbar: this.parseHbarAmount(listing.salePrice),
                 seller: this.formatAddress(listing.sellerAddress),
-                timestamp: listing.listingDate,
+                timestamp: listing.saleDate,
                 image_url: listing.imageCDN || listing.nftImage || listing.nftImageUrl || listing.image || listing.imageFile || listing.imageUrl || null,
                 imageCDN: listing.imageCDN,
                 nftImage: listing.nftImage,
