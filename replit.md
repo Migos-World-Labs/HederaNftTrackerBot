@@ -144,6 +144,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added processListing() method and removeDuplicateListings() for listing management
   - Split main monitoring into processNewSales() and processNewListings() methods
   - Listings show comprehensive data including price, seller info, rarity, and collection links
+- July 10, 2025: Added separate channel configuration for listings vs sales
+  - Extended database schema with listingsChannelId field for separate channel support
+  - Added /set-listings-channel command to configure separate listing notification channels
+  - Updated processListing() method to route notifications to dedicated listings channel when configured
+  - Sales notifications continue in main channel while listings go to separate channel if configured
+  - Enhanced database storage methods to support listings channel configuration and management
+  - Provides channel permission validation and user-friendly setup instructions
 
 ## User Preferences
 

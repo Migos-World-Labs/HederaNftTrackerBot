@@ -161,7 +161,7 @@ class DatabaseStorage {
     }
 
     // Server configuration management
-    async setServerConfig(guildId, channelId, guildName, enabled = true) {
+    async setServerConfig(guildId, channelId, guildName, enabled = true, listingsChannelId = null) {
         try {
             const existing = await db.select()
                 .from(serverConfigs)
@@ -172,6 +172,7 @@ class DatabaseStorage {
                 await db.update(serverConfigs)
                     .set({
                         channelId,
+                        listingsChannelId,
                         guildName,
                         enabled,
                         lastUpdated: new Date()
@@ -182,6 +183,7 @@ class DatabaseStorage {
                     .values({
                         guildId,
                         channelId,
+                        listingsChannelId,
                         guildName,
                         enabled
                     });
@@ -189,6 +191,31 @@ class DatabaseStorage {
             return true;
         } catch (error) {
             console.error('Error setting server config:', error);
+            return false;
+        }
+    }
+
+    async setListingsChannel(guildId, listingsChannelId) {
+        try {
+            const existing = await db.select()
+                .from(serverConfigs)
+                .where(eq(serverConfigs.guildId, guildId))
+                .limit(1);
+
+            if (existing.length > 0) {
+                await db.update(serverConfigs)
+                    .set({
+                        listingsChannelId,
+                        lastUpdated: new Date()
+                    })
+                    .where(eq(serverConfigs.guildId, guildId));
+                return true;
+            } else {
+                console.log('No server config found to update listings channel');
+                return false;
+            }
+        } catch (error) {
+            console.error('Error setting listings channel:', error);
             return false;
         }
     }

@@ -458,7 +458,10 @@ class NFTSalesBot {
                         continue; // Skip this server if collection not tracked
                     }
                     
-                    const channel = this.client.channels.cache.get(serverConfig.channelId);
+                    // Use separate listings channel if configured, otherwise use main channel
+                    const channelId = serverConfig.listingsChannelId || serverConfig.channelId;
+                    const channel = this.client.channels.cache.get(channelId);
+                    
                     if (channel) {
                         // Create Discord embed for the listing
                         const embed = await embedUtils.createListingEmbed(listing, hbarRate);
@@ -699,6 +702,18 @@ class NFTSalesBot {
                 description: 'Show bot status and monitoring information'
             },
             {
+                name: 'set-listings-channel',
+                description: 'Set a separate channel for NFT listing notifications',
+                options: [
+                    {
+                        name: 'channel',
+                        type: 7, // CHANNEL
+                        description: 'The channel where listing notifications should be sent',
+                        required: true
+                    }
+                ]
+            },
+            {
                 name: 'test',
                 description: 'Test the bot functionality',
                 options: [
@@ -773,6 +788,9 @@ class NFTSalesBot {
                     break;
                 case 'test':
                     await this.handleTestCommand(interaction);
+                    break;
+                case 'set-listings-channel':
+                    await this.handleSetListingsChannelCommand(interaction, options);
                     break;
                 default:
                     await interaction.reply('Unknown command');
@@ -1088,6 +1106,56 @@ class NFTSalesBot {
         } catch (error) {
             console.error('Error in Rooster Cartel order fill test:', error);
             await interaction.editReply(`❌ Error testing Rooster Cartel order fill: ${error.message}`);
+        }
+    }
+
+    async handleSetListingsChannelCommand(interaction, options) {
+        try {
+            const channel = options.getChannel('channel');
+            const guildId = interaction.guildId;
+
+            // Validate channel type (must be text channel)
+            if (channel.type !== 0) {
+                await interaction.reply({
+                    content: '❌ Please select a text channel for listing notifications.',
+                    ephemeral: true
+                });
+                return;
+            }
+
+            // Check if bot has permissions in the channel
+            const botMember = interaction.guild.members.me;
+            const permissions = channel.permissionsFor(botMember);
+            
+            if (!permissions.has(['SendMessages', 'EmbedLinks'])) {
+                await interaction.reply({
+                    content: '❌ I need "Send Messages" and "Embed Links" permissions in that channel.',
+                    ephemeral: true
+                });
+                return;
+            }
+
+            // Update the server config with listings channel
+            const success = await this.storage.setListingsChannel(guildId, channel.id);
+            
+            if (success) {
+                await interaction.reply({
+                    content: `✅ Listings channel set to ${channel}!\n\n📝 **New listings** will now be posted in ${channel}\n🔥 **Sales notifications** will continue in your main channel\n\nUse the same command again to change the listings channel.`,
+                    ephemeral: false
+                });
+            } else {
+                await interaction.reply({
+                    content: '❌ Failed to set listings channel. Make sure the bot is properly configured in this server.',
+                    ephemeral: true
+                });
+            }
+
+        } catch (error) {
+            console.error('Error setting listings channel:', error);
+            await interaction.reply({
+                content: '❌ An error occurred while setting the listings channel. Please try again.',
+                ephemeral: true
+            });
         }
     }
 

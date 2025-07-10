@@ -16,6 +16,7 @@ const serverConfigs = pgTable('server_configs', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   guildId: text('guild_id').notNull().unique(),
   channelId: text('channel_id').notNull(),
+  listingsChannelId: text('listings_channel_id'), // Optional separate channel for listings
   guildName: text('guild_name').notNull(),
   enabled: boolean('enabled').notNull().default(true),
   addedDate: timestamp('added_date').defaultNow().notNull(),
