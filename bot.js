@@ -1689,49 +1689,72 @@ class NFTSalesBot {
                 // Get tracked collections for this server
                 const trackedCollections = await this.storage.getCollections(guildId, true);
                 
-                // Filter and format choices
-                const choices = trackedCollections
-                    .filter(col => {
-                        const name = col.name || col.token_id;
-                        return name.toLowerCase().includes(focusedValue) || 
-                               col.token_id.includes(focusedValue);
-                    })
-                    .slice(0, 25) // Discord limit
-                    .map(col => ({
-                        name: `${col.name || 'Unknown'} (${col.token_id})`.substring(0, 100),
-                        value: col.token_id
-                    }));
-
-                // Always include "All Collections" option
-                if (focusedValue === '' || 'all collections'.includes(focusedValue)) {
-                    choices.unshift({
+                // Debug log
+                console.log(`Autocomplete: Found ${trackedCollections.length} collections for guild ${guildId}`);
+                
+                let choices = [];
+                
+                // Always include "All Collections" option first
+                if (!focusedValue || focusedValue === '' || 'all collections'.toLowerCase().includes(focusedValue)) {
+                    choices.push({
                         name: '📊 All Tracked Collections',
                         value: 'all'
                     });
                 }
-
+                
+                // Add individual collections
+                const collectionChoices = trackedCollections
+                    .filter(col => {
+                        // Only include collections with valid token_id
+                        if (!col.token_id || col.token_id.trim() === '') {
+                            console.log(`Skipping collection with invalid token_id:`, col);
+                            return false;
+                        }
+                        
+                        const name = (col.name || '').toLowerCase();
+                        const tokenId = col.token_id.toLowerCase();
+                        return name.includes(focusedValue) || tokenId.includes(focusedValue);
+                    })
+                    .slice(0, 23) // Leave room for "All Collections"
+                    .map(col => {
+                        const choice = {
+                            name: `${col.name || 'Unknown'} (${col.token_id})`.substring(0, 100),
+                            value: col.token_id
+                        };
+                        console.log(`Adding choice:`, choice);
+                        return choice;
+                    });
+                
+                choices = choices.concat(collectionChoices);
+                
+                console.log(`Responding with ${choices.length} choices`);
                 await interaction.respond(choices);
             }
         } catch (error) {
             console.error('Error handling autocomplete:', error);
             try {
-                await interaction.respond([]);
+                await interaction.respond([{
+                    name: '❌ Error loading collections',
+                    value: 'error'
+                }]);
             } catch (responseError) {
-                // Ignore response errors for autocomplete
+                console.error('Failed to respond to autocomplete:', responseError);
             }
         }
     }
 
     async handleAnalyticsCommand(interaction, options) {
         try {
-            // Immediate validation before any async operations
-            if (!interaction.isRepliable()) {
-                console.log('Interaction expired before analytics processing');
-                return;
+            // Defer immediately to prevent timeout - no validation needed first
+            try {
+                await interaction.deferReply();
+            } catch (deferError) {
+                if (deferError.code === 10062) {
+                    console.log('Interaction expired before analytics could start');
+                    return;
+                }
+                throw deferError;
             }
-
-            // Defer immediately to prevent timeout
-            await interaction.deferReply();
 
             const analyticsType = options.getString('type');
             const collectionTokenId = options.getString('collection');
