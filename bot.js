@@ -1002,7 +1002,18 @@ class NFTSalesBot {
             
         } catch (error) {
             console.error('Error in test command:', error);
-            await interaction.editReply('❌ Error running test. Please try again.');
+            // Handle expired interactions gracefully
+            try {
+                if (error.code === 10062 || error.code === 40060) {
+                    // Interaction expired or already acknowledged - just log it
+                    console.log('Interaction expired during test command execution');
+                } else {
+                    await interaction.editReply('❌ Error running test. Please try again.');
+                }
+            } catch (responseError) {
+                // If we can't respond, just log the error
+                console.error('Could not respond to interaction:', responseError.message);
+            }
         }
     }
 
@@ -1052,7 +1063,15 @@ class NFTSalesBot {
             
         } catch (error) {
             console.error('Error in order fill test:', error);
-            await interaction.editReply(`❌ Error testing order fill: ${error.message}`);
+            try {
+                if (error.code === 10062 || error.code === 40060) {
+                    console.log('Interaction expired during order fill test');
+                } else {
+                    await interaction.editReply(`❌ Error testing order fill: ${error.message}`);
+                }
+            } catch (responseError) {
+                console.error('Could not respond to order fill test interaction:', responseError.message);
+            }
         }
     }
 
@@ -1101,7 +1120,15 @@ class NFTSalesBot {
             
         } catch (error) {
             console.error('Error in Rooster Cartel order fill test:', error);
-            await interaction.editReply(`❌ Error testing Rooster Cartel order fill: ${error.message}`);
+            try {
+                if (error.code === 10062 || error.code === 40060) {
+                    console.log('Interaction expired during Rooster Cartel order fill test');
+                } else {
+                    await interaction.editReply(`❌ Error testing Rooster Cartel order fill: ${error.message}`);
+                }
+            } catch (responseError) {
+                console.error('Could not respond to Rooster Cartel test interaction:', responseError.message);
+            }
         }
     }
 
@@ -1265,15 +1292,14 @@ class NFTSalesBot {
             
         } catch (error) {
             console.error('Error testing latest listing:', error);
-            // Try to respond safely without causing interaction errors
             try {
-                if (!interaction.replied && !interaction.deferred) {
-                    await interaction.reply(`❌ Error occurred while testing listing functionality: ${error.message}`);
+                if (error.code === 10062 || error.code === 40060) {
+                    console.log('Interaction expired during listing test');
                 } else {
                     await interaction.editReply(`❌ Error occurred while testing listing functionality: ${error.message}`);
                 }
             } catch (responseError) {
-                console.error('Error responding to interaction:', responseError);
+                console.error('Could not respond to listing test interaction:', responseError.message);
             }
         }
     }
