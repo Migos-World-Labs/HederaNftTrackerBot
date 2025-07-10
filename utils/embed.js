@@ -6,8 +6,12 @@ const { EmbedBuilder } = require('discord.js');
 const currencyService = require('../services/currency');
 const sentxService = require('../services/sentx');
 const hederaService = require('../services/hedera');
+const HashinalService = require('../services/hashinal');
 
 class EmbedUtils {
+    constructor() {
+        this.hashinalService = new HashinalService();
+    }
     /**
      * Create a Discord embed for an NFT sale
      * @param {Object} sale - Sale data object
@@ -68,19 +72,52 @@ class EmbedUtils {
                        (sale.data && sale.data.image);
         
         // Special debugging for Hashinals and problematic collections
+        const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228'];
         const isHashinal = sale.collection_name && (
             sale.collection_name.toLowerCase().includes('hashinal') ||
-            sale.token_id === '0.0.hashinal_collection_id' // Add known Hashinal collection IDs
+            sale.collection_name.toLowerCase().includes('hcs-') ||
+            sale.nft_name?.toLowerCase().includes('hashinal') ||
+            knownHashinalTokens.includes(sale.token_id) ||
+            (sale.metadata && sale.metadata.p === 'hcs-5') // HCS-5 standard marker
         );
         
-        if (isHashinal || (sale.collection_name && sale.collection_name.includes('Rooster Cartel'))) {
-            console.log(`🖼️ [${isHashinal ? 'HASHINAL' : 'ROOSTER CARTEL'}] Processing image for ${sale.nft_name}`);
+        // Enhanced debugging for image detection issues
+        if (isHashinal || (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) || !imageUrl) {
+            const debugType = isHashinal ? 'HASHINAL' : (sale.collection_name?.includes('Rooster Cartel') ? 'ROOSTER CARTEL' : 'NO IMAGE');
+            console.log(`🖼️ [${debugType}] Processing image for ${sale.nft_name}`);
             console.log(`  Selected imageUrl: ${imageUrl}`);
             console.log(`  imageCDN: ${sale.imageCDN}`);
             console.log(`  nftImage: ${sale.nftImage}`);
             console.log(`  image_url: ${sale.image_url}`);
             console.log(`  image: ${sale.image}`);
+            console.log(`  imageFile: ${sale.imageFile}`);
             console.log(`  metadata.image: ${sale.metadata?.image}`);
+            console.log(`  data.image: ${sale.data?.image}`);
+            
+            // Check for Hashinal-specific image fields
+            if (sale.metadata) {
+                console.log(`  metadata.files: ${JSON.stringify(sale.metadata.files)}`);
+                console.log(`  metadata.uri: ${sale.metadata.uri}`);
+                console.log(`  metadata.image_data: ${sale.metadata.image_data}`);
+            }
+            
+            // Log all available fields to identify potential image sources
+            if (isHashinal) {
+                console.log(`  [HASHINAL DEBUG] All sale fields:`, Object.keys(sale));
+            }
+        }
+
+        // Use Hashinal service for enhanced image resolution
+        if (isHashinal && !imageUrl) {
+            console.log(`🔧 [HASHINAL] Attempting enhanced image resolution...`);
+            try {
+                imageUrl = await this.hashinalService.resolveHashinalImage(sale);
+                if (imageUrl) {
+                    console.log(`✅ [HASHINAL] Enhanced resolution found image: ${imageUrl}`);
+                }
+            } catch (error) {
+                console.error(`❌ [HASHINAL] Enhanced resolution failed:`, error.message);
+            }
         }
         
         // If no image is available, try to fetch NFT details to get metadata
@@ -279,17 +316,51 @@ class EmbedUtils {
         }
         
         // Special debugging for Hashinals and other problematic collections
+        const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228'];
         const isHashinal = listing.collection_name && (
             listing.collection_name.toLowerCase().includes('hashinal') ||
-            listing.token_id === '0.0.hashinal_collection_id' // Add known Hashinal collection IDs
+            listing.collection_name.toLowerCase().includes('hcs-') ||
+            listing.nft_name?.toLowerCase().includes('hashinal') ||
+            knownHashinalTokens.includes(listing.token_id) ||
+            (listing.metadata && listing.metadata.p === 'hcs-5') // HCS-5 standard marker
         );
         
-        if (isHashinal) {
-            console.log(`🖼️ [HASHINAL LISTING] Processing image for ${listing.nft_name}`);
+        if (isHashinal || !imageUrl) {
+            const debugType = isHashinal ? 'HASHINAL LISTING' : 'NO IMAGE LISTING';
+            console.log(`🖼️ [${debugType}] Processing image for ${listing.nft_name}`);
             console.log(`  Selected imageUrl: ${imageUrl}`);
             console.log(`  imageCDN: ${listing.imageCDN}`);
             console.log(`  nftImage: ${listing.nftImage}`);
+            console.log(`  image_url: ${listing.image_url}`);
+            console.log(`  image: ${listing.image}`);
+            console.log(`  imageFile: ${listing.imageFile}`);
             console.log(`  metadata.image: ${listing.metadata?.image}`);
+            console.log(`  data.image: ${listing.data?.image}`);
+            
+            // Check for Hashinal-specific image fields
+            if (listing.metadata) {
+                console.log(`  metadata.files: ${JSON.stringify(listing.metadata.files)}`);
+                console.log(`  metadata.uri: ${listing.metadata.uri}`);
+                console.log(`  metadata.image_data: ${listing.metadata.image_data}`);
+            }
+            
+            // Log all available fields for Hashinals
+            if (isHashinal) {
+                console.log(`  [HASHINAL DEBUG] All listing fields:`, Object.keys(listing));
+            }
+        }
+
+        // Use Hashinal service for enhanced image resolution
+        if (isHashinal && !imageUrl) {
+            console.log(`🔧 [HASHINAL] Attempting enhanced listing image resolution...`);
+            try {
+                imageUrl = await this.hashinalService.resolveHashinalImage(listing);
+                if (imageUrl) {
+                    console.log(`✅ [HASHINAL] Enhanced resolution found listing image: ${imageUrl}`);
+                }
+            } catch (error) {
+                console.error(`❌ [HASHINAL] Enhanced listing resolution failed:`, error.message);
+            }
         }
         
         if (imageUrl) {
@@ -503,7 +574,7 @@ class EmbedUtils {
 
     /**
      * Convert IPFS URL to HTTP URL for Discord compatibility
-     * @param {string} ipfsUrl - IPFS URL
+     * @param {string} ipfsUrl - IPFS URL or other image URL formats
      * @returns {string|null} HTTP URL or null if invalid
      */
     convertIpfsToHttp(ipfsUrl) {
@@ -514,11 +585,19 @@ class EmbedUtils {
             return ipfsUrl;
         }
         
+        // Handle Hashinals HRL format (hcs://1/topicId)
+        if (ipfsUrl.startsWith('hcs://')) {
+            // For Hashinals, we need to convert HRL to actual image URL
+            // This might require fetching metadata from Hedera Consensus Service
+            console.log(`Hashinal HRL detected: ${ipfsUrl} - conversion not yet implemented`);
+            return null; // For now, return null until we implement HCS metadata fetching
+        }
+        
         // Handle various IPFS URL formats
         if (ipfsUrl.startsWith('ipfs://')) {
             const hash = ipfsUrl.replace('ipfs://', '');
             
-            // Check if hash contains path (for Hashinals and other collections)
+            // Check if hash contains path (for traditional NFTs and some collections)
             if (hash.includes('/')) {
                 return `https://ipfs.io/ipfs/${hash}`;
             }
@@ -532,15 +611,21 @@ class EmbedUtils {
             return `https://ipfs.io/ipfs/${hash}`;
         }
         
-        // Handle bare IPFS hashes (common in Hashinals)
-        if (ipfsUrl.startsWith('Qm') || ipfsUrl.startsWith('baf')) {
+        // Handle bare IPFS hashes (common in some NFT collections)
+        if (ipfsUrl.match(/^(Qm[1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]+)$/)) {
             return `https://ipfs.io/ipfs/${ipfsUrl}`;
         }
         
-        // Handle Hashinals-specific patterns (data URIs, base64, etc.)
+        // Handle data URIs (base64 encoded images)
         if (ipfsUrl.startsWith('data:')) {
             // Data URIs are already valid for Discord
             return ipfsUrl;
+        }
+        
+        // Handle Arweave URLs
+        if (ipfsUrl.startsWith('ar://')) {
+            const hash = ipfsUrl.replace('ar://', '');
+            return `https://arweave.net/${hash}`;
         }
         
         return null;

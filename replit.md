@@ -242,6 +242,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added graceful timeout handling for all slash commands (add, remove, list, status, test)
   - Implemented proper deferReply for longer-running test commands to prevent 3-second Discord timeouts
   - Added comprehensive error logging without breaking bot functionality when interactions expire
+- July 10, 2025: Enhanced Hashinals NFT image support and debugging
+  - Created dedicated HashinalService for HCS-5 standard NFT handling
+  - Added Hashinal detection using known token IDs (0.0.5552189, 0.0.2173899, 0.0.789064, 0.0.1097228)
+  - Enhanced image resolution with multiple fallback sources including metadata fields
+  - Added HRL (Hedera Resource Locator) format detection for hcs:// URLs
+  - Improved debugging for Hashinals with detailed field logging and enhanced metadata fetching
+  - Added Mirror Node integration for additional metadata retrieval when standard image fields are missing
 
 ## User Preferences
 
