@@ -827,6 +827,10 @@ class NFTSalesBot {
                         required: true,
                         choices: [
                             {
+                                name: '📋 View All Analytics - Complete comprehensive analysis',
+                                value: 'view-all'
+                            },
+                            {
                                 name: '📊 Core Statistics - All-time volume, sales, prices',
                                 value: 'core-stats'
                             },
@@ -1801,6 +1805,35 @@ class NFTSalesBot {
             let embed;
             
             switch (analyticsType) {
+                case 'view-all':
+                    // Create multiple embeds for comprehensive view
+                    const embeds = [];
+                    
+                    // Core Stats
+                    embeds.push(this.embedUtils.createCoreStatsEmbed(analytics, collectionNames));
+                    
+                    // Advanced Metrics
+                    embeds.push(this.embedUtils.createAdvancedMetricsEmbed(analytics));
+                    
+                    // Price Distribution
+                    embeds.push(this.embedUtils.createPriceDistributionEmbed(analytics));
+                    
+                    // Market Health
+                    embeds.push(this.embedUtils.createMarketHealthEmbed(analytics));
+                    
+                    // Quick Buy Recommendations
+                    embeds.push(this.embedUtils.createQuickBuyRecommendationsEmbed(analytics));
+                    
+                    // Market Overview
+                    const marketOverview = await this.sentxService.getMarketOverview();
+                    if (marketOverview) {
+                        const hbarRate = await this.currencyService.getHbarToUsdRate();
+                        embeds.push(this.embedUtils.createMarketOverviewEmbed(marketOverview, hbarRate));
+                    }
+                    
+                    await interaction.editReply({ embeds: embeds });
+                    return;
+                    
                 case 'core-stats':
                     embed = this.embedUtils.createCoreStatsEmbed(analytics, collectionNames);
                     break;
