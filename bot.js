@@ -680,6 +680,10 @@ class NFTSalesBot {
                 ]
             },
             {
+                name: 'remove-all',
+                description: 'Remove ALL tracked collections from this server (requires confirmation)'
+            },
+            {
                 name: 'list',
                 description: 'List all tracked NFT collections'
             },
@@ -776,6 +780,9 @@ class NFTSalesBot {
                 case 'remove':
                     await this.handleRemoveCommand(interaction, options);
                     break;
+                case 'remove-all':
+                    await this.handleRemoveAllCommand(interaction);
+                    break;
                 case 'list':
                     await this.handleListCommand(interaction);
                     break;
@@ -869,6 +876,126 @@ class NFTSalesBot {
             console.error('Error removing collection:', error);
             await interaction.reply({
                 content: '❌ Error removing collection. Please try again.',
+                ephemeral: true
+            });
+        }
+    }
+
+    async handleRemoveAllCommand(interaction) {
+        const guildId = interaction.guildId;
+
+        try {
+            // Get current tracked collections
+            const trackedCollections = await this.storage.getCollections(guildId);
+            
+            if (!trackedCollections || trackedCollections.length === 0) {
+                await interaction.reply({
+                    content: '❌ No collections are currently being tracked in this server.',
+                    ephemeral: true
+                });
+                return;
+            }
+
+            // Create confirmation embed with current collections
+            const collectionList = trackedCollections.map((collection, index) => 
+                `${index + 1}. **${collection.name}** (${collection.token_id || collection.tokenId})`
+            ).join('\n');
+
+            const confirmEmbed = {
+                title: '⚠️ Remove All Collections - Confirmation Required',
+                description: `Are you sure you want to remove ALL tracked collections from this server?\n\n**Currently tracked collections:**\n${collectionList}\n\n**This action cannot be undone.**`,
+                color: 0xff6600, // Orange warning color
+                footer: { text: 'Use the buttons below to confirm or cancel' }
+            };
+
+            // Create confirmation buttons
+            const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+            
+            const confirmButton = new ButtonBuilder()
+                .setCustomId('remove_all_confirm')
+                .setLabel('Yes, Remove All')
+                .setStyle(ButtonStyle.Danger);
+
+            const cancelButton = new ButtonBuilder()
+                .setCustomId('remove_all_cancel')
+                .setLabel('Cancel')
+                .setStyle(ButtonStyle.Secondary);
+
+            const row = new ActionRowBuilder()
+                .addComponents(confirmButton, cancelButton);
+
+            await interaction.reply({
+                embeds: [confirmEmbed],
+                components: [row],
+                ephemeral: false
+            });
+
+            // Wait for button interaction
+            const filter = (buttonInteraction) => {
+                return ['remove_all_confirm', 'remove_all_cancel'].includes(buttonInteraction.customId) && 
+                       buttonInteraction.user.id === interaction.user.id;
+            };
+
+            try {
+                const buttonInteraction = await interaction.awaitMessageComponent({ 
+                    filter, 
+                    time: 30000 // 30 seconds timeout
+                });
+
+                if (buttonInteraction.customId === 'remove_all_confirm') {
+                    // Remove all collections
+                    let removedCount = 0;
+                    for (const collection of trackedCollections) {
+                        const tokenId = collection.token_id || collection.tokenId;
+                        const removed = await this.storage.removeCollection(guildId, tokenId);
+                        if (removed) removedCount++;
+                    }
+
+                    const successEmbed = {
+                        title: '✅ All Collections Removed',
+                        description: `Successfully removed **${removedCount}** collections from tracking in this server.`,
+                        color: 0x00ff00, // Green success color
+                        timestamp: new Date().toISOString()
+                    };
+
+                    await buttonInteraction.update({
+                        embeds: [successEmbed],
+                        components: [] // Remove buttons
+                    });
+
+                } else if (buttonInteraction.customId === 'remove_all_cancel') {
+                    const cancelEmbed = {
+                        title: '❌ Action Cancelled',
+                        description: 'Remove all collections operation was cancelled. All collections remain tracked.',
+                        color: 0x888888, // Gray color
+                        timestamp: new Date().toISOString()
+                    };
+
+                    await buttonInteraction.update({
+                        embeds: [cancelEmbed],
+                        components: [] // Remove buttons
+                    });
+                }
+
+            } catch (timeoutError) {
+                // Handle timeout
+                const timeoutEmbed = {
+                    title: '⏰ Confirmation Timeout',
+                    description: 'Remove all collections confirmation timed out. No changes were made.',
+                    color: 0x888888, // Gray color
+                    timestamp: new Date().toISOString()
+                };
+
+                await interaction.editReply({
+                    embeds: [timeoutEmbed],
+                    components: [] // Remove buttons
+                });
+            }
+
+        } catch (error) {
+            console.error('Error in remove all command:', error);
+            await interaction.reply({
+                content: '❌ Error processing remove all command. Please try again.',
                 ephemeral: true
             });
         }
