@@ -1705,23 +1705,25 @@ class NFTSalesBot {
                 // Add individual collections
                 const collectionChoices = trackedCollections
                     .filter(col => {
-                        // Only include collections with valid token_id
-                        if (!col.token_id || col.token_id.trim() === '') {
-                            console.log(`Skipping collection with invalid token_id:`, col);
+                        // Check for tokenId field (Drizzle ORM field name)
+                        const tokenId = col.tokenId || col.token_id; // Support both field names
+                        if (!tokenId) {
+                            console.log(`Skipping collection with missing tokenId:`, col);
                             return false;
                         }
                         
                         const name = (col.name || '').toLowerCase();
-                        const tokenId = col.token_id.toLowerCase();
-                        return name.includes(focusedValue) || tokenId.includes(focusedValue);
+                        const tokenIdLower = tokenId.toLowerCase();
+                        return name.includes(focusedValue) || tokenIdLower.includes(focusedValue);
                     })
                     .slice(0, 23) // Leave room for "All Collections"
                     .map(col => {
+                        const tokenId = col.tokenId || col.token_id; // Support both field names
                         const choice = {
-                            name: `${col.name || 'Unknown'} (${col.token_id})`.substring(0, 100),
-                            value: col.token_id
+                            name: `${col.name || 'Unknown'} (${tokenId})`.substring(0, 100),
+                            value: tokenId
                         };
-                        console.log(`Adding choice:`, choice);
+                        console.log(`Adding collection choice:`, choice);
                         return choice;
                     });
                 
@@ -1768,10 +1770,13 @@ class NFTSalesBot {
             if (collectionTokenId && collectionTokenId !== 'all') {
                 // Validate that the collection is tracked in this server
                 const trackedCollections = await this.storage.getCollections(guildId, true);
-                const isTracked = trackedCollections.some(col => col.token_id === collectionTokenId);
+                const isTracked = trackedCollections.some(col => (col.tokenId || col.token_id) === collectionTokenId);
                 
                 if (!isTracked) {
-                    const availableCollections = trackedCollections.map(col => `• ${col.name || 'Unknown'} (${col.token_id})`).join('\n');
+                    const availableCollections = trackedCollections.map(col => {
+                        const tokenId = col.tokenId || col.token_id;
+                        return `• ${col.name || 'Unknown'} (${tokenId})`;
+                    }).join('\n');
                     await interaction.editReply({
                         content: `❌ Collection ${collectionTokenId} is not tracked in this server.\n\n**Available Collections:**\n${availableCollections || 'None - use `/add` to add collections first'}`,
                     });
@@ -1779,7 +1784,7 @@ class NFTSalesBot {
                 }
                 
                 tokenIds = [collectionTokenId];
-                const collection = trackedCollections.find(col => col.token_id === collectionTokenId);
+                const collection = trackedCollections.find(col => (col.tokenId || col.token_id) === collectionTokenId);
                 collectionNames = [collection.name || collectionTokenId];
             } else {
                 // Use all tracked collections for this server
@@ -1792,8 +1797,8 @@ class NFTSalesBot {
                     return;
                 }
                 
-                tokenIds = trackedCollections.map(col => col.token_id);
-                collectionNames = trackedCollections.map(col => col.name || col.token_id);
+                tokenIds = trackedCollections.map(col => col.tokenId || col.token_id);
+                collectionNames = trackedCollections.map(col => col.name || (col.tokenId || col.token_id));
             }
 
             // Get analytics data from SentX
