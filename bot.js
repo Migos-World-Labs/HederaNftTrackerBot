@@ -1255,25 +1255,25 @@ class NFTSalesBot {
                 console.log(`Looking for listings from ${targetTokenIds.length} tracked collections:`, targetTokenIds);
             }
             
-            // Get recent listings from SentX
-            const recentListings = await sentxService.getRecentListings(100);
+            // Get all listings from SentX (without time filter for testing)
+            const allListings = await sentxService.getRecentListings(100, true);
             
-            if (!recentListings || recentListings.length === 0) {
-                await interaction.editReply('❌ No recent listings found for testing');
+            if (!allListings || allListings.length === 0) {
+                await interaction.editReply('❌ No listings found from SentX marketplace');
                 return;
             }
             
             // Filter for listings from target collections
-            const targetListings = recentListings.filter(listing => 
+            const targetListings = allListings.filter(listing => 
                 targetTokenIds.includes(listing.token_id || listing.tokenId)
             );
             
             if (targetListings.length === 0) {
                 if (specifiedCollection) {
-                    await interaction.editReply(`❌ No recent listings found for ${targetCollectionName}.\n\nTry again later when new listings appear for this collection.`);
+                    await interaction.editReply(`❌ No listings found for ${targetCollectionName} on SentX marketplace.\n\nThis collection may not have any active listings currently.`);
                 } else {
                     const collectionNames = trackedCollections.map(c => c.name).join(', ');
-                    await interaction.editReply(`❌ No recent listings found for your tracked collections: ${collectionNames}\n\nTry again later when new listings appear for these collections.`);
+                    await interaction.editReply(`❌ No listings found for your tracked collections: ${collectionNames}\n\nThese collections may not have any active listings currently.`);
                 }
                 return;
             }

@@ -122,9 +122,10 @@ class SentXService {
     /**
      * Get recent NFT listings from SentX marketplace
      * @param {number} limit - Number of listings to fetch
+     * @param {boolean} allTimeListings - If true, fetch all listings without time filter (for testing)
      * @returns {Array} Array of listing objects
      */
-    async getRecentListings(limit = 50) {
+    async getRecentListings(limit = 50, allTimeListings = false) {
         try {
             const apiKey = process.env.SENTX_API_KEY;
             
@@ -164,7 +165,23 @@ class SentXService {
                 return isValidListing;
             });
             
-            return this.formatListingsData(listingsOnly);
+            const formattedListings = this.formatListingsData(listingsOnly);
+            
+            // Filter for recent listings only if not fetching all time listings
+            if (allTimeListings) {
+                console.log(`📋 Found ${formattedListings.length} total listings from SentX API (all time)`);
+                return formattedListings;
+            } else {
+                // Filter for recent listings (within last 15 minutes for live monitoring)
+                const fifteenMinutesAgo = Date.now() - (15 * 60 * 1000);
+                const recentListings = formattedListings.filter(listing => {
+                    const listingTimestamp = new Date(listing.timestamp).getTime();
+                    return listingTimestamp > fifteenMinutesAgo;
+                });
+
+                console.log(`📋 Found ${recentListings.length} recent listings from SentX API`);
+                return recentListings;
+            }
 
         } catch (error) {
             if (error.response) {
