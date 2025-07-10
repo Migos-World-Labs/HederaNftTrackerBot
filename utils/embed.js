@@ -54,20 +54,33 @@ class EmbedUtils {
         }
 
         // Add NFT image with comprehensive fallback options
-        // Priority: imageCDN > nftImage > image_url > imageUrl > imageFile > image
+        // Priority: imageCDN > nftImage > image_url > imageUrl > imageFile > image > metadata.image > media.image
         let imageUrl = sale.imageCDN || 
                        sale.nftImage || 
                        sale.image_url || 
                        sale.imageUrl || 
                        sale.imageFile ||
-                       sale.image;
+                       sale.image ||
+                       sale.nft_image ||
+                       sale.imageData ||
+                       (sale.metadata && sale.metadata.image) ||
+                       (sale.media && sale.media.image) ||
+                       (sale.data && sale.data.image);
         
-        // Special debugging for Rooster Cartel images
-        if (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) {
-            console.log(`ROOSTER CARTEL - Processing image for ${sale.nft_name}`);
+        // Special debugging for Hashinals and problematic collections
+        const isHashinal = sale.collection_name && (
+            sale.collection_name.toLowerCase().includes('hashinal') ||
+            sale.token_id === '0.0.hashinal_collection_id' // Add known Hashinal collection IDs
+        );
+        
+        if (isHashinal || (sale.collection_name && sale.collection_name.includes('Rooster Cartel'))) {
+            console.log(`🖼️ [${isHashinal ? 'HASHINAL' : 'ROOSTER CARTEL'}] Processing image for ${sale.nft_name}`);
             console.log(`  Selected imageUrl: ${imageUrl}`);
             console.log(`  imageCDN: ${sale.imageCDN}`);
             console.log(`  nftImage: ${sale.nftImage}`);
+            console.log(`  image_url: ${sale.image_url}`);
+            console.log(`  image: ${sale.image}`);
+            console.log(`  metadata.image: ${sale.metadata?.image}`);
         }
         
         // If no image is available, try to fetch NFT details to get metadata
@@ -244,7 +257,7 @@ class EmbedUtils {
             });
         }
 
-        // Add NFT image with comprehensive fallback options
+        // Add NFT image with comprehensive fallback options for listings
         let imageUrl = listing.imageCDN || 
                        listing.nftImage || 
                        listing.image_url || 
@@ -253,14 +266,30 @@ class EmbedUtils {
                        listing.image ||
                        listing.nft_image ||
                        listing.imageData ||
-                       listing.metadata?.image ||
-                       listing.media?.image;
+                       (listing.metadata && listing.metadata.image) ||
+                       (listing.media && listing.media.image) ||
+                       (listing.data && listing.data.image);
         
         // Additional checks for image URLs in nested data
         if (!imageUrl && listing.nft_data) {
             imageUrl = listing.nft_data.imageCDN || 
                       listing.nft_data.image_url || 
-                      listing.nft_data.image;
+                      listing.nft_data.image ||
+                      (listing.nft_data.metadata && listing.nft_data.metadata.image);
+        }
+        
+        // Special debugging for Hashinals and other problematic collections
+        const isHashinal = listing.collection_name && (
+            listing.collection_name.toLowerCase().includes('hashinal') ||
+            listing.token_id === '0.0.hashinal_collection_id' // Add known Hashinal collection IDs
+        );
+        
+        if (isHashinal) {
+            console.log(`🖼️ [HASHINAL LISTING] Processing image for ${listing.nft_name}`);
+            console.log(`  Selected imageUrl: ${imageUrl}`);
+            console.log(`  imageCDN: ${listing.imageCDN}`);
+            console.log(`  nftImage: ${listing.nftImage}`);
+            console.log(`  metadata.image: ${listing.metadata?.image}`);
         }
         
         if (imageUrl) {
@@ -485,10 +514,33 @@ class EmbedUtils {
             return ipfsUrl;
         }
         
-        // Convert IPFS URLs to HTTP gateway URLs
+        // Handle various IPFS URL formats
         if (ipfsUrl.startsWith('ipfs://')) {
             const hash = ipfsUrl.replace('ipfs://', '');
+            
+            // Check if hash contains path (for Hashinals and other collections)
+            if (hash.includes('/')) {
+                return `https://ipfs.io/ipfs/${hash}`;
+            }
+            
+            // For CIDv0 and CIDv1 hashes
+            if (hash.startsWith('Qm') || hash.startsWith('baf')) {
+                return `https://ipfs.io/ipfs/${hash}`;
+            }
+            
+            // Fallback for other hash formats
             return `https://ipfs.io/ipfs/${hash}`;
+        }
+        
+        // Handle bare IPFS hashes (common in Hashinals)
+        if (ipfsUrl.startsWith('Qm') || ipfsUrl.startsWith('baf')) {
+            return `https://ipfs.io/ipfs/${ipfsUrl}`;
+        }
+        
+        // Handle Hashinals-specific patterns (data URIs, base64, etc.)
+        if (ipfsUrl.startsWith('data:')) {
+            // Data URIs are already valid for Discord
+            return ipfsUrl;
         }
         
         return null;

@@ -395,26 +395,47 @@ class NFTSalesBot {
             // Get all configured servers and channels
             const serverConfigs = await this.storage.getAllServerConfigs();
             let successCount = 0;
+            let eligibleServers = 0;
             
             if (serverConfigs.length === 0) {
-                console.log('No servers configured for notifications');
+                console.log('❌ No servers configured for notifications');
                 return;
             }
+            
+            console.log(`🔍 Checking ${serverConfigs.length} server(s) for collection tracking: ${sale.token_id || sale.tokenId}`);
 
             // Check each server to see if they track this collection
             for (const serverConfig of serverConfigs) {
                 try {
-                    if (!serverConfig.enabled) continue;
+                    if (!serverConfig.enabled) {
+                        console.log(`  ⏸️ ${serverConfig.guildName || serverConfig.guildId}: notifications disabled`);
+                        continue;
+                    }
                     
                     // Check if this server tracks the collection
                     const isTracked = await this.storage.isCollectionTracked(sale.token_id || sale.tokenId, serverConfig.guildId);
                     
                     if (!isTracked) {
+                        console.log(`  ⏭️ ${serverConfig.guildName || serverConfig.guildId}: collection not tracked`);
                         continue; // Skip this server if collection not tracked
                     }
                     
+                    eligibleServers++;
+                    console.log(`  ✅ ${serverConfig.guildName || serverConfig.guildId}: collection tracked, posting notification...`);
+                    
                     const channel = this.client.channels.cache.get(serverConfig.channelId);
                     if (channel) {
+                        // Add collection URL for SentX marketplace
+                        if (sale.token_id) {
+                            const collectionFriendlyUrl = sale.collectionFriendlyurl || sale.collection_friendly_url;
+                            
+                            if (collectionFriendlyUrl) {
+                                sale.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
+                            } else {
+                                sale.collection_url = `https://sentx.io/nft-marketplace/collection/${sale.token_id}`;
+                            }
+                        }
+                        
                         // Create Discord embed for the sale
                         const embed = await embedUtils.createSaleEmbed(sale, hbarRate);
                         const message = await channel.send({ embeds: [embed] });
@@ -427,14 +448,19 @@ class NFTSalesBot {
                         }
                         
                         successCount++;
+                        console.log(`    📤 Posted to #${channel.name}`);
+                    } else {
+                        console.log(`    ❌ Channel not found: ${serverConfig.channelId}`);
                     }
                 } catch (error) {
-                    console.error(`Failed to post to server ${serverConfig.guildId}:`, error.message);
+                    console.error(`    ❌ Failed to post to server ${serverConfig.guildName || serverConfig.guildId}:`, error.message);
                 }
             }
             
             if (successCount > 0) {
-                console.log(`✅ Posted sale notification to ${successCount} server(s): ${sale.nft_name} sold for ${sale.price_hbar} HBAR`);
+                console.log(`🔥 Posted sale notification to ${successCount}/${eligibleServers} eligible server(s): ${sale.nft_name} sold for ${sale.price_hbar} HBAR`);
+            } else if (eligibleServers > 0) {
+                console.log(`⚠️ Failed to post to any of ${eligibleServers} eligible server(s)`);
             }
 
         } catch (error) {
@@ -447,27 +473,38 @@ class NFTSalesBot {
             // Get all configured servers and channels
             const serverConfigs = await this.storage.getAllServerConfigs();
             let successCount = 0;
+            let eligibleServers = 0;
             
             if (serverConfigs.length === 0) {
-                console.log('No servers configured for listing notifications');
+                console.log('❌ No servers configured for listing notifications');
                 return;
             }
+            
+            console.log(`🔍 Checking ${serverConfigs.length} server(s) for collection tracking: ${listing.token_id || listing.tokenId}`);
 
             // Check each server to see if they track this collection
             for (const serverConfig of serverConfigs) {
                 try {
-                    if (!serverConfig.enabled) continue;
+                    if (!serverConfig.enabled) {
+                        console.log(`  ⏸️ ${serverConfig.guildName || serverConfig.guildId}: notifications disabled`);
+                        continue;
+                    }
                     
                     // Check if this server tracks the collection
                     const isTracked = await this.storage.isCollectionTracked(listing.token_id || listing.tokenId, serverConfig.guildId);
                     
                     if (!isTracked) {
+                        console.log(`  ⏭️ ${serverConfig.guildName || serverConfig.guildId}: collection not tracked`);
                         continue; // Skip this server if collection not tracked
                     }
+                    
+                    eligibleServers++;
+                    console.log(`  ✅ ${serverConfig.guildName || serverConfig.guildId}: collection tracked, posting listing...`);
                     
                     // Use separate listings channel if configured, otherwise use main channel
                     const channelId = serverConfig.listingsChannelId || serverConfig.channelId;
                     const channel = this.client.channels.cache.get(channelId);
+                    const channelType = serverConfig.listingsChannelId ? 'listings' : 'main';
                     
                     if (channel) {
                         // Add collection URL for SentX marketplace (collection page, not specific NFT)
@@ -493,14 +530,19 @@ class NFTSalesBot {
                         }
                         
                         successCount++;
+                        console.log(`    📝 Posted to #${channel.name} (${channelType} channel)`);
+                    } else {
+                        console.log(`    ❌ Channel not found: ${channelId} (${channelType})`);
                     }
                 } catch (error) {
-                    console.error(`Failed to post listing to server ${serverConfig.guildId}:`, error.message);
+                    console.error(`    ❌ Failed to post listing to server ${serverConfig.guildName || serverConfig.guildId}:`, error.message);
                 }
             }
             
             if (successCount > 0) {
-                console.log(`✅ Posted listing notification to ${successCount} server(s): ${listing.nft_name} listed for ${listing.price_hbar} HBAR`);
+                console.log(`📝 Posted listing notification to ${successCount}/${eligibleServers} eligible server(s): ${listing.nft_name} listed for ${listing.price_hbar} HBAR`);
+            } else if (eligibleServers > 0) {
+                console.log(`⚠️ Failed to post listing to any of ${eligibleServers} eligible server(s)`);
             }
 
         } catch (error) {

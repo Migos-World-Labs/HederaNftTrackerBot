@@ -229,6 +229,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - New test command structure: "Latest Sale from Tracked Collections", "Latest Listing from Tracked Collections", "Recent Marketplace Sale", "Recent Marketplace Listing"
   - Improved user experience by showing relevant data for each server's tracked collections
   - Fixed Discord interaction timeout errors with better error handling
+- July 10, 2025: Enhanced notification system and Hashinals image support
+  - Added comprehensive debugging system for notification delivery with detailed server tracking
+  - Enhanced IPFS URL conversion to support Hashinals, CIDv0, CIDv1, data URIs, and bare hashes
+  - Improved image detection with additional fallback options (metadata.image, media.image, data.image)
+  - Added special debugging for Hashinals and other problematic NFT collections
+  - Enhanced notification logging to show which servers receive/reject notifications and why
+  - Fixed collection URL generation for both sales and listings with proper SentX marketplace links
 
 ## User Preferences
 
