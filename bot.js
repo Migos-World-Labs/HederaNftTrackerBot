@@ -746,27 +746,19 @@ class NFTSalesBot {
                         required: false,
                         choices: [
                             {
-                                name: 'Regular Sale',
-                                value: 'sale'
+                                name: 'Latest Sale from Tracked Collections',
+                                value: 'tracked-sale'
                             },
                             {
-                                name: 'Order Fill',
-                                value: 'orderfill'
+                                name: 'Latest Listing from Tracked Collections',
+                                value: 'tracked-listing'
                             },
                             {
-                                name: 'Rooster Cartel Order Fill',
-                                value: 'roosterorderfill'
-                            },
-                            {
-                                name: 'Latest Listing',
-                                value: 'listing'
-                            },
-                            {
-                                name: 'Recent Sale',
+                                name: 'Recent Marketplace Sale',
                                 value: 'recent-sale'
                             },
                             {
-                                name: 'Recent Listing',
+                                name: 'Recent Marketplace Listing',
                                 value: 'recent-listing'
                             }
                         ]
@@ -1144,112 +1136,29 @@ class NFTSalesBot {
 
     async handleTestCommand(interaction) {
         try {
-            // Check if user specified orderfill test
-            const testType = interaction.options?.getString('type') || 'sale';
+            const testType = interaction.options?.getString('type') || 'tracked-sale';
             console.log(`Test command triggered with type: ${testType}`);
             
             // Defer reply once at the beginning
             await interaction.deferReply();
             
-            if (testType === 'orderfill') {
-                console.log('Executing order fill test...');
-                await this.testOrderFill(interaction);
-                return;
-            } else if (testType === 'roosterorderfill') {
-                console.log('Executing Rooster Cartel order fill test...');
-                await this.testRoosterCartelOrderFill(interaction);
-                return;
-            } else if (testType === 'listing') {
-                console.log('Executing listing test...');
+            if (testType === 'tracked-listing') {
+                console.log('Executing tracked collection listing test...');
                 await this.testLatestListing(interaction);
                 return;
             } else if (testType === 'recent-sale') {
-                console.log('Testing most recent sale...');
+                console.log('Testing most recent marketplace sale...');
                 await this.testMostRecentSale(interaction);
                 return;
             } else if (testType === 'recent-listing') {
-                console.log('Testing most recent listing...');
+                console.log('Testing most recent marketplace listing...');
                 await this.testMostRecentListing(interaction);
                 return;
             } else {
-                console.log('Testing with recent sale data...');
-                
-                // Get recent sales from SentX
-                const recentSales = await sentxService.getRecentSales(100);
-                
-                let testSale = null;
-                
-                if (recentSales && recentSales.length > 0) {
-                    // Try to find a sale from tracked collections first
-                    const trackedCollections = await this.storage.getCollections(interaction.guildId);
-                    if (trackedCollections && trackedCollections.length > 0) {
-                        const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
-                        testSale = recentSales.find(sale => trackedTokenIds.includes(sale.token_id));
-                    }
-                    
-                    // If no tracked collection sales found, use any recent sale
-                    if (!testSale) {
-                        testSale = recentSales[0]; // Use the most recent sale
-                    }
-                }
-                
-                // If still no sale found, create mock data
-                if (!testSale) {
-                    console.log('No recent sales found, using mock data for test');
-                    testSale = {
-                        id: 'test-sale-' + Date.now(),
-                        nft_name: 'Sample NFT #1234 (Demo)',
-                        collection_name: 'Demo Collection',
-                        token_id: '0.0.123456',
-                        serial_id: 1234,
-                        serial_number: 1234,
-                        price_hbar: 100,
-                        buyer: '0.0.789012',
-                        seller: '0.0.345678',
-                        timestamp: new Date().toISOString(),
-                        imageCDN: 'https://via.placeholder.com/400x400/7c3aed/ffffff?text=Demo+NFT',
-                        image_url: 'https://via.placeholder.com/400x400/7c3aed/ffffff?text=Demo+NFT',
-                        collection_url: 'https://sentx.io/nft-marketplace',
-                        marketplace: 'SentX',
-                        sale_type: 'Sale',
-                        transaction_hash: '0.0.12345@1640995200.123456789',
-                        rarity: 0.25,
-                        rank: 250
-                    };
-                }
-                
-                console.log(`Using sale for testing: ${testSale.nft_name} from ${testSale.collection_name}`);
-                
-                // Ensure collection URL is set
-                if (!testSale.collection_url) {
-                    testSale.collection_url = 'https://sentx.io/nft-marketplace';
-                }
-                
-                // Get HBAR rate and process the sale
-                const hbarRate = await currencyService.getHbarToUsdRate();
-                
-                // Create embed
-                const embed = await embedUtils.createSaleEmbed(testSale, hbarRate);
-                
-                // Determine message based on data source
-                const isTrackedCollection = recentSales && recentSales.length > 0;
-                const isMockData = testSale.id && testSale.id.startsWith('test-sale-');
-                
-                let content;
-                if (isMockData) {
-                    content = `🧪 **Test Notification (Demo Data):**\nThis shows how sale notifications would appear. Add collections with \`/add\` to track real sales!`;
-                } else if (isTrackedCollection) {
-                    content = `🧪 **Test Sale Notification:**\nUsing recent marketplace data to demonstrate bot functionality.`;
-                } else {
-                    content = `🧪 **Test Sale Notification:**\nShowing how notifications appear with real marketplace data.`;
-                }
-                
-                await interaction.editReply({ 
-                    content: content,
-                    embeds: [embed] 
-                });
-                
-                console.log('Test sale notification posted successfully!');
+                // Default: tracked-sale
+                console.log('Testing latest sale from tracked collections...');
+                await this.testTrackedCollectionsSale(interaction);
+                return;
             }
             
         } catch (error) {
@@ -1269,120 +1178,7 @@ class NFTSalesBot {
         }
     }
 
-    async testOrderFill(interaction) {
-        try {
-            console.log('=== EXECUTING ORDER FILL TEST ===');
-            
-            // Create a mock order fill with proper structure and real Wild Tigers image data
-            const mockOrderFill = {
-                id: 'test-order-fill-' + Date.now(),
-                nft_name: 'Wild Tigers #1234 (Test Order Fill)',
-                collection_name: 'Wild Tigers',
-                token_id: '0.0.6024491', // Wild Tigers token ID  
-                serial_id: 1234,
-                serial_number: 1234,
-                price_hbar: 150,
-                buyer: '0.0.789012',
-                seller: '0.0.345678',
-                timestamp: new Date().toISOString(),
-                // Use actual Wild Tigers image data from live API
-                nftImage: 'ipfs://bafybeidxxnqpp2sxul24xot7n6behrwad4p236bzbislk2kpirpgzho7lm',
-                imageCDN: 'https://sentx.b-cdn.net/bafybeidxxnqpp2sxul24xot7n6behrwad4p236bzbislk2kpirpgzho7lm?optimizer=image',
-                image_url: 'https://sentx.b-cdn.net/bafybeidxxnqpp2sxul24xot7n6behrwad4p236bzbislk2kpirpgzho7lm?optimizer=image',
-                collection_url: 'https://sentx.io/nft-marketplace/wild-tigers',
-                marketplace: 'SentX',
-                sale_type: 'Order', // This marks it as an order fill
-                transaction_hash: '0.0.12345@1640995200.123456789',
-                rarity: 0.15,
-                rank: 150
-            };
-            
-            console.log('Mock order fill data:', JSON.stringify(mockOrderFill, null, 2));
-            
-            // Get current HBAR rate  
-            const hbarRate = await currencyService.getHbarToUsdRate();
-            console.log(`Using HBAR rate: ${hbarRate}`);
-            
-            // Create the embed
-            const embed = await embedUtils.createSaleEmbed(mockOrderFill, hbarRate);
-            
-            await interaction.editReply({ 
-                content: `📋 **Test Order Fill Notification (Mock Data):**\nThis simulates how an order fill would appear with images.`,
-                embeds: [embed] 
-            });
-            
-            console.log('=== ORDER FILL TEST COMPLETED SUCCESSFULLY ===');
-            
-        } catch (error) {
-            console.error('Error in order fill test:', error);
-            try {
-                if (error.code === 10062 || error.code === 40060) {
-                    console.log('Interaction expired during order fill test');
-                } else {
-                    await interaction.editReply(`❌ Error testing order fill: ${error.message}`);
-                }
-            } catch (responseError) {
-                console.error('Could not respond to order fill test interaction:', responseError.message);
-            }
-        }
-    }
 
-    async testRoosterCartelOrderFill(interaction) {
-        try {
-            console.log('=== EXECUTING ROOSTER CARTEL ORDER FILL TEST ===');
-            
-            // Create a mock Rooster Cartel order fill with real API data structure
-            const mockOrderFill = {
-                id: 'test-rooster-' + Date.now(),
-                nft_name: 'Rooster Cartel Breeding Hen #72 (Test Order Fill)',
-                collection_name: 'Rooster Cartel Hens',
-                token_id: '0.0.1110608',
-                serial_id: 59,
-                serial_number: 59,
-                price_hbar: 100,
-                buyer: '0.0.453351',
-                seller: '0.0.812534',
-                timestamp: new Date().toISOString(),
-                imageCDN: 'https://sentx.b-cdn.net/bafybeia5grwrbz3k6ngxcabnsuwpo2yitpqbwbufwd5c7dmjx55ppy7ste/52.png?optimizer=image',
-                nftImage: 'ipfs://bafybeia5grwrbz3k6ngxcabnsuwpo2yitpqbwbufwd5c7dmjx55ppy7ste/52.png',
-                image_url: 'https://sentx.b-cdn.net/bafybeia5grwrbz3k6ngxcabnsuwpo2yitpqbwbufwd5c7dmjx55ppy7ste/52.png?optimizer=image',
-                collection_url: 'https://sentx.io/nft-marketplace/rooster-cartel-breeding-hens',
-                marketplace: 'SentX',
-                sale_type: 'Order',
-                transaction_hash: '0.0.1064038@1750487213.602045476',
-                rarity: 0.7545,
-                rank: 83
-            };
-            
-            console.log('Mock Rooster Cartel order fill data:', JSON.stringify(mockOrderFill, null, 2));
-            
-            // Get current HBAR rate
-            const hbarRate = await this.currencyService.getHbarToUsdRate();
-            console.log(`Using HBAR rate: ${hbarRate}`);
-            
-            // Create the embed
-            const embed = await this.embedUtils.createSaleEmbed(mockOrderFill, hbarRate);
-            
-            await interaction.editReply({ 
-                content: `📋 **Test Rooster Cartel Order Fill (Mock Data):**\nTesting image display for Rooster Cartel NFTs.`,
-                embeds: [embed] 
-            });
-            
-            console.log('=== ROOSTER CARTEL ORDER FILL TEST COMPLETED ===');
-            
-        } catch (error) {
-            console.error('Error in Rooster Cartel order fill test:', error);
-            try {
-                if (error.code === 10062 || error.code === 40060) {
-                    console.log('Interaction expired during Rooster Cartel order fill test');
-                } else {
-                    await interaction.editReply(`❌ Error testing Rooster Cartel order fill: ${error.message}`);
-                }
-            } catch (responseError) {
-                console.error('Could not respond to Rooster Cartel test interaction:', responseError.message);
-            }
-        }
-    }
 
     async handleSetListingsChannelCommand(interaction, options) {
         try {
@@ -1723,6 +1519,79 @@ class NFTSalesBot {
                 }
             } catch (responseError) {
                 console.error('Could not respond to listing test interaction:', responseError.message);
+            }
+        }
+    }
+
+    async testTrackedCollectionsSale(interaction) {
+        try {
+            console.log('Testing latest sale from tracked collections...');
+            
+            // Get tracked collections for this server
+            const guildId = interaction.guildId;
+            const trackedCollections = await this.storage.getCollections(guildId);
+            
+            if (!trackedCollections || trackedCollections.length === 0) {
+                await interaction.editReply('❌ No collections are being tracked in this server. Use `/add` to track collections first.');
+                return;
+            }
+            
+            // Get recent sales from SentX
+            const recentSales = await sentxService.getRecentSales(100);
+            
+            if (!recentSales || recentSales.length === 0) {
+                await interaction.editReply('❌ No recent sales found on SentX marketplace');
+                return;
+            }
+            
+            // Find sales from tracked collections
+            const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+            const trackedSales = recentSales.filter(sale => trackedTokenIds.includes(sale.token_id));
+            
+            if (trackedSales.length === 0) {
+                const collectionNames = trackedCollections.map(c => c.name).join(', ');
+                await interaction.editReply(`❌ No recent sales found for your tracked collections: ${collectionNames}\n\nThese collections may not have had any sales recently.`);
+                return;
+            }
+            
+            // Use the most recent sale from tracked collections
+            const testSale = trackedSales[0];
+            const collectionName = trackedCollections.find(c => 
+                (c.token_id || c.tokenId) === testSale.token_id
+            )?.name || testSale.collection_name;
+            
+            // Ensure collection URL is set
+            if (!testSale.collection_url) {
+                testSale.collection_url = testSale.collectionFriendlyurl 
+                    ? `https://sentx.io/nft-marketplace/${testSale.collectionFriendlyurl}`
+                    : `https://sentx.io/nft-marketplace/collection/${testSale.token_id}`;
+            }
+            
+            console.log(`Using sale for testing: ${testSale.nft_name} from ${collectionName}`);
+            
+            // Get HBAR rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            
+            // Create sale embed
+            const embed = await embedUtils.createSaleEmbed(testSale, hbarRate);
+            
+            await interaction.editReply({
+                content: `📈 **Test Sale from Tracked Collection:**\n*Latest sale from ${collectionName}*`,
+                embeds: [embed]
+            });
+            
+            console.log('Tracked collection sale test completed successfully!');
+            
+        } catch (error) {
+            console.error('Error testing tracked collection sale:', error);
+            try {
+                if (error.code === 10062 || error.code === 40060) {
+                    console.log('Interaction expired during tracked sale test');
+                } else {
+                    await interaction.editReply(`❌ Error testing tracked collection sale: ${error.message}`);
+                }
+            } catch (responseError) {
+                console.error('Could not respond to tracked sale test interaction:', responseError.message);
             }
         }
     }

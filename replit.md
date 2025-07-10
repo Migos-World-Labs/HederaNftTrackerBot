@@ -223,6 +223,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - New test commands show the most recent marketplace activity regardless of tracked collections
   - Enhanced image detection and fallback for listing notifications
   - Fixed URL generation to prevent malformed marketplace links
+- July 10, 2025: Simplified test commands to focus on server collections
+  - Removed hardcoded test collections (Wild Tigers, Rooster Cartel) from test commands
+  - Replaced with server-specific test options that only use collections tracked in each server
+  - New test command structure: "Latest Sale from Tracked Collections", "Latest Listing from Tracked Collections", "Recent Marketplace Sale", "Recent Marketplace Listing"
+  - Improved user experience by showing relevant data for each server's tracked collections
+  - Fixed Discord interaction timeout errors with better error handling
 
 ## User Preferences
 
