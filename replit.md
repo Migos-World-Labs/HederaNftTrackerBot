@@ -151,6 +151,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Sales notifications continue in main channel while listings go to separate channel if configured
   - Enhanced database storage methods to support listings channel configuration and management
   - Provides channel permission validation and user-friendly setup instructions
+- July 10, 2025: Added test listing command functionality
+  - Extended /test slash command with new "Latest Listing" option
+  - Implemented testLatestListing() method to fetch and display most recent marketplace listing
+  - Updated slash command registration to include new test option
+  - Test command now supports: Regular Sale, Order Fill, Rooster Cartel Order Fill, and Latest Listing
+  - Provides comprehensive testing capabilities for both sales and listings notification systems
 
 ## User Preferences
 
