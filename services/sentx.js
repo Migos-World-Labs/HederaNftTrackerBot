@@ -169,7 +169,10 @@ class SentXService {
             
             // Filter for recent listings only if not fetching all time listings
             if (allTimeListings) {
-                console.log(`📋 Found ${formattedListings.length} total listings from SentX API (all time)`);
+                // Only log if listings found for testing
+                if (formattedListings.length > 0) {
+                    console.log(`📋 Found ${formattedListings.length} total listings from SentX API (all time)`);
+                }
                 return formattedListings;
             } else {
                 // Filter for recent listings (within last 15 minutes for live monitoring)
@@ -179,7 +182,10 @@ class SentXService {
                     return listingTimestamp > fifteenMinutesAgo;
                 });
 
-                console.log(`📋 Found ${recentListings.length} recent listings from SentX API`);
+                // Only log if listings found - reduces console spam
+                if (recentListings.length > 0) {
+                    console.log(`📋 Found ${recentListings.length} recent listings from SentX API`);
+                }
                 return recentListings;
             }
 

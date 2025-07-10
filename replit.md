@@ -188,6 +188,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Shows list of all tracked collections before removal with 30-second timeout
   - Includes proper error handling and user feedback for bulk operations
   - Prevents accidental data loss with clear warning messages and cancellation option
+- July 10, 2025: Optimized monitoring to only track database collections
+  - Modified checkForNewSales() to filter API results by tracked collections only
+  - Eliminated console spam by only processing sales/listings from database collections
+  - Reduced unnecessary API processing and improved performance
+  - Console now only shows activity for collections actually being tracked
+  - System automatically picks up new collections as they're added to database
 
 ## User Preferences
 

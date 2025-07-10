@@ -157,22 +157,39 @@ class NFTSalesBot {
 
     async checkForNewSales() {
         try {
+            // Get all tracked collections from database first
+            const allTrackedCollections = await this.storage.getCollections();
+            const trackedTokenIds = allTrackedCollections.map(c => c.token_id || c.tokenId);
+            
+            if (trackedTokenIds.length === 0) {
+                // No collections tracked, skip monitoring
+                return;
+            }
+
             // Get recent sales from SentX marketplace
             const sentxSales = await sentxService.getRecentSales();
             // Get recent listings from SentX marketplace  
             const sentxListings = await sentxService.getRecentListings();
 
+            // Filter for only tracked collections
+            const trackedSales = sentxSales.filter(sale => 
+                trackedTokenIds.includes(sale.token_id || sale.tokenId)
+            );
+            const trackedListings = sentxListings.filter(listing => 
+                trackedTokenIds.includes(listing.token_id || listing.tokenId)
+            );
+
             // Get current HBAR to USD rate
             const hbarRate = await currencyService.getHbarToUsdRate();
 
-            // Process sales
-            if (sentxSales && sentxSales.length > 0) {
-                await this.processNewSales(sentxSales, hbarRate);
+            // Process sales (only for tracked collections)
+            if (trackedSales && trackedSales.length > 0) {
+                await this.processNewSales(trackedSales, hbarRate);
             }
 
-            // Process listings  
-            if (sentxListings && sentxListings.length > 0) {
-                await this.processNewListings(sentxListings, hbarRate);
+            // Process listings (only for tracked collections)
+            if (trackedListings && trackedListings.length > 0) {
+                await this.processNewListings(trackedListings, hbarRate);
             }
 
         } catch (error) {
