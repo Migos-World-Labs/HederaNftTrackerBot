@@ -1164,7 +1164,7 @@ class NFTSalesBot {
             console.log('Testing latest listing...');
             
             // Get recent listings from SentX
-            const recentListings = await this.sentxService.getRecentListings(50);
+            const recentListings = await sentxService.getRecentListings(50);
             
             if (!recentListings || recentListings.length === 0) {
                 await interaction.editReply('❌ No recent listings found for testing');
@@ -1178,10 +1178,10 @@ class NFTSalesBot {
             console.log('Test listing data:', JSON.stringify(testListing, null, 2));
             
             // Get HBAR rate
-            const hbarRate = await this.currencyService.getHbarToUsdRate();
+            const hbarRate = await currencyService.getHbarToUsdRate();
             
             // Create a listing embed to test the formatting
-            const embed = await this.embedUtils.createListingEmbed(testListing, hbarRate);
+            const embed = await embedUtils.createListingEmbed(testListing, hbarRate);
             
             // Send test listing notification
             await interaction.editReply({
