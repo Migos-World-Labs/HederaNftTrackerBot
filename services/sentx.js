@@ -301,10 +301,11 @@ class SentXService {
                 attributes: listing.attributes || [],
                 payment_token: listing.paymentToken || { symbol: 'HBAR' },
                 listing_url: listing.listingUrl ? `https://sentx.io${listing.listingUrl}` : 
-                    (listing.collectionFriendlyurl && listing.nftSerialId ? 
+                    (listing.collectionFriendlyurl && listing.nftSerialId && listing.nftSerialId !== null && listing.nftSerialId !== undefined ? 
                         `https://sentx.io/nft-marketplace/${listing.collectionFriendlyurl}/${listing.nftSerialId}` : 
-                        (listing.nftTokenAddress && listing.nftSerialId ? 
-                            `https://sentx.io/nft-marketplace/collection/${listing.nftTokenAddress}/${listing.nftSerialId}` : null)),
+                        (listing.collectionFriendlyurl ? 
+                            `https://sentx.io/nft-marketplace/${listing.collectionFriendlyurl}` : 
+                            `https://sentx.io/nft-marketplace/collection/${listing.nftTokenAddress}`)),
                 collection_url: listing.collectionFriendlyurl ? `https://sentx.io/nft-marketplace/${listing.collectionFriendlyurl}` : `https://sentx.io/nft-marketplace/collection/${listing.nftTokenAddress}`,
                 floor_price: listing.floorPrice || null,
                 days_since_mint: listing.daysSinceMint || null
@@ -351,10 +352,11 @@ class SentXService {
                 attributes: sale.attributes || [],
                 payment_token: sale.paymentToken || { symbol: 'HBAR' },
                 listing_url: sale.listingUrl ? `https://sentx.io${sale.listingUrl}` : 
-                    (sale.collectionFriendlyurl && sale.nftSerialId ? 
+                    (sale.collectionFriendlyurl && sale.nftSerialId && sale.nftSerialId !== null && sale.nftSerialId !== undefined ? 
                         `https://sentx.io/nft-marketplace/${sale.collectionFriendlyurl}/${sale.nftSerialId}` : 
-                        (sale.nftTokenAddress && sale.nftSerialId ? 
-                            `https://sentx.io/nft-marketplace/collection/${sale.nftTokenAddress}/${sale.nftSerialId}` : null)),
+                        (sale.collectionFriendlyurl ? 
+                            `https://sentx.io/nft-marketplace/${sale.collectionFriendlyurl}` : 
+                            `https://sentx.io/nft-marketplace/collection/${sale.nftTokenAddress}`)),
                 collection_url: sale.collectionFriendlyurl ? `https://sentx.io/nft-marketplace/${sale.collectionFriendlyurl}` : `https://sentx.io/nft-marketplace/collection/${sale.nftTokenAddress}`,
                 previous_price: sale.previousPrice || null
             };

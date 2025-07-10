@@ -438,7 +438,7 @@ class EmbedUtils {
             `🆔 **Collection ID:** \`${listing.token_id}\``,
         ];
 
-        if (listing.listing_url) {
+        if (listing.listing_url && !listing.listing_url.includes('undefined')) {
             technicalDetails.push(`🔗 **View Listing:** [Open on SentX](${listing.listing_url})`);
         }
 

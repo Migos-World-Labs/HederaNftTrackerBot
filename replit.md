@@ -249,6 +249,11 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added HRL (Hedera Resource Locator) format detection for hcs:// URLs
   - Improved debugging for Hashinals with detailed field logging and enhanced metadata fetching
   - Added Mirror Node integration for additional metadata retrieval when standard image fields are missing
+- July 10, 2025: Fixed undefined values in listing URLs
+  - Fixed "undefined" appearing in "View Listing" links by adding proper validation for serial numbers
+  - Enhanced URL generation to fallback to collection pages when specific NFT serial data is missing
+  - Added filtering to prevent display of malformed URLs containing "undefined" text
+  - Improved link reliability for both sales and listings notifications with comprehensive null checking
 
 ## User Preferences
 
