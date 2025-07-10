@@ -71,15 +71,19 @@ class EmbedUtils {
                        (sale.media && sale.media.image) ||
                        (sale.data && sale.data.image);
                        
-        // Special debugging for Hashinals and problematic collections
-        const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228'];
+        // Enhanced Hashinal detection with broader patterns
+        const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228', '0.0.8293984'];
         const hcsImageTokens = ['0.0.8308459']; // The Ape Anthology - uses HCS for images
-        const isHashinal = sale.collection_name && (
-            sale.collection_name.toLowerCase().includes('hashinal') ||
-            sale.collection_name.toLowerCase().includes('hcs-') ||
-            sale.nft_name?.toLowerCase().includes('hashinal') ||
+        const isHashinal = (
+            (sale.collection_name && (
+                sale.collection_name.toLowerCase().includes('hashinal') ||
+                sale.collection_name.toLowerCase().includes('hcs-') ||
+                sale.collection_name.toLowerCase().includes('inscription')
+            )) ||
+            (sale.nft_name && sale.nft_name.toLowerCase().includes('hashinal')) ||
             knownHashinalTokens.includes(sale.token_id) ||
-            (sale.metadata && sale.metadata.p === 'hcs-5') // HCS-5 standard marker
+            (sale.metadata && sale.metadata.p === 'hcs-5') ||
+            (sale.description && sale.description.toLowerCase().includes('hashinal'))
         );
         const isHCSImageToken = hcsImageTokens.includes(sale.token_id) || 
             (sale.nftImage && sale.nftImage.startsWith('hcs://')) ||
@@ -98,13 +102,11 @@ class EmbedUtils {
             }
         }
         
-        // For Hashinals with token ID, use HashPack CDN URL format
+        // For Hashinals with token ID, use HashPack CDN URL format as priority
         if (isHashinal && sale.token_id && sale.serial_number) {
             const hashpackUrl = `https://hashpack-hashinal.b-cdn.net/api/inscription-cdn/${sale.token_id}/${sale.serial_number}?network=mainnet`;
-            if (!imageUrl) {
-                imageUrl = hashpackUrl;
-                console.log(`🖼️ [HASHINAL] Using HashPack CDN URL: ${hashpackUrl}`);
-            }
+            imageUrl = hashpackUrl; // Override any existing imageUrl for Hashinals
+            console.log(`🖼️ [HASHINAL] Using HashPack CDN URL: ${hashpackUrl}`);
         }
         
         // Enhanced debugging for image detection issues
@@ -358,15 +360,19 @@ class EmbedUtils {
                        (listing.media && listing.media.image) ||
                        (listing.data && listing.data.image);
 
-        // Special debugging for Hashinals and problematic collections in listings
-        const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228'];
+        // Enhanced Hashinal detection with broader patterns for listings
+        const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228', '0.0.8293984'];
         const hcsImageTokens = ['0.0.8308459']; // The Ape Anthology - uses HCS for images
-        const isHashinalListing = listing.collection_name && (
-            listing.collection_name.toLowerCase().includes('hashinal') ||
-            listing.collection_name.toLowerCase().includes('hcs-') ||
-            listing.nft_name?.toLowerCase().includes('hashinal') ||
+        const isHashinalListing = (
+            (listing.collection_name && (
+                listing.collection_name.toLowerCase().includes('hashinal') ||
+                listing.collection_name.toLowerCase().includes('hcs-') ||
+                listing.collection_name.toLowerCase().includes('inscription')
+            )) ||
+            (listing.nft_name && listing.nft_name.toLowerCase().includes('hashinal')) ||
             knownHashinalTokens.includes(listing.token_id) ||
-            (listing.metadata && listing.metadata.p === 'hcs-5') // HCS-5 standard marker
+            (listing.metadata && listing.metadata.p === 'hcs-5') ||
+            (listing.description && listing.description.toLowerCase().includes('hashinal'))
         );
         const isHCSListing = hcsImageTokens.includes(listing.token_id) || 
                             (listing.nftImage && listing.nftImage.startsWith('hcs://')) ||
@@ -384,13 +390,11 @@ class EmbedUtils {
             }
         }
         
-        // For Hashinals with token ID, use HashPack CDN URL format
+        // For Hashinals with token ID, use HashPack CDN URL format as priority
         if (isHashinalListing && listing.token_id && listing.serial_number) {
             const hashpackUrl = `https://hashpack-hashinal.b-cdn.net/api/inscription-cdn/${listing.token_id}/${listing.serial_number}?network=mainnet`;
-            if (!imageUrl) {
-                imageUrl = hashpackUrl;
-                console.log(`🖼️ [HASHINAL LISTING] Using HashPack CDN URL: ${hashpackUrl}`);
-            }
+            imageUrl = hashpackUrl; // Override any existing imageUrl for Hashinals
+            console.log(`🖼️ [HASHINAL LISTING] Using HashPack CDN URL: ${hashpackUrl}`);
         }
         
         // Additional checks for image URLs in nested data
@@ -479,17 +483,38 @@ class EmbedUtils {
             });
         }
 
-        // Seller information
-        const sellerInfo = [];
-        const sellerLabel = '🏪 Seller';
-        sellerInfo.push(`**Listed by:** ${sellerLabel}`);
-        sellerInfo.push(`*Account:* \`${this.formatAccountId(listing.seller)}\``);
+        // Add seller whale tier information
+        if (listing.seller) {
+            console.log(`Fetching seller holdings for listing: ${listing.seller}`);
+            try {
+                const hederaService = require('../services/hedera');
+                const sellerHoldings = await hederaService.getAccountNFTHoldings(listing.seller, listing.token_id);
+                
+                const sellerTier = hederaService.getCollectorTier(sellerHoldings?.nft_count || 0);
+                const sellerInfo = [
+                    `**Listed by:** ${sellerTier.emoji} ${sellerTier.name} Collector`,
+                    `*Account:* \`${this.formatAccountId(listing.seller)}\``
+                ];
+                
+                if (sellerHoldings?.nft_count > 0) {
+                    sellerInfo.push(`*Holdings:* ${hederaService.formatNFTCount(sellerHoldings.nft_count)} from this collection`);
+                }
 
-        embed.addFields({
-            name: '👤 Seller Info',
-            value: sellerInfo.join('\n'),
-            inline: false
-        });
+                embed.addFields({
+                    name: '👤 Seller Information',
+                    value: sellerInfo.join('\n'),
+                    inline: false
+                });
+            } catch (error) {
+                console.error('Error fetching seller holdings for listing:', error);
+                // Fallback without whale tier
+                embed.addFields({
+                    name: '👤 Seller Information',
+                    value: `*Account:* \`${this.formatAccountId(listing.seller)}\``,
+                    inline: false
+                });
+            }
+        }
 
         // Technical details section
         const technicalDetails = [

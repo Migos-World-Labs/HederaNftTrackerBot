@@ -273,6 +273,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced Discord interaction timeout handling to prevent "Unknown interaction" errors in test commands
   - Applied comprehensive Hashinal detection for both known tokens and HCS-5 standard markers
   - Both SentX and HashPack CDN URLs now work as fallbacks for different Hashinal collections
+- July 10, 2025: Improved Hashinal image detection and added whale tiers to listings
+  - Enhanced Hashinal detection to include "inscription" patterns and additional known tokens (0.0.8293984)
+  - Made Hashinal image URLs priority override any existing imageUrl for better reliability
+  - Added comprehensive whale tier support to listing notifications with seller holdings information
+  - Fixed HashPack CDN URL format to work without serial number parameter when not available
+  - Listings now display seller collector tiers (Whale, Shark, Dolphin, etc.) like sales notifications
 
 ## User Preferences
 
