@@ -205,6 +205,147 @@ class EmbedUtils {
     }
 
     /**
+     * Create a Discord embed for an NFT listing
+     * @param {Object} listing - Listing data object
+     * @param {number} hbarRate - Current HBAR to USD rate
+     * @returns {EmbedBuilder} Discord embed object
+     */
+    async createListingEmbed(listing, hbarRate) {
+        const usdValue = listing.price_hbar * hbarRate;
+        const marketplace = listing.marketplace || 'SentX';
+        
+        // Create a more friendly title and description
+        const nftName = listing.nft_name || `NFT #${listing.serial_number || 'Unknown'}`;
+        const collectionName = listing.collection_name && listing.collection_name !== 'Unknown Collection' 
+            ? listing.collection_name 
+            : 'NFT Collection';
+        
+        const embed = new EmbedBuilder()
+            .setTitle(`📝 ${nftName} listed for sale!`)
+            .setDescription(`A new listing appeared on ${marketplace} for **$${usdValue.toFixed(2)} USD** (${listing.price_hbar} HBAR)`)
+            .setColor('#00ff41')
+            .setTimestamp(new Date(listing.timestamp));
+
+        // Add collection info prominently with floor price
+        if (listing.collection_name && listing.collection_name !== 'Unknown Collection') {
+            let collectionTitle = `${collectionName} Collection`;
+            
+            // Use pre-fetched floor price data if available
+            if (listing.floor_price && listing.floor_price > 0) {
+                const floorUsdValue = listing.floor_price * hbarRate;
+                const priceVsFloor = ((listing.price_hbar / listing.floor_price - 1) * 100).toFixed(1);
+                const floorCompare = priceVsFloor > 0 ? `+${priceVsFloor}%` : `${priceVsFloor}%`;
+                collectionTitle += ` • Floor: ${listing.floor_price} HBAR ($${floorUsdValue.toFixed(2)}) • ${floorCompare}`;
+            }
+            
+            embed.setAuthor({
+                name: collectionTitle,
+                iconURL: null
+            });
+        }
+
+        // Add NFT image with comprehensive fallback options
+        let imageUrl = listing.imageCDN || 
+                       listing.nftImage || 
+                       listing.image_url || 
+                       listing.imageUrl || 
+                       listing.imageFile ||
+                       listing.image;
+        
+        // Note: Image fallback would require service injection, skipping for now
+        // The listing should already have image data from the API response
+        
+        if (imageUrl) {
+            const convertedImageUrl = this.convertIpfsToHttp(imageUrl);
+            if (convertedImageUrl) {
+                embed.setImage(convertedImageUrl);
+            } else {
+                console.log(`Failed to convert listing image URL: ${imageUrl}`);
+            }
+        } else {
+            console.log(`No image found for listing: ${listing.nft_name} (${listing.token_id}/${listing.serial_id || listing.serial_number})`);
+        }
+
+        // Note: Seller holdings would require service injection, using basic seller info for now
+        const sellerHoldings = null;
+        const sellerTier = null;
+
+        // Main listing information section with collection link
+        const collectionLink = listing.collection_url 
+            ? `📦 **Collection:** [${listing.collection_name}](${listing.collection_url})`
+            : `📦 **Collection:** ${listing.collection_name}`;
+            
+        const listingInfo = [
+            `💰 **Asking Price:** ${listing.price_hbar} HBAR ≈ $${usdValue.toFixed(2)} USD`,
+            `🏪 **Marketplace:** ${marketplace}`,
+            collectionLink
+        ];
+
+        if (listing.serial_number) {
+            listingInfo.push(`🔢 **NFT #:** ${listing.serial_number}`);
+        }
+
+        embed.addFields({
+            name: '📊 Listing Details',
+            value: listingInfo.join('\n'),
+            inline: false
+        });
+
+        // Rarity information (if available)
+        if (listing.rarity || listing.rank) {
+            let rarityInfo = [];
+            if (listing.rank) {
+                rarityInfo.push(`🏆 **Rank:** #${listing.rank} in collection`);
+            }
+            if (listing.rarity) {
+                const rarityPercentage = parseFloat((listing.rarity * 100).toFixed(1));
+                const rarityTier = this.getRarityTier(listing.rarity);
+                rarityInfo.push(`✨ **Rarity:** ${rarityTier} (${rarityPercentage}%)`);
+            }
+            
+            embed.addFields({
+                name: '🌟 Rarity Info',
+                value: rarityInfo.join('\n'),
+                inline: false
+            });
+        }
+
+        // Seller information
+        const sellerInfo = [];
+        const sellerLabel = '🏪 Seller';
+        sellerInfo.push(`**Listed by:** ${sellerLabel}`);
+        sellerInfo.push(`*Account:* \`${this.formatAccountId(listing.seller)}\``);
+
+        embed.addFields({
+            name: '👤 Seller Info',
+            value: sellerInfo.join('\n'),
+            inline: false
+        });
+
+        // Technical details section
+        const technicalDetails = [
+            `🆔 **Collection ID:** \`${listing.token_id}\``,
+        ];
+
+        if (listing.listing_url) {
+            technicalDetails.push(`🔗 **View Listing:** [Open on SentX](${listing.listing_url})`);
+        }
+
+        embed.addFields({
+            name: '🔧 Technical Details',
+            value: technicalDetails.join('\n'),
+            inline: false
+        });
+
+        // Footer with timestamp and branding
+        embed.setFooter({
+            text: `Built for Hedera by Mauii - Migos World Labs Inc • ${new Date(listing.timestamp).toLocaleString()}`
+        });
+
+        return embed;
+    }
+
+    /**
      * Create a status embed for the bot
      * @param {boolean} isMonitoring - Whether the bot is currently monitoring
      * @returns {EmbedBuilder} Status embed

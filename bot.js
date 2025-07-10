@@ -157,18 +157,45 @@ class NFTSalesBot {
 
     async checkForNewSales() {
         try {
-            console.log('Checking for new NFT sales...');
+            console.log('Checking for new NFT sales and listings...');
             
             // Get recent sales from SentX marketplace
             const sentxSales = await sentxService.getRecentSales();
+            // Get recent listings from SentX marketplace  
+            const sentxListings = await sentxService.getRecentListings();
 
             if (!sentxSales || sentxSales.length === 0) {
                 console.log('No recent sales found from SentX');
-                return;
+            } else {
+                console.log(`Found ${sentxSales.length} sales from SentX`);
             }
 
-            console.log(`Found ${sentxSales.length} sales from SentX`);
+            if (!sentxListings || sentxListings.length === 0) {
+                console.log('No recent listings found from SentX');
+            } else {
+                console.log(`Found ${sentxListings.length} listings from SentX`);
+            }
 
+            // Get current HBAR to USD rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+
+            // Process sales
+            if (sentxSales && sentxSales.length > 0) {
+                await this.processNewSales(sentxSales, hbarRate);
+            }
+
+            // Process listings  
+            if (sentxListings && sentxListings.length > 0) {
+                await this.processNewListings(sentxListings, hbarRate);
+            }
+
+        } catch (error) {
+            console.error('Error checking for new sales and listings:', error);
+        }
+    }
+
+    async processNewSales(sentxSales, hbarRate) {
+        try {
             // Get the timestamp of the last processed sale
             const lastProcessedTimestamp = await this.storage.getLastProcessedSale();
             
@@ -197,9 +224,6 @@ class NFTSalesBot {
 
             // Sort by timestamp to process oldest first
             uniqueSales.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-            // Get current HBAR to USD rate
-            const hbarRate = await currencyService.getHbarToUsdRate();
 
             // Process each new sale
             for (const sale of uniqueSales) {
@@ -233,9 +257,75 @@ class NFTSalesBot {
                 // Small delay between messages to avoid rate limiting
                 await this.delay(1000);
             }
-
         } catch (error) {
-            console.error('Error checking for new sales:', error);
+            console.error('Error processing new sales:', error);
+        }
+    }
+
+    async processNewListings(sentxListings, hbarRate) {
+        try {
+            // Get the timestamp of the last processed listing
+            const lastProcessedTimestamp = await this.storage.getLastProcessedListing();
+            
+            // Filter for truly new listings only (listings that happened after our last check)
+            let newListings = sentxListings.filter(listing => {
+                const listingTimestamp = new Date(listing.timestamp).getTime();
+                const isNewer = listingTimestamp > lastProcessedTimestamp;
+                
+                // Additional check: listing must be within last 15 minutes to be considered "live"
+                const fifteenMinutesAgo = Date.now() - (15 * 60 * 1000);
+                const isRecent = listingTimestamp > fifteenMinutesAgo;
+                
+                return isNewer && isRecent;
+            });
+
+            console.log(`Found ${newListings.length} new live listings to process from SentX`);
+
+            if (newListings.length === 0) {
+                console.log('No new live listings to process');
+                return;
+            }
+
+            // Remove duplicates based on token_id, serial_number, and timestamp
+            const uniqueListings = this.removeDuplicateListings(newListings);
+            console.log(`After removing duplicates: ${uniqueListings.length} unique listings`);
+
+            // Sort by timestamp to process oldest first
+            uniqueListings.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+            // Process each new listing
+            for (const listing of uniqueListings) {
+                // Create more specific unique listing ID to prevent duplicates
+                const tokenId = listing.tokenId || listing.token_id;
+                const serialNumber = listing.serialNumber || listing.serial_number;
+                const listingTsMs = new Date(listing.timestamp).getTime();
+                const listingId = listing.listing_id || `${tokenId}_${serialNumber}_${listingTsMs}`;
+                
+                console.log(`Checking listing ID: ${listingId}`);
+                
+                // Check if we've already processed this listing
+                const alreadyProcessed = await this.storage.isListingProcessed(listingId);
+                if (alreadyProcessed) {
+                    console.log(`✓ Skipping already processed listing: ${listing.nftName || listing.nft_name} (${listingId})`);
+                    continue;
+                }
+                
+                console.log(`→ Processing new listing: ${listing.nftName || listing.nft_name}`);
+                
+                await this.processListing(listing, hbarRate);
+                
+                // Mark listing as processed to prevent duplicates
+                await this.storage.markListingProcessed(listingId, listing.tokenId || listing.token_id);
+                
+                // Update last processed timestamp
+                const processedTsMs = new Date(listing.timestamp).getTime();
+                await this.storage.setLastProcessedListing(processedTsMs);
+                
+                // Small delay between messages to avoid rate limiting
+                await this.delay(1000);
+            }
+        } catch (error) {
+            console.error('Error processing new listings:', error);
         }
     }
 
@@ -258,6 +348,33 @@ class NFTSalesBot {
             
             if (seen.has(key)) {
                 console.log(`Removing duplicate sale: ${sale.nftName || sale.nft_name} from ${sale.marketplace}`);
+                return false;
+            }
+            
+            seen.add(key);
+            return true;
+        });
+    }
+
+    /**
+     * Remove duplicate listings that might appear in multiple requests
+     * @param {Array} listings - Array of listings
+     * @returns {Array} Deduplicated listings array
+     */
+    removeDuplicateListings(listings) {
+        const seen = new Set();
+        return listings.filter(listing => {
+            // Create a unique key based on token, serial, and timestamp
+            const tokenId = listing.tokenId || listing.token_id;
+            const serialNumber = listing.serialNumber || listing.serial_number;
+            const timestamp = new Date(listing.timestamp).getTime();
+            
+            // Round timestamp to nearest minute to catch listings that might have slightly different timestamps
+            const roundedTimestamp = Math.floor(timestamp / 60000) * 60000;
+            const key = `listing_${tokenId}_${serialNumber}_${roundedTimestamp}`;
+            
+            if (seen.has(key)) {
+                console.log(`Removing duplicate listing: ${listing.nftName || listing.nft_name} from ${listing.marketplace}`);
                 return false;
             }
             
@@ -315,6 +432,58 @@ class NFTSalesBot {
 
         } catch (error) {
             console.error('Error processing sale:', error.message);
+        }
+    }
+
+    async processListing(listing, hbarRate) {
+        try {
+            // Get all configured servers and channels
+            const serverConfigs = await this.storage.getAllServerConfigs();
+            let successCount = 0;
+            
+            if (serverConfigs.length === 0) {
+                console.log('No servers configured for listing notifications');
+                return;
+            }
+
+            // Check each server to see if they track this collection
+            for (const serverConfig of serverConfigs) {
+                try {
+                    if (!serverConfig.enabled) continue;
+                    
+                    // Check if this server tracks the collection
+                    const isTracked = await this.storage.isCollectionTracked(listing.token_id || listing.tokenId, serverConfig.guildId);
+                    
+                    if (!isTracked) {
+                        continue; // Skip this server if collection not tracked
+                    }
+                    
+                    const channel = this.client.channels.cache.get(serverConfig.channelId);
+                    if (channel) {
+                        // Create Discord embed for the listing
+                        const embed = await embedUtils.createListingEmbed(listing, hbarRate);
+                        const message = await channel.send({ embeds: [embed] });
+                        
+                        // Add listing emoji reaction
+                        try {
+                            await message.react('📝');
+                        } catch (error) {
+                            console.log('Could not add reaction:', error.message);
+                        }
+                        
+                        successCount++;
+                    }
+                } catch (error) {
+                    console.error(`Failed to post listing to server ${serverConfig.guildId}:`, error.message);
+                }
+            }
+            
+            if (successCount > 0) {
+                console.log(`✅ Posted listing notification to ${successCount} server(s): ${listing.nft_name} listed for ${listing.price_hbar} HBAR`);
+            }
+
+        } catch (error) {
+            console.error('Error processing listing:', error.message);
         }
     }
 

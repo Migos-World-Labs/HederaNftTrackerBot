@@ -156,6 +156,82 @@ class SentXService {
     }
 
     /**
+     * Get recent NFT listings from SentX marketplace
+     * @param {number} limit - Number of listings to fetch
+     * @returns {Array} Array of listing objects
+     */
+    async getRecentListings(limit = 50) {
+        try {
+            console.log('Fetching recent listings from SentX...');
+            
+            const apiKey = process.env.SENTX_API_KEY;
+            console.log('API Key available:', apiKey ? 'Yes' : 'No');
+            
+            const params = {
+                apikey: apiKey,
+                activityFilter: 'Listed', // Filter specifically for listings
+                amount: limit,
+                page: 1,
+                hbarMarketOnly: 1 // Focus on HBAR market
+            };
+            
+            console.log('Listings request params:', JSON.stringify(params, null, 2));
+            
+            const response = await this.axiosInstance.get('/v1/public/market/activity', {
+                params: params
+            });
+
+            if (!response.data || !response.data.success) {
+                console.log('No successful response from SentX API for listings');
+                return [];
+            }
+
+            if (!response.data.marketActivity || response.data.marketActivity.length === 0) {
+                console.log('No market activity found for listings');
+                return [];
+            }
+
+            console.log(`Found ${response.data.marketActivity.length} market activities for listings`);
+            
+            // Filter only actual listings (must have listing price and be active)
+            const listingsOnly = response.data.marketActivity.filter(activity => {
+                const isValidListing = activity.listingPrice && 
+                    activity.listingPrice > 0 &&
+                    activity.sellerAddress &&
+                    activity.sellerAddress !== null &&
+                    activity.saletype === 'Listed'; // Only actual listings
+                
+                if (isValidListing) {
+                    console.log(`Including listing: ${activity.nftName} for ${activity.listingPrice} HBAR`);
+                }
+                
+                return isValidListing;
+            });
+
+            console.log(`Filtered to ${listingsOnly.length} actual listings`);
+            
+            return this.formatListingsData(listingsOnly);
+
+        } catch (error) {
+            if (error.response) {
+                console.error('SentX API error for listings:', {
+                    status: error.response.status,
+                    statusText: error.response.statusText,
+                    url: error.config?.url,
+                    data: typeof error.response.data === 'string' ? error.response.data.substring(0, 200) : error.response.data
+                });
+            } else if (error.request) {
+                console.error('SentX API listings request failed - no response received');
+            } else {
+                console.error('SentX API listings request setup error:', error.message);
+            }
+            
+            // Return empty array on error to prevent bot from crashing
+            return [];
+        }
+    }
+
+    /**
      * Get collection floor price from SentX marketplace
      * @param {string} tokenId - Token ID of the collection
      * @returns {Object} Floor price information
@@ -216,6 +292,48 @@ class SentXService {
             console.error(`Error fetching floor price for ${tokenId}:`, error.message);
             return null;
         }
+    }
+
+    /**
+     * Format raw listings data from API into standardized format
+     * @param {Array} rawListings - Raw listings data from API
+     * @returns {Array} Formatted listings data
+     */
+    formatListingsData(rawListings) {
+        return rawListings.map(listing => {
+            const hasImage = listing.nftImage || listing.imageCDN || listing.nftImageUrl || listing.image;
+            console.log(`Processing Listing: ${listing.nftName}, Image: ${hasImage ? 'Present' : 'Missing'}`);
+            
+            return {
+                id: `${listing.nftTokenAddress}-${listing.nftSerialId}-${listing.listingDate}`,
+                nft_name: listing.nftName || 'Unknown NFT',
+                collection_name: listing.collectionName || 'Unknown Collection',
+                token_id: listing.nftTokenAddress,
+                serial_id: listing.nftSerialId,
+                serial_number: listing.nftSerialId,
+                price_hbar: this.parseHbarAmount(listing.listingPrice),
+                seller: this.formatAddress(listing.sellerAddress),
+                timestamp: listing.listingDate,
+                image_url: listing.imageCDN || listing.nftImage || listing.nftImageUrl || listing.image || listing.imageFile || listing.imageUrl || null,
+                imageCDN: listing.imageCDN,
+                nftImage: listing.nftImage,
+                imageFile: listing.imageFile,
+                image: listing.image,
+                imageUrl: listing.imageUrl,
+                collection_image_url: listing.collectionImage || listing.collectionIcon || null,
+                rarity: listing.rarityPct || null,
+                rank: listing.rarityRank || null,
+                marketplace: 'SentX',
+                listing_id: listing.listingId || listing.id || null,
+                sale_type: 'Listing',
+                attributes: listing.attributes || [],
+                payment_token: listing.paymentToken || { symbol: 'HBAR' },
+                listing_url: listing.listingUrl ? `https://sentx.io${listing.listingUrl}` : null,
+                collection_url: listing.collectionFriendlyurl ? `https://sentx.io/nft-marketplace/${listing.collectionFriendlyurl}` : `https://sentx.io/nft-marketplace/collection/${listing.nftTokenAddress}`,
+                floor_price: listing.floorPrice || null,
+                days_since_mint: listing.daysSinceMint || null
+            };
+        });
     }
 
     /**

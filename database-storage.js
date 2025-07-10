@@ -342,6 +342,55 @@ class DatabaseStorage {
         }
     }
 
+    // Processed listings management
+    async markListingProcessed(listingId, tokenId) {
+        try {
+            await db.insert(processedSales)
+                .values({
+                    saleId: `listing_${listingId}`,
+                    tokenId
+                })
+                .onConflictDoNothing();
+            return true;
+        } catch (error) {
+            console.error('Error marking listing as processed:', error);
+            return false;
+        }
+    }
+
+    async isListingProcessed(listingId) {
+        try {
+            const result = await db.select()
+                .from(processedSales)
+                .where(eq(processedSales.saleId, `listing_${listingId}`))
+                .limit(1);
+            return result.length > 0;
+        } catch (error) {
+            console.error('Error checking if listing is processed:', error);
+            return false;
+        }
+    }
+
+    async getLastProcessedListing() {
+        try {
+            const lastProcessed = await this.getBotState('lastProcessedListing', 0);
+            return typeof lastProcessed === 'number' ? lastProcessed : 0;
+        } catch (error) {
+            console.error('Error getting last processed listing:', error);
+            return 0;
+        }
+    }
+
+    async setLastProcessedListing(timestamp) {
+        try {
+            await this.setBotState('lastProcessedListing', timestamp);
+            return true;
+        } catch (error) {
+            console.error('Error setting last processed listing:', error);
+            return false;
+        }
+    }
+
     // Cleanup old processed sales (older than 3 days)
     async cleanupOldProcessedSales() {
         try {

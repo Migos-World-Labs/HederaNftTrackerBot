@@ -136,6 +136,14 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Updated configuration validation to reflect multi-server architecture
   - Added duplicate collection prevention logic for better data integrity
   - Enhanced error handling for corrupted migration files
+- July 10, 2025: Added NFT listings notification feature
+  - Implemented getRecentListings() method in SentX service to fetch marketplace listings
+  - Created createListingEmbed() function for rich Discord listing notifications
+  - Added database storage methods for tracking processed listings (markListingProcessed, isListingProcessed)
+  - Integrated listings monitoring into main bot monitoring loop alongside sales
+  - Added processListing() method and removeDuplicateListings() for listing management
+  - Split main monitoring into processNewSales() and processNewListings() methods
+  - Listings show comprehensive data including price, seller info, rarity, and collection links
 
 ## User Preferences
 
