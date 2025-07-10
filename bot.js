@@ -755,6 +755,32 @@ class NFTSalesBot {
                         required: false
                     }
                 ]
+            },
+            {
+                name: 'broadcast-test',
+                description: 'Send test notifications to ALL Discord servers',
+                options: [
+                    {
+                        name: 'type',
+                        type: 3, // STRING
+                        description: 'Type of notification to broadcast',
+                        required: true,
+                        choices: [
+                            {
+                                name: 'Latest Sale',
+                                value: 'sale'
+                            },
+                            {
+                                name: 'Latest Listing',
+                                value: 'listing'
+                            },
+                            {
+                                name: 'Both Sale & Listing',
+                                value: 'both'
+                            }
+                        ]
+                    }
+                ]
             }
         ];
 
@@ -808,6 +834,9 @@ class NFTSalesBot {
                     break;
                 case 'test':
                     await this.handleTestCommand(interaction);
+                    break;
+                case 'broadcast-test':
+                    await this.handleBroadcastTestCommand(interaction);
                     break;
                 case 'set-listings-channel':
                     await this.handleSetListingsChannelCommand(interaction, options);
@@ -1358,6 +1387,147 @@ class NFTSalesBot {
 
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async handleBroadcastTestCommand(interaction) {
+        try {
+            const testType = interaction.options.getString('type');
+            
+            // Defer reply to avoid timeout
+            await interaction.deferReply();
+            
+            await interaction.editReply('🚀 Broadcasting test notifications to all Discord servers...');
+            
+            // Get all server configurations
+            const serverConfigs = await this.storage.getAllServerConfigs();
+            
+            if (!serverConfigs || serverConfigs.length === 0) {
+                await interaction.editReply('❌ No Discord servers are configured for notifications.');
+                return;
+            }
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            if (testType === 'sale' || testType === 'both') {
+                console.log('Broadcasting test sale to all servers...');
+                
+                // Get recent sales and find one from tracked collections
+                const recentSales = await sentxService.getRecentSales(50);
+                const trackedCollections = await this.storage.getCollections();
+                const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+                
+                const testSale = recentSales.find(sale => 
+                    trackedTokenIds.includes(sale.token_id || sale.tokenId)
+                );
+                
+                if (testSale) {
+                    const hbarRate = await currencyService.getHbarToUsdRate();
+                    const embed = await embedUtils.createSaleEmbed(testSale, hbarRate);
+                    
+                    // Broadcast to all servers
+                    for (const serverConfig of serverConfigs) {
+                        try {
+                            const guild = this.client.guilds.cache.get(serverConfig.guildId);
+                            if (guild) {
+                                const channel = guild.channels.cache.get(serverConfig.channelId);
+                                if (channel) {
+                                    await channel.send({
+                                        content: `🧪 **TEST SALE NOTIFICATION**\n*This is a test broadcast to all servers*`,
+                                        embeds: [embed]
+                                    });
+                                    successCount++;
+                                } else {
+                                    failCount++;
+                                }
+                            } else {
+                                failCount++;
+                            }
+                        } catch (error) {
+                            console.error(`Failed to send to server ${serverConfig.guildName}:`, error);
+                            failCount++;
+                        }
+                        
+                        // Small delay between servers to avoid rate limiting
+                        await this.delay(500);
+                    }
+                } else {
+                    await interaction.editReply('❌ No recent sales found from tracked collections for testing.');
+                    return;
+                }
+            }
+            
+            if (testType === 'listing' || testType === 'both') {
+                console.log('Broadcasting test listing to all servers...');
+                
+                // Get all listings and find one from tracked collections
+                const allListings = await sentxService.getRecentListings(100, true);
+                const trackedCollections = await this.storage.getCollections();
+                const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+                
+                const testListing = allListings.find(listing => 
+                    trackedTokenIds.includes(listing.token_id || listing.tokenId)
+                );
+                
+                if (testListing) {
+                    const hbarRate = await currencyService.getHbarToUsdRate();
+                    const embed = await embedUtils.createListingEmbed(testListing, hbarRate);
+                    
+                    // Broadcast to all servers (check for separate listings channel)
+                    for (const serverConfig of serverConfigs) {
+                        try {
+                            const guild = this.client.guilds.cache.get(serverConfig.guildId);
+                            if (guild) {
+                                // Use listings channel if configured, otherwise main channel
+                                const targetChannelId = serverConfig.listingsChannelId || serverConfig.channelId;
+                                const channel = guild.channels.cache.get(targetChannelId);
+                                
+                                if (channel) {
+                                    await channel.send({
+                                        content: `🧪 **TEST LISTING NOTIFICATION**\n*This is a test broadcast to all servers*`,
+                                        embeds: [embed]
+                                    });
+                                    successCount++;
+                                } else {
+                                    failCount++;
+                                }
+                            } else {
+                                failCount++;
+                            }
+                        } catch (error) {
+                            console.error(`Failed to send listing to server ${serverConfig.guildName}:`, error);
+                            failCount++;
+                        }
+                        
+                        // Small delay between servers to avoid rate limiting
+                        await this.delay(500);
+                    }
+                } else {
+                    await interaction.editReply('❌ No listings found from tracked collections for testing.');
+                    return;
+                }
+            }
+            
+            // Report results
+            const totalServers = serverConfigs.length;
+            const resultMessage = `✅ **Broadcast Test Complete**\n\n` +
+                `📊 **Results:**\n` +
+                `• Successful: ${successCount}/${totalServers} servers\n` +
+                `• Failed: ${failCount}/${totalServers} servers\n\n` +
+                `🎯 **Test Type:** ${testType === 'both' ? 'Sale & Listing' : testType.charAt(0).toUpperCase() + testType.slice(1)}\n` +
+                `📡 **Servers Reached:** ${serverConfigs.map(s => s.guildName).join(', ')}`;
+            
+            await interaction.editReply(resultMessage);
+            console.log(`Broadcast test completed: ${successCount} success, ${failCount} failed`);
+            
+        } catch (error) {
+            console.error('Error in broadcast test command:', error);
+            try {
+                await interaction.editReply('❌ Error occurred during broadcast test. Please try again.');
+            } catch (replyError) {
+                console.error('Could not respond to broadcast test interaction:', replyError);
+            }
+        }
     }
 
     async testLatestListing(interaction) {
