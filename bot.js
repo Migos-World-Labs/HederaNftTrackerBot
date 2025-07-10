@@ -470,20 +470,13 @@ class NFTSalesBot {
                     const channel = this.client.channels.cache.get(channelId);
                     
                     if (channel) {
-                        // Add collection URL for SentX marketplace with NFT serial number
+                        // Add collection URL for SentX marketplace (collection page, not specific NFT)
                         if (listing.token_id) {
                             const collectionFriendlyUrl = listing.collectionFriendlyurl || listing.collection_friendly_url;
-                            const serialNumber = listing.serial_number || listing.serialNumber || listing.serial_id;
                             
-                            if (collectionFriendlyUrl && serialNumber) {
-                                listing.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}/${serialNumber}`;
-                            } else if (collectionFriendlyUrl) {
+                            if (collectionFriendlyUrl) {
                                 listing.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
-                            } else if (serialNumber) {
-                                // Fallback: use token ID and serial number in URL
-                                listing.collection_url = `https://sentx.io/nft-marketplace/collection/${listing.token_id}/${serialNumber}`;
                             } else {
-                                // Final fallback: use token ID only
                                 listing.collection_url = `https://sentx.io/nft-marketplace/collection/${listing.token_id}`;
                             }
                         }
@@ -767,6 +760,14 @@ class NFTSalesBot {
                             {
                                 name: 'Latest Listing',
                                 value: 'listing'
+                            },
+                            {
+                                name: 'Recent Sale',
+                                value: 'recent-sale'
+                            },
+                            {
+                                name: 'Recent Listing',
+                                value: 'recent-listing'
                             }
                         ]
                     },
@@ -1161,6 +1162,14 @@ class NFTSalesBot {
             } else if (testType === 'listing') {
                 console.log('Executing listing test...');
                 await this.testLatestListing(interaction);
+                return;
+            } else if (testType === 'recent-sale') {
+                console.log('Testing most recent sale...');
+                await this.testMostRecentSale(interaction);
+                return;
+            } else if (testType === 'recent-listing') {
+                console.log('Testing most recent listing...');
+                await this.testMostRecentListing(interaction);
                 return;
             } else {
                 console.log('Testing with recent sale data...');
@@ -1682,6 +1691,13 @@ class NFTSalesBot {
             // Get HBAR rate
             const hbarRate = await currencyService.getHbarToUsdRate();
             
+            // Ensure collection URL points to collection, not specific NFT
+            if (!testListing.collection_url || testListing.collection_url.includes('undefined')) {
+                testListing.collection_url = testListing.collectionFriendlyurl 
+                    ? `https://sentx.io/nft-marketplace/${testListing.collectionFriendlyurl}`
+                    : `https://sentx.io/nft-marketplace/collection/${testListing.token_id}`;
+            }
+            
             // Create a listing embed to test the formatting
             const embed = await embedUtils.createListingEmbed(testListing, hbarRate);
             
@@ -1707,6 +1723,108 @@ class NFTSalesBot {
                 }
             } catch (responseError) {
                 console.error('Could not respond to listing test interaction:', responseError.message);
+            }
+        }
+    }
+
+    async testMostRecentSale(interaction) {
+        try {
+            console.log('Testing most recent sale from marketplace...');
+            
+            // Get recent sales from SentX
+            const recentSales = await sentxService.getRecentSales(50);
+            
+            if (!recentSales || recentSales.length === 0) {
+                await interaction.editReply('❌ No recent sales found on SentX marketplace');
+                return;
+            }
+            
+            // Use the most recent sale
+            const testSale = recentSales[0];
+            
+            // Ensure collection URL is set
+            if (!testSale.collection_url) {
+                testSale.collection_url = testSale.collectionFriendlyurl 
+                    ? `https://sentx.io/nft-marketplace/${testSale.collectionFriendlyurl}`
+                    : `https://sentx.io/nft-marketplace/collection/${testSale.token_id}`;
+            }
+            
+            console.log(`Using most recent sale for testing: ${testSale.nft_name} from ${testSale.collection_name}`);
+            
+            // Get HBAR rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            
+            // Create sale embed
+            const embed = await embedUtils.createSaleEmbed(testSale, hbarRate);
+            
+            await interaction.editReply({
+                content: `📈 **Most Recent Sale on SentX:**\n*Showing the latest NFT sale from the marketplace*`,
+                embeds: [embed]
+            });
+            
+            console.log('Most recent sale test completed successfully!');
+            
+        } catch (error) {
+            console.error('Error testing most recent sale:', error);
+            try {
+                if (error.code === 10062 || error.code === 40060) {
+                    console.log('Interaction expired during recent sale test');
+                } else {
+                    await interaction.editReply(`❌ Error testing most recent sale: ${error.message}`);
+                }
+            } catch (responseError) {
+                console.error('Could not respond to recent sale test interaction:', responseError.message);
+            }
+        }
+    }
+    
+    async testMostRecentListing(interaction) {
+        try {
+            console.log('Testing most recent listing from marketplace...');
+            
+            // Get recent listings from SentX
+            const recentListings = await sentxService.getRecentListings(50, true);
+            
+            if (!recentListings || recentListings.length === 0) {
+                await interaction.editReply('❌ No recent listings found on SentX marketplace');
+                return;
+            }
+            
+            // Use the most recent listing
+            const testListing = recentListings[0];
+            
+            // Ensure collection URL points to collection, not specific NFT
+            if (!testListing.collection_url || testListing.collection_url.includes('undefined')) {
+                testListing.collection_url = testListing.collectionFriendlyurl 
+                    ? `https://sentx.io/nft-marketplace/${testListing.collectionFriendlyurl}`
+                    : `https://sentx.io/nft-marketplace/collection/${testListing.token_id}`;
+            }
+            
+            console.log(`Using most recent listing for testing: ${testListing.nft_name} from ${testListing.collection_name}`);
+            
+            // Get HBAR rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            
+            // Create listing embed
+            const embed = await embedUtils.createListingEmbed(testListing, hbarRate);
+            
+            await interaction.editReply({
+                content: `📝 **Most Recent Listing on SentX:**\n*Showing the latest NFT listing from the marketplace*`,
+                embeds: [embed]
+            });
+            
+            console.log('Most recent listing test completed successfully!');
+            
+        } catch (error) {
+            console.error('Error testing most recent listing:', error);
+            try {
+                if (error.code === 10062 || error.code === 40060) {
+                    console.log('Interaction expired during recent listing test');
+                } else {
+                    await interaction.editReply(`❌ Error testing most recent listing: ${error.message}`);
+                }
+            } catch (responseError) {
+                console.error('Could not respond to recent listing test interaction:', responseError.message);
             }
         }
     }

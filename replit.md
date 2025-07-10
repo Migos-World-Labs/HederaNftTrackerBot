@@ -216,6 +216,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added intelligent fallback system: tracked collections → recent sales → mock data
   - Improved user experience for servers without tracked collections or recent sales
   - Enhanced test messages to clarify data source (real vs demo) and guide users to add collections
+- July 10, 2025: Enhanced test commands and fixed listing URLs
+  - Fixed collection URLs showing "undefined" serial numbers in listing notifications
+  - Changed collection URLs to point to collection pages instead of specific NFTs with undefined serials
+  - Added new test command options: "Recent Sale" and "Recent Listing" 
+  - New test commands show the most recent marketplace activity regardless of tracked collections
+  - Enhanced image detection and fallback for listing notifications
+  - Fixed URL generation to prevent malformed marketplace links
 
 ## User Preferences
 
