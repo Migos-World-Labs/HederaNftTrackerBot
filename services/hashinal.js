@@ -31,6 +31,16 @@ class HashinalService {
     }
 
     /**
+     * Check if an NFT has known image display issues
+     * @param {Object} nft - NFT object with token_id and collection_name
+     * @returns {boolean} True if this token has reported image issues
+     */
+    isProblemImageToken(nft) {
+        const problemImageTokens = ['0.0.8308459']; // The Ape Anthology - reported image issues
+        return problemImageTokens.includes(nft.token_id);
+    }
+
+    /**
      * Check if a URL is in HRL (Hedera Resource Locator) format
      * @param {string} url - URL to check
      * @returns {boolean} True if URL is HRL format
@@ -49,7 +59,7 @@ class HashinalService {
         try {
             console.log(`🔍 [HASHINAL] Resolving image for ${nft.nft_name} (${nft.token_id})`);
             
-            // Check all possible image fields
+            // Check all possible image fields including HCS URLs
             const imageFields = [
                 nft.imageCDN,
                 nft.nftImage,
@@ -57,10 +67,13 @@ class HashinalService {
                 nft.image,
                 nft.imageFile,
                 nft.imageUrl,
+                nft.imagecid, // Additional field found in SentX API
                 nft.metadata?.image,
                 nft.metadata?.image_data,
                 nft.data?.image
             ];
+
+            console.log(`🔍 [HASHINAL] Checking ${imageFields.length} image fields...`);
 
             // Look for direct HTTP/HTTPS URLs first
             for (const field of imageFields) {
@@ -78,12 +91,15 @@ class HashinalService {
                 }
             }
 
-            // Handle HRL format (hcs://) - for future implementation
+            // Handle HCS URLs - try to fetch from Hedera Consensus Service
             for (const field of imageFields) {
                 if (field && this.isHRLFormat(field)) {
-                    console.log(`⚠️ [HASHINAL] HRL format detected: ${field} - fetching from HCS not yet implemented`);
-                    // For now, we'll try to find alternative image sources
-                    continue;
+                    console.log(`🔧 [HASHINAL] Attempting to resolve HCS URL: ${field}`);
+                    const resolvedUrl = await this.fetchHCSImageData(field);
+                    if (resolvedUrl) {
+                        console.log(`✅ [HASHINAL] Successfully resolved HCS image: ${resolvedUrl}`);
+                        return resolvedUrl;
+                    }
                 }
             }
 
@@ -99,16 +115,38 @@ class HashinalService {
 
             // Try to fetch additional metadata from Hedera Mirror Node
             const enhancedMetadata = await this.fetchTokenMetadata(nft.token_id, nft.serial_id);
-            if (enhancedMetadata && enhancedMetadata.image) {
-                console.log(`✅ [HASHINAL] Found image in enhanced metadata: ${enhancedMetadata.image}`);
-                return enhancedMetadata.image;
+            if (enhancedMetadata) {
+                // Check for image in enhanced metadata
+                if (enhancedMetadata.image) {
+                    if (enhancedMetadata.image.startsWith('http')) {
+                        console.log(`✅ [HASHINAL] Found HTTP image in enhanced metadata: ${enhancedMetadata.image}`);
+                        return enhancedMetadata.image;
+                    } else if (this.isHRLFormat(enhancedMetadata.image)) {
+                        console.log(`🔧 [HASHINAL] Found HCS image in enhanced metadata: ${enhancedMetadata.image}`);
+                        const resolvedUrl = await this.fetchHCSImageData(enhancedMetadata.image);
+                        if (resolvedUrl) {
+                            console.log(`✅ [HASHINAL] Successfully resolved enhanced HCS image: ${resolvedUrl}`);
+                            return resolvedUrl;
+                        }
+                    }
+                }
+                
+                // Check for files array in enhanced metadata
+                if (enhancedMetadata.files && Array.isArray(enhancedMetadata.files)) {
+                    for (const file of enhancedMetadata.files) {
+                        if (file.uri && file.uri.startsWith('http')) {
+                            console.log(`✅ [HASHINAL] Found HTTP image in enhanced metadata files: ${file.uri}`);
+                            return file.uri;
+                        }
+                    }
+                }
             }
 
             console.log(`❌ [HASHINAL] No suitable image found for ${nft.nft_name}`);
             return null;
 
         } catch (error) {
-            console.error(`Error resolving Hashinal image for ${nft.token_id}:`, error.message);
+            console.error(`❌ [HASHINAL] Error resolving image for ${nft.token_id}:`, error.message);
             return null;
         }
     }
@@ -129,40 +167,140 @@ class HashinalService {
             }
 
             const url = `${this.mirrorNodeUrl}/api/v1/tokens/${tokenId}/nfts/${serialId}`;
-            const response = await axios.get(url, { timeout: 5000 });
+            console.log(`🔍 [MIRROR NODE] Fetching metadata for ${tokenId}/${serialId}`);
+            const response = await axios.get(url, { timeout: 10000 });
 
             if (response.data && response.data.metadata) {
-                // Try to parse base64 metadata
-                const metadataBase64 = response.data.metadata;
-                const metadataString = Buffer.from(metadataBase64, 'base64').toString('utf8');
-                const metadata = JSON.parse(metadataString);
-                
-                // Cache the result
-                this.cache.set(cacheKey, {
-                    data: metadata,
-                    timestamp: Date.now()
-                });
+                try {
+                    // Try to parse base64 metadata
+                    const metadataBase64 = response.data.metadata;
+                    const metadataString = Buffer.from(metadataBase64, 'base64').toString('utf8');
+                    const metadata = JSON.parse(metadataString);
+                    
+                    console.log(`📥 [MIRROR NODE] Successfully parsed metadata for ${tokenId}/${serialId}`);
+                    console.log(`📝 [MIRROR NODE] Metadata keys:`, Object.keys(metadata));
+                    
+                    // Log image-related fields for debugging
+                    if (metadata.image || metadata.image_url || metadata.files) {
+                        console.log(`🖼️ [MIRROR NODE] Image fields found:`);
+                        console.log(`   image: ${metadata.image}`);
+                        console.log(`   image_url: ${metadata.image_url}`);
+                        console.log(`   files: ${JSON.stringify(metadata.files)}`);
+                    }
+                    
+                    // Cache the result
+                    this.cache.set(cacheKey, {
+                        data: metadata,
+                        timestamp: Date.now()
+                    });
 
-                console.log(`📥 [HASHINAL] Fetched metadata from Mirror Node for ${tokenId}/${serialId}`);
-                return metadata;
+                    return metadata;
+                } catch (parseError) {
+                    console.error(`❌ [MIRROR NODE] Failed to parse metadata for ${tokenId}/${serialId}:`, parseError.message);
+                    console.log(`📄 [MIRROR NODE] Raw metadata (first 200 chars):`, response.data.metadata.substring(0, 200));
+                }
+            } else {
+                console.log(`⚠️ [MIRROR NODE] No metadata found for ${tokenId}/${serialId}`);
             }
 
             return null;
         } catch (error) {
-            console.error(`Error fetching metadata from Mirror Node for ${tokenId}/${serialId}:`, error.message);
+            console.error(`❌ [MIRROR NODE] Error fetching metadata for ${tokenId}/${serialId}:`, error.message);
+            if (error.response) {
+                console.log(`HTTP Status: ${error.response.status}`);
+            }
             return null;
         }
     }
 
     /**
-     * Convert HRL to HTTP URL (placeholder for future implementation)
+     * Fetch image data from HCS URL
+     * @param {string} hcsUrl - HCS URL (hcs://1/topicId)
+     * @returns {Promise<string|null>} Image URL or data URI
+     */
+    async fetchHCSImageData(hcsUrl) {
+        try {
+            console.log(`🔍 [HCS] Attempting to fetch data from: ${hcsUrl}`);
+            
+            // Extract topic ID from HCS URL
+            const topicMatch = hcsUrl.match(/hcs:\/\/1\/(.+)/);
+            if (!topicMatch) {
+                console.log(`❌ [HCS] Invalid HCS URL format: ${hcsUrl}`);
+                return null;
+            }
+            
+            const topicId = topicMatch[1];
+            console.log(`📋 [HCS] Topic ID extracted: ${topicId}`);
+            
+            // Try to fetch HCS topic data from Mirror Node
+            const url = `${this.mirrorNodeUrl}/api/v1/topics/${topicId}/messages`;
+            console.log(`🔍 [HCS] Fetching topic messages from: ${url}`);
+            
+            const response = await axios.get(url, { 
+                timeout: 15000,
+                params: {
+                    limit: 5, // Get latest messages
+                    order: 'desc'
+                }
+            });
+
+            if (response.data && response.data.messages && response.data.messages.length > 0) {
+                console.log(`📥 [HCS] Found ${response.data.messages.length} topic messages`);
+                
+                // Look through messages for image data
+                for (const message of response.data.messages) {
+                    if (message.message) {
+                        try {
+                            // Decode the base64 message
+                            const messageData = Buffer.from(message.message, 'base64').toString('utf8');
+                            console.log(`📝 [HCS] Message content (first 100 chars): ${messageData.substring(0, 100)}`);
+                            
+                            // Check if it's image data (data URI format)
+                            if (messageData.startsWith('data:image/')) {
+                                console.log(`✅ [HCS] Found data URI image in topic ${topicId}`);
+                                return messageData;
+                            }
+                            
+                            // Try to parse as JSON in case it contains image URL
+                            try {
+                                const jsonData = JSON.parse(messageData);
+                                if (jsonData.image || jsonData.image_url) {
+                                    const imageUrl = jsonData.image || jsonData.image_url;
+                                    console.log(`✅ [HCS] Found image URL in JSON data: ${imageUrl}`);
+                                    return imageUrl;
+                                }
+                            } catch (jsonError) {
+                                // Not JSON, continue to next message
+                            }
+                            
+                        } catch (decodeError) {
+                            console.log(`⚠️ [HCS] Failed to decode message: ${decodeError.message}`);
+                        }
+                    }
+                }
+                
+                console.log(`❌ [HCS] No image data found in topic messages for ${topicId}`);
+            } else {
+                console.log(`❌ [HCS] No messages found for topic ${topicId}`);
+            }
+
+            return null;
+        } catch (error) {
+            console.error(`❌ [HCS] Error fetching HCS data for ${hcsUrl}:`, error.message);
+            if (error.response) {
+                console.log(`HTTP Status: ${error.response.status}`);
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Convert HRL to HTTP URL (legacy method - now uses fetchHCSImageData)
      * @param {string} hrlUrl - HRL URL (hcs://1/topicId)
      * @returns {Promise<string|null>} HTTP URL or null
      */
     async convertHRLToHttp(hrlUrl) {
-        // Future implementation: fetch data from Hedera Consensus Service
-        console.log(`⚠️ [HASHINAL] HRL conversion not yet implemented: ${hrlUrl}`);
-        return null;
+        return await this.fetchHCSImageData(hrlUrl);
     }
 
     /**

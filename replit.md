@@ -254,6 +254,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced URL generation to fallback to collection pages when specific NFT serial data is missing
   - Added filtering to prevent display of malformed URLs containing "undefined" text
   - Improved link reliability for both sales and listings notifications with comprehensive null checking
+- July 10, 2025: Implemented HCS image support for collections like The Ape Anthology (0.0.8308459)
+  - Added comprehensive HCS (Hedera Consensus Service) URL detection and fetching
+  - Implemented fetchHCSImageData() method to resolve hcs://1/topicId URLs to actual images
+  - Enhanced image resolution to handle data URIs and JSON metadata from HCS topic messages
+  - Added automatic detection of HCS image tokens through nftImage and imagecid fields
+  - Fixed image display issues for Hashinal-like collections that store images on-chain via HCS
+  - Added detailed debugging and logging for HCS image resolution process
 
 ## User Preferences
 

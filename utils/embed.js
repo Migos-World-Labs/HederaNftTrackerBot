@@ -73,6 +73,7 @@ class EmbedUtils {
         
         // Special debugging for Hashinals and problematic collections
         const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228'];
+        const hcsImageTokens = ['0.0.8308459']; // The Ape Anthology - uses HCS for images
         const isHashinal = sale.collection_name && (
             sale.collection_name.toLowerCase().includes('hashinal') ||
             sale.collection_name.toLowerCase().includes('hcs-') ||
@@ -80,43 +81,51 @@ class EmbedUtils {
             knownHashinalTokens.includes(sale.token_id) ||
             (sale.metadata && sale.metadata.p === 'hcs-5') // HCS-5 standard marker
         );
+        const isHCSImageToken = hcsImageTokens.includes(sale.token_id) || 
+            (sale.nftImage && sale.nftImage.startsWith('hcs://')) ||
+            (sale.imagecid && sale.imagecid.startsWith('hcs://'));
         
         // Enhanced debugging for image detection issues
-        if (isHashinal || (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) || !imageUrl) {
-            const debugType = isHashinal ? 'HASHINAL' : (sale.collection_name?.includes('Rooster Cartel') ? 'ROOSTER CARTEL' : 'NO IMAGE');
-            console.log(`🖼️ [${debugType}] Processing image for ${sale.nft_name}`);
+        if (isHashinal || isHCSImageToken || (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) || !imageUrl) {
+            const debugType = isHashinal ? 'HASHINAL' : 
+                              isHCSImageToken ? 'HCS IMAGE TOKEN' : 
+                              (sale.collection_name?.includes('Rooster Cartel') ? 'ROOSTER CARTEL' : 'NO IMAGE');
+            console.log(`🖼️ [${debugType}] Processing image for ${sale.nft_name} (${sale.token_id})`);
             console.log(`  Selected imageUrl: ${imageUrl}`);
             console.log(`  imageCDN: ${sale.imageCDN}`);
             console.log(`  nftImage: ${sale.nftImage}`);
+            console.log(`  imagecid: ${sale.imagecid}`);
             console.log(`  image_url: ${sale.image_url}`);
             console.log(`  image: ${sale.image}`);
             console.log(`  imageFile: ${sale.imageFile}`);
+            console.log(`  imageUrl: ${sale.imageUrl}`);
             console.log(`  metadata.image: ${sale.metadata?.image}`);
             console.log(`  data.image: ${sale.data?.image}`);
             
-            // Check for Hashinal-specific image fields
+            // Check for additional image fields in nested objects
             if (sale.metadata) {
                 console.log(`  metadata.files: ${JSON.stringify(sale.metadata.files)}`);
                 console.log(`  metadata.uri: ${sale.metadata.uri}`);
                 console.log(`  metadata.image_data: ${sale.metadata.image_data}`);
+                console.log(`  metadata.animation_url: ${sale.metadata.animation_url}`);
             }
             
-            // Log all available fields to identify potential image sources
-            if (isHashinal) {
-                console.log(`  [HASHINAL DEBUG] All sale fields:`, Object.keys(sale));
+            // Log all available fields to identify potential image sources for HCS tokens
+            if (isHashinal || isHCSImageToken) {
+                console.log(`  [${debugType} DEBUG] All sale fields:`, Object.keys(sale));
             }
         }
 
         // Use Hashinal service for enhanced image resolution
-        if (isHashinal && !imageUrl) {
-            console.log(`🔧 [HASHINAL] Attempting enhanced image resolution...`);
+        if ((isHashinal || isHCSImageToken) && !imageUrl) {
+            console.log(`🔧 [${debugType}] Attempting enhanced image resolution...`);
             try {
                 imageUrl = await this.hashinalService.resolveHashinalImage(sale);
                 if (imageUrl) {
-                    console.log(`✅ [HASHINAL] Enhanced resolution found image: ${imageUrl}`);
+                    console.log(`✅ [${debugType}] Enhanced resolution found image: ${imageUrl}`);
                 }
             } catch (error) {
-                console.error(`❌ [HASHINAL] Enhanced resolution failed:`, error.message);
+                console.error(`❌ [${debugType}] Enhanced resolution failed:`, error.message);
             }
         }
         
