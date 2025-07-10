@@ -30,11 +30,7 @@ class SentXService {
      */
     async getRecentSales(limit = 50) {
         try {
-            console.log('Fetching recent sales from SentX...');
-            
             const apiKey = process.env.SENTX_API_KEY;
-            console.log('API Key available:', apiKey ? 'Yes' : 'No');
-            console.log('API Key length:', apiKey ? apiKey.length : 0);
             
             const params = {
                 apikey: apiKey,
@@ -44,42 +40,16 @@ class SentXService {
                 hbarMarketOnly: 1 // Focus on HBAR market
             };
             
-            console.log('Request params:', JSON.stringify(params, null, 2));
-            
             const response = await this.axiosInstance.get('/v1/public/market/activity', {
                 params: params
             });
 
             if (!response.data || !response.data.success) {
-                console.log('No successful response from SentX API');
                 return [];
             }
 
             if (!response.data.marketActivity || response.data.marketActivity.length === 0) {
-                console.log('No market activity found');
                 return [];
-            }
-
-            console.log(`Found ${response.data.marketActivity.length} market activities`);
-            
-            // Log all sale types to debug order fills
-            const saleTypes = [...new Set(response.data.marketActivity.map(a => a.saletype))];
-            console.log('Available sale types:', saleTypes);
-            
-            // Log sample activities for debugging
-            if (response.data.marketActivity.length > 0) {
-                console.log('Sample activity structure:');
-                console.log(JSON.stringify(response.data.marketActivity[0], null, 2));
-            }
-            
-            // Log order fills specifically for debugging
-            const orderFills = response.data.marketActivity.filter(a => a.saletype === 'Order');
-            if (orderFills.length > 0) {
-                console.log('=== ORDER FILL DEBUGGING ===');
-                console.log(`Found ${orderFills.length} order fills`);
-                orderFills.slice(0, 3).forEach((orderFill, index) => {
-                    console.log(`ORDER FILL ${index + 1}:`, JSON.stringify(orderFill, null, 2));
-                });
             }
             
             // Filter only actual completed sales (must have buyer address and completed transaction)
@@ -91,14 +61,8 @@ class SentXService {
                     // Order fills may not have transaction ID but are still valid completed sales
                     (activity.saleTransactionId !== null || activity.saletype === 'Order');
                 
-                if (hasCompletedSale) {
-                    console.log(`Including completed sale ${activity.saletype}: ${activity.nftName} - Image: ${activity.nftImage ? 'Yes' : 'No'}`);
-                }
-                
                 return hasCompletedSale;
             });
-
-            console.log(`Filtered to ${salesOnly.length} actual sales`);
             
             return this.formatSalesData(salesOnly);
 
@@ -162,10 +126,7 @@ class SentXService {
      */
     async getRecentListings(limit = 50) {
         try {
-            console.log('Fetching recent listings from SentX...');
-            
             const apiKey = process.env.SENTX_API_KEY;
-            console.log('API Key available:', apiKey ? 'Yes' : 'No');
             
             const params = {
                 apikey: apiKey,
@@ -175,32 +136,16 @@ class SentXService {
                 hbarMarketOnly: 1 // Focus on HBAR market
             };
             
-            console.log('Listings request params:', JSON.stringify(params, null, 2));
-            
             const response = await this.axiosInstance.get('/v1/public/market/activity', {
                 params: params
             });
 
             if (!response.data || !response.data.success) {
-                console.log('No successful response from SentX API for listings');
                 return [];
             }
 
             if (!response.data.marketActivity || response.data.marketActivity.length === 0) {
-                console.log('No market activity found for listings');
                 return [];
-            }
-
-            console.log(`Found ${response.data.marketActivity.length} market activities for listings`);
-            
-            // Debug: Log all sale types to see what's available for listings
-            const listingSaleTypes = [...new Set(response.data.marketActivity.map(a => a.saletype))];
-            console.log('Available listing sale types:', listingSaleTypes);
-            
-            // Debug: Log sample listing activities
-            if (response.data.marketActivity.length > 0) {
-                console.log('Sample listing activity structure:');
-                console.log(JSON.stringify(response.data.marketActivity[0], null, 2));
             }
             
             // Filter only actual listings (look for any listing-related activity)
@@ -216,14 +161,8 @@ class SentXService {
                 
                 const isValidListing = hasListingData && isListingType;
                 
-                if (activity.saletype === 'Listed') {
-                    console.log(`Found listing: ${activity.nftName} - saletype: "${activity.saletype}" - salePrice: ${activity.salePrice} HBAR - buyerAddress: ${activity.buyerAddress || 'none'} - Valid: ${isValidListing}`);
-                }
-                
                 return isValidListing;
             });
-
-            console.log(`Filtered to ${listingsOnly.length} actual listings`);
             
             return this.formatListingsData(listingsOnly);
 
@@ -316,9 +255,6 @@ class SentXService {
      */
     formatListingsData(rawListings) {
         return rawListings.map(listing => {
-            const hasImage = listing.nftImage || listing.imageCDN || listing.nftImageUrl || listing.image;
-            console.log(`Processing Listing: ${listing.nftName}, Image: ${hasImage ? 'Present' : 'Missing'}`);
-            
             return {
                 id: `${listing.nftTokenAddress}-${listing.nftSerialId}-${listing.saleDate}`,
                 nft_name: listing.nftName || 'Unknown NFT',
@@ -362,32 +298,6 @@ class SentXService {
      */
     formatSalesData(rawSales) {
         return rawSales.map(sale => {
-            // Debug log each sale to identify missing images
-            const hasImage = sale.nftImage || sale.imageCDN || sale.nftImageUrl || sale.image;
-            if (sale.collectionName && sale.collectionName.includes('Rooster Cartel')) {
-                console.log(`ROOSTER CARTEL DEBUG - ${sale.saletype}: ${sale.nftName}`);
-                console.log(`  nftImage: ${sale.nftImage || 'MISSING'}`);
-                console.log(`  imageCDN: ${sale.imageCDN || 'MISSING'}`);
-                console.log(`  nftImageUrl: ${sale.nftImageUrl || 'MISSING'}`);
-                console.log(`  image: ${sale.image || 'MISSING'}`);
-                console.log(`  nftMetadata: ${sale.nftMetadata || 'MISSING'}`);
-            }
-            console.log(`Processing ${sale.saletype}: ${sale.nftName}, Image: ${hasImage ? 'Present' : 'Missing'}`);
-            
-            // Enhanced debugging for order fills specifically
-            if (sale.saletype === 'Order') {
-                console.log(`ORDER FILL IMAGE DEBUG - ${sale.nftName}`);
-                console.log(`  All possible image fields:`, {
-                    nftImage: sale.nftImage,
-                    imageCDN: sale.imageCDN,
-                    nftImageUrl: sale.nftImageUrl,
-                    image: sale.image,
-                    imageFile: sale.imageFile,
-                    imageUrl: sale.imageUrl,
-                    nftMetadata: sale.nftMetadata
-                });
-            }
-            
             return {
                 id: `${sale.nftTokenAddress}-${sale.nftSerialId}-${sale.saleDate}`,
                 nft_name: sale.nftName || 'Unknown NFT',

@@ -157,24 +157,10 @@ class NFTSalesBot {
 
     async checkForNewSales() {
         try {
-            console.log('Checking for new NFT sales and listings...');
-            
             // Get recent sales from SentX marketplace
             const sentxSales = await sentxService.getRecentSales();
             // Get recent listings from SentX marketplace  
             const sentxListings = await sentxService.getRecentListings();
-
-            if (!sentxSales || sentxSales.length === 0) {
-                console.log('No recent sales found from SentX');
-            } else {
-                console.log(`Found ${sentxSales.length} sales from SentX`);
-            }
-
-            if (!sentxListings || sentxListings.length === 0) {
-                console.log('No recent listings found from SentX');
-            } else {
-                console.log(`Found ${sentxListings.length} listings from SentX`);
-            }
 
             // Get current HBAR to USD rate
             const hbarRate = await currencyService.getHbarToUsdRate();
@@ -211,16 +197,12 @@ class NFTSalesBot {
                 return isNewer && isRecent;
             });
 
-            console.log(`Found ${newSales.length} new live sales to process from SentX`);
-
             if (newSales.length === 0) {
-                console.log('No new live sales to process');
                 return;
             }
 
             // Remove duplicates based on token_id, serial_number, and timestamp
             const uniqueSales = this.removeDuplicateSales(newSales);
-            console.log(`After removing duplicates: ${uniqueSales.length} unique sales`);
 
             // Sort by timestamp to process oldest first
             uniqueSales.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -234,16 +216,13 @@ class NFTSalesBot {
                 const transactionId = sale.saleTransactionId || sale.transaction_id || '';
                 const saleId = `${tokenId}_${serialNumber}_${saleTsMs}_${transactionId}`;
                 
-                console.log(`Checking sale ID: ${saleId}`);
-                
                 // Check if we've already processed this sale
                 const alreadyProcessed = await this.storage.isSaleProcessed(saleId);
                 if (alreadyProcessed) {
-                    console.log(`✓ Skipping already processed sale: ${sale.nftName || sale.nft_name} (${saleId})`);
                     continue;
                 }
                 
-                console.log(`→ Processing new sale: ${sale.nftName || sale.nft_name}`);
+                console.log(`🔥 NEW SALE: ${sale.collection_name || sale.nft_name} - ${sale.price_hbar} HBAR`);
                 
                 await this.processSale(sale, hbarRate);
                 
@@ -279,16 +258,12 @@ class NFTSalesBot {
                 return isNewer && isRecent;
             });
 
-            console.log(`Found ${newListings.length} new live listings to process from SentX`);
-
             if (newListings.length === 0) {
-                console.log('No new live listings to process');
                 return;
             }
 
             // Remove duplicates based on token_id, serial_number, and timestamp
             const uniqueListings = this.removeDuplicateListings(newListings);
-            console.log(`After removing duplicates: ${uniqueListings.length} unique listings`);
 
             // Sort by timestamp to process oldest first
             uniqueListings.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -301,16 +276,13 @@ class NFTSalesBot {
                 const listingTsMs = new Date(listing.timestamp).getTime();
                 const listingId = listing.listing_id || `${tokenId}_${serialNumber}_${listingTsMs}`;
                 
-                console.log(`Checking listing ID: ${listingId}`);
-                
                 // Check if we've already processed this listing
                 const alreadyProcessed = await this.storage.isListingProcessed(listingId);
                 if (alreadyProcessed) {
-                    console.log(`✓ Skipping already processed listing: ${listing.nftName || listing.nft_name} (${listingId})`);
                     continue;
                 }
                 
-                console.log(`→ Processing new listing: ${listing.nftName || listing.nft_name}`);
+                console.log(`📋 NEW LISTING: ${listing.collection_name || listing.nft_name} - ${listing.price_hbar} HBAR`);
                 
                 await this.processListing(listing, hbarRate);
                 
