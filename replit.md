@@ -205,6 +205,11 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added interaction validation and graceful fallback when API calls take too long
   - Improved timeout management for test commands to prevent 3-second Discord limits
   - Added comprehensive error logging for better debugging of interaction issues
+- July 10, 2025: Fixed collection URLs and improved listing images
+  - Fixed collection URLs to include NFT serial numbers instead of "undefined"
+  - Enhanced image detection with comprehensive fallback options for rapid listings
+  - Improved URL generation to properly link to specific NFT listings on SentX marketplace
+  - Reduced console spam by eliminating repeated logging for same listings detection
 
 ## User Preferences
 

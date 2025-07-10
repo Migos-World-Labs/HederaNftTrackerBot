@@ -178,19 +178,21 @@ class NFTSalesBot {
             const trackedListings = sentxListings.filter(listing => 
                 trackedTokenIds.includes(listing.token_id || listing.tokenId)
             );
+            
+            // Only log when we actually have new data to process
+            const hasNewSales = trackedSales && trackedSales.length > 0;
+            const hasNewListings = trackedListings && trackedListings.length > 0;
 
             // Get current HBAR to USD rate
             const hbarRate = await currencyService.getHbarToUsdRate();
 
             // Process sales (only for tracked collections)
-            if (trackedSales && trackedSales.length > 0) {
-                console.log(`🔥 Found ${trackedSales.length} sales from tracked collections`);
+            if (hasNewSales) {
                 await this.processNewSales(trackedSales, hbarRate);
             }
 
-            // Process listings (only for tracked collections)
-            if (trackedListings && trackedListings.length > 0) {
-                console.log(`📋 Found ${trackedListings.length} listings from tracked collections`);
+            // Process listings (only for tracked collections)  
+            if (hasNewListings) {
                 await this.processNewListings(trackedListings, hbarRate);
             }
 
@@ -468,6 +470,24 @@ class NFTSalesBot {
                     const channel = this.client.channels.cache.get(channelId);
                     
                     if (channel) {
+                        // Add collection URL for SentX marketplace with NFT serial number
+                        if (listing.token_id) {
+                            const collectionFriendlyUrl = listing.collectionFriendlyurl || listing.collection_friendly_url;
+                            const serialNumber = listing.serial_number || listing.serialNumber || listing.serial_id;
+                            
+                            if (collectionFriendlyUrl && serialNumber) {
+                                listing.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}/${serialNumber}`;
+                            } else if (collectionFriendlyUrl) {
+                                listing.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
+                            } else if (serialNumber) {
+                                // Fallback: use token ID and serial number in URL
+                                listing.collection_url = `https://sentx.io/nft-marketplace/collection/${listing.token_id}/${serialNumber}`;
+                            } else {
+                                // Final fallback: use token ID only
+                                listing.collection_url = `https://sentx.io/nft-marketplace/collection/${listing.token_id}`;
+                            }
+                        }
+                        
                         // Create Discord embed for the listing
                         const embed = await embedUtils.createListingEmbed(listing, hbarRate);
                         const message = await channel.send({ embeds: [embed] });

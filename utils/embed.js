@@ -250,10 +250,18 @@ class EmbedUtils {
                        listing.image_url || 
                        listing.imageUrl || 
                        listing.imageFile ||
-                       listing.image;
+                       listing.image ||
+                       listing.nft_image ||
+                       listing.imageData ||
+                       listing.metadata?.image ||
+                       listing.media?.image;
         
-        // Note: Image fallback would require service injection, skipping for now
-        // The listing should already have image data from the API response
+        // Additional checks for image URLs in nested data
+        if (!imageUrl && listing.nft_data) {
+            imageUrl = listing.nft_data.imageCDN || 
+                      listing.nft_data.image_url || 
+                      listing.nft_data.image;
+        }
         
         if (imageUrl) {
             const convertedImageUrl = this.convertIpfsToHttp(imageUrl);
@@ -263,7 +271,10 @@ class EmbedUtils {
                 console.log(`Failed to convert listing image URL: ${imageUrl}`);
             }
         } else {
-            console.log(`No image found for listing: ${listing.nft_name} (${listing.token_id}/${listing.serial_id || listing.serial_number})`);
+            // Only log missing images if we have all the data we expect
+            if (listing.token_id && listing.serial_number) {
+                console.log(`No image found for listing: ${listing.nft_name} (${listing.token_id}/${listing.serial_id || listing.serial_number})`);
+            }
         }
 
         // Note: Seller holdings would require service injection, using basic seller info for now
