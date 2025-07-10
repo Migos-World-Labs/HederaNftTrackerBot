@@ -1255,6 +1255,9 @@ class NFTSalesBot {
                 console.log(`Looking for listings from ${targetTokenIds.length} tracked collections:`, targetTokenIds);
             }
             
+            // Show loading message
+            await interaction.editReply('🔍 Searching marketplace for listings...');
+            
             // Get all listings from SentX (without time filter for testing)
             const allListings = await sentxService.getRecentListings(100, true);
             
