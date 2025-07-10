@@ -261,6 +261,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added automatic detection of HCS image tokens through nftImage and imagecid fields
   - Fixed image display issues for Hashinal-like collections that store images on-chain via HCS
   - Added detailed debugging and logging for HCS image resolution process
+- July 10, 2025: Fixed Hashinal images using SentX Hashinals service
+  - Updated image URL generation to use https://hashinals.sentx.io/{topicId}?optimizer=image&width=640
+  - Replaced complex HCS topic message parsing with direct SentX Hashinals service calls
+  - Applied fix to both sales and listings notifications for consistent image display
+  - Verified working solution with The Ape Anthology (0.0.8308459) and other HCS collections
+  - Hashinal images now display reliably in Discord notifications without complex decompression
 
 ## User Preferences
 

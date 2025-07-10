@@ -91,14 +91,16 @@ class HashinalService {
                 }
             }
 
-            // Handle HCS URLs - try to fetch from Hedera Consensus Service
+            // Handle HCS URLs - use SentX Hashinals service for direct resolution
             for (const field of imageFields) {
                 if (field && this.isHRLFormat(field)) {
-                    console.log(`🔧 [HASHINAL] Attempting to resolve HCS URL: ${field}`);
-                    const resolvedUrl = await this.fetchHCSImageData(field);
-                    if (resolvedUrl) {
-                        console.log(`✅ [HASHINAL] Successfully resolved HCS image: ${resolvedUrl}`);
-                        return resolvedUrl;
+                    console.log(`🔧 [HASHINAL] Converting HCS URL to Hashinals service: ${field}`);
+                    const topicMatch = field.match(/hcs:\/\/1\/(.+)/);
+                    if (topicMatch) {
+                        const topicId = topicMatch[1];
+                        const hashinalUrl = `https://hashinals.sentx.io/${topicId}?optimizer=image&width=640`;
+                        console.log(`✅ [HASHINAL] Using Hashinals service URL: ${hashinalUrl}`);
+                        return hashinalUrl;
                     }
                 }
             }
@@ -239,7 +241,7 @@ class HashinalService {
             const response = await axios.get(url, { 
                 timeout: 15000,
                 params: {
-                    limit: 5, // Get latest messages
+                    limit: 10, // Get more messages to find image data
                     order: 'desc'
                 }
             });
@@ -261,13 +263,103 @@ class HashinalService {
                                 return messageData;
                             }
                             
-                            // Try to parse as JSON in case it contains image URL
+                            // Check if it's binary image data that needs to be converted to data URI
+                            if (messageData.length > 100 && !messageData.includes('http') && !messageData.includes('{')) {
+                                console.log(`🔧 [HCS] Message appears to be binary image data, trying to convert...`);
+                                try {
+                                    // Try to convert binary data to data URI
+                                    const binaryData = Buffer.from(message.message, 'base64');
+                                    
+                                    // Check for common image headers
+                                    const header = binaryData.toString('hex', 0, 10);
+                                    let mimeType = null;
+                                    
+                                    if (header.startsWith('89504e47')) { // PNG
+                                        mimeType = 'image/png';
+                                    } else if (header.startsWith('ffd8ff')) { // JPEG
+                                        mimeType = 'image/jpeg';
+                                    } else if (header.startsWith('47494638')) { // GIF
+                                        mimeType = 'image/gif';
+                                    } else if (header.startsWith('424d')) { // BMP
+                                        mimeType = 'image/bmp';
+                                    } else if (header.startsWith('52494646')) { // WebP
+                                        mimeType = 'image/webp';
+                                    }
+                                    
+                                    if (mimeType) {
+                                        const dataUri = `data:${mimeType};base64,${message.message}`;
+                                        console.log(`✅ [HCS] Converted binary data to ${mimeType} data URI`);
+                                        return dataUri;
+                                    }
+                                } catch (conversionError) {
+                                    console.log(`⚠️ [HCS] Failed to convert binary data: ${conversionError.message}`);
+                                }
+                            }
+                            
+                            // Try to parse as JSON in case it contains image URL or compressed data
                             try {
                                 const jsonData = JSON.parse(messageData);
+                                console.log(`📋 [HCS] Parsed JSON data:`, Object.keys(jsonData));
+                                
+                                // Check for direct image URL
                                 if (jsonData.image || jsonData.image_url) {
                                     const imageUrl = jsonData.image || jsonData.image_url;
                                     console.log(`✅ [HCS] Found image URL in JSON data: ${imageUrl}`);
                                     return imageUrl;
+                                }
+                                
+                                // Check for compressed data format (used by The Ape Anthology)
+                                if (jsonData.c) {
+                                    console.log(`🔧 [HCS] Found compressed data field 'c', attempting to decompress...`);
+                                    try {
+                                        // The 'c' field appears to contain base64-encoded compressed data
+                                        const compressedData = Buffer.from(jsonData.c, 'base64');
+                                        
+                                        // Try to decompress using different methods
+                                        const zlib = require('node:zlib');
+                                        
+                                        // Try gzip decompression
+                                        try {
+                                            const decompressed = zlib.gunzipSync(compressedData);
+                                            const decompressedText = decompressed.toString('utf8');
+                                            console.log(`📄 [HCS] Decompressed data (first 200 chars): ${decompressedText.substring(0, 200)}`);
+                                            
+                                            // Check if decompressed data is a data URI
+                                            if (decompressedText.startsWith('data:image/')) {
+                                                console.log(`✅ [HCS] Found data URI in decompressed data`);
+                                                return decompressedText;
+                                            }
+                                            
+                                            // Try to parse decompressed data as JSON
+                                            try {
+                                                const decompressedJson = JSON.parse(decompressedText);
+                                                if (decompressedJson.image || decompressedJson.image_url) {
+                                                    console.log(`✅ [HCS] Found image in decompressed JSON`);
+                                                    return decompressedJson.image || decompressedJson.image_url;
+                                                }
+                                            } catch (parseError) {
+                                                // Not JSON, might be raw image data
+                                            }
+                                        } catch (gzipError) {
+                                            console.log(`⚠️ [HCS] Gzip decompression failed, trying deflate...`);
+                                            
+                                            // Try deflate decompression
+                                            try {
+                                                const decompressed = zlib.inflateSync(compressedData);
+                                                const decompressedText = decompressed.toString('utf8');
+                                                console.log(`📄 [HCS] Deflate decompressed data (first 200 chars): ${decompressedText.substring(0, 200)}`);
+                                                
+                                                if (decompressedText.startsWith('data:image/')) {
+                                                    console.log(`✅ [HCS] Found data URI in deflate decompressed data`);
+                                                    return decompressedText;
+                                                }
+                                            } catch (deflateError) {
+                                                console.log(`⚠️ [HCS] Deflate decompression also failed`);
+                                            }
+                                        }
+                                    } catch (decompressionError) {
+                                        console.log(`⚠️ [HCS] Decompression failed: ${decompressionError.message}`);
+                                    }
                                 }
                             } catch (jsonError) {
                                 // Not JSON, continue to next message

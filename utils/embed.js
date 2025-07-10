@@ -70,6 +70,19 @@ class EmbedUtils {
                        (sale.metadata && sale.metadata.image) ||
                        (sale.media && sale.media.image) ||
                        (sale.data && sale.data.image);
+                       
+        // For HCS tokens, construct the proper Hashinals URL
+        if (isHCSImageToken && (sale.nftImage?.startsWith('hcs://') || sale.imagecid?.startsWith('hcs://'))) {
+            const hcsUrl = sale.nftImage || sale.imagecid;
+            // Extract topic ID from HCS URL (e.g., hcs://1/0.0.8304646)
+            const topicMatch = hcsUrl.match(/hcs:\/\/1\/(.+)/);
+            if (topicMatch) {
+                const topicId = topicMatch[1];
+                const hashinalUrl = `https://hashinals.sentx.io/${topicId}?optimizer=image&width=640`;
+                imageUrl = hashinalUrl;
+                console.log(`🖼️ [HASHINAL] Using Hashinals service URL: ${hashinalUrl}`);
+            }
+        }
         
         // Special debugging for Hashinals and problematic collections
         const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228'];
@@ -126,6 +139,26 @@ class EmbedUtils {
                 }
             } catch (error) {
                 console.error(`❌ [${debugType}] Enhanced resolution failed:`, error.message);
+            }
+        }
+
+        // Additional fallback for HCS tokens using Hashinals service
+        if (!imageUrl && isHCSImageToken) {
+            console.log(`🔧 [${debugType}] Trying Hashinals service fallback...`);
+            
+            // Check for HCS URLs in the most common fields
+            const hcsFields = [sale.nftImage, sale.imagecid, sale.image, sale.imageFile];
+            for (const field of hcsFields) {
+                if (field && field.startsWith('hcs://')) {
+                    const topicMatch = field.match(/hcs:\/\/1\/(.+)/);
+                    if (topicMatch) {
+                        const topicId = topicMatch[1];
+                        const hashinalUrl = `https://hashinals.sentx.io/${topicId}?optimizer=image&width=640`;
+                        console.log(`✅ [${debugType}] Using Hashinals service fallback: ${hashinalUrl}`);
+                        imageUrl = hashinalUrl;
+                        break;
+                    }
+                }
             }
         }
         
@@ -315,6 +348,22 @@ class EmbedUtils {
                        (listing.metadata && listing.metadata.image) ||
                        (listing.media && listing.media.image) ||
                        (listing.data && listing.data.image);
+
+        // For HCS tokens in listings, construct the proper Hashinals URL
+        const isHCSListing = listing.token_id === '0.0.8308459' || 
+                            (listing.nftImage && listing.nftImage.startsWith('hcs://')) ||
+                            (listing.imagecid && listing.imagecid.startsWith('hcs://'));
+        
+        if (isHCSListing && (listing.nftImage?.startsWith('hcs://') || listing.imagecid?.startsWith('hcs://'))) {
+            const hcsUrl = listing.nftImage || listing.imagecid;
+            const topicMatch = hcsUrl.match(/hcs:\/\/1\/(.+)/);
+            if (topicMatch) {
+                const topicId = topicMatch[1];
+                const hashinalUrl = `https://hashinals.sentx.io/${topicId}?optimizer=image&width=640`;
+                imageUrl = hashinalUrl;
+                console.log(`🖼️ [HASHINAL LISTING] Using Hashinals service URL: ${hashinalUrl}`);
+            }
+        }
         
         // Additional checks for image URLs in nested data
         if (!imageUrl && listing.nft_data) {
