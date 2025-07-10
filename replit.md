@@ -285,6 +285,11 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced error handling with immediate deferReply and comprehensive timeout protection
   - Test commands now process much faster and never timeout due to streamlined architecture
   - Added graceful fallback for expired interactions with proper error logging
+- July 10, 2025: Removed /broadcast-test command
+  - Eliminated problematic /broadcast-test command that was causing interaction timeout errors
+  - Simplified slash command registration by removing broadcast test functionality
+  - Bot now focuses on individual server testing via /test command which works reliably
+  - Cleaned up command handler to prevent unknown interaction errors
 
 ## User Preferences
 
