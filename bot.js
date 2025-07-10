@@ -1192,7 +1192,7 @@ class NFTSalesBot {
             console.log('Testing latest listing...');
             
             // Get recent listings from SentX
-            const recentListings = await sentxService.getRecentListings(50);
+            const recentListings = await this.sentxService.getRecentListings(50);
             
             if (!recentListings || recentListings.length === 0) {
                 await interaction.editReply('❌ No recent listings found for testing');
@@ -1203,12 +1203,13 @@ class NFTSalesBot {
             const testListing = recentListings[0];
             
             console.log(`Using listing for testing: ${testListing.nftName || testListing.nft_name} from ${testListing.collectionName || testListing.collection_name}`);
+            console.log('Test listing data:', JSON.stringify(testListing, null, 2));
             
             // Get HBAR rate
-            const hbarRate = await currencyService.getHbarToUsdRate();
+            const hbarRate = await this.currencyService.getHbarToUsdRate();
             
-            // Create a mock listing embed to test the formatting
-            const embed = await embedUtils.createListingEmbed(testListing, hbarRate);
+            // Create a listing embed to test the formatting
+            const embed = await this.embedUtils.createListingEmbed(testListing, hbarRate);
             
             // Send test listing notification
             await interaction.editReply({
@@ -1220,7 +1221,8 @@ class NFTSalesBot {
             
         } catch (error) {
             console.error('Error testing latest listing:', error);
-            await interaction.editReply('❌ Error occurred while testing listing functionality');
+            console.error('Error details:', error.stack);
+            await interaction.editReply(`❌ Error occurred while testing listing functionality: ${error.message}`);
         }
     }
 
