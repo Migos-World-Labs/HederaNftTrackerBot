@@ -184,11 +184,13 @@ class NFTSalesBot {
 
             // Process sales (only for tracked collections)
             if (trackedSales && trackedSales.length > 0) {
+                console.log(`🔥 Found ${trackedSales.length} sales from tracked collections`);
                 await this.processNewSales(trackedSales, hbarRate);
             }
 
             // Process listings (only for tracked collections)
             if (trackedListings && trackedListings.length > 0) {
+                console.log(`📋 Found ${trackedListings.length} listings from tracked collections`);
                 await this.processNewListings(trackedListings, hbarRate);
             }
 

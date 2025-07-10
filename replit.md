@@ -194,6 +194,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Reduced unnecessary API processing and improved performance
   - Console now only shows activity for collections actually being tracked
   - System automatically picks up new collections as they're added to database
+- July 10, 2025: Added broadcast test command and eliminated console spam
+  - Implemented /broadcast-test command to send notifications to all Discord servers simultaneously
+  - Added options for Latest Sale, Latest Listing, or Both with detailed success/failure reporting
+  - Completely eliminated console spam from SentX API calls when no tracked collections have activity
+  - Console now only logs when there are actual sales/listings from tracked collections
+  - Added rate limiting between servers to prevent Discord API issues during broadcasts
 
 ## User Preferences
 
