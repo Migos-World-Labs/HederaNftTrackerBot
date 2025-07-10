@@ -773,8 +773,17 @@ class NFTSalesBot {
             }
         } catch (error) {
             console.error('Error handling slash command:', error);
-            if (!interaction.replied) {
-                await interaction.reply('An error occurred while processing the command.');
+            try {
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({ 
+                        content: 'An error occurred while processing the command.',
+                        ephemeral: true
+                    });
+                } else if (interaction.deferred && !interaction.replied) {
+                    await interaction.editReply('An error occurred while processing the command.');
+                }
+            } catch (responseError) {
+                console.error('Error responding to interaction:', responseError);
             }
         }
     }
@@ -919,11 +928,12 @@ class NFTSalesBot {
 
     async handleTestCommand(interaction) {
         try {
-            await interaction.deferReply();
-            
             // Check if user specified orderfill test
             const testType = interaction.options?.getString('type') || 'sale';
             console.log(`Test command triggered with type: ${testType}`);
+            
+            // Defer reply once at the beginning
+            await interaction.deferReply();
             
             if (testType === 'orderfill') {
                 console.log('Executing order fill test...');
@@ -1163,19 +1173,44 @@ class NFTSalesBot {
         try {
             console.log('Testing latest listing...');
             
+            // Get tracked collections for this server
+            const guildId = interaction.guildId;
+            const trackedCollections = await this.storage.getCollections(guildId);
+            
+            if (!trackedCollections || trackedCollections.length === 0) {
+                await interaction.editReply('❌ No collections are being tracked in this server. Use `/add` to track collections first.');
+                return;
+            }
+            
+            const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+            console.log(`Looking for listings from ${trackedTokenIds.length} tracked collections:`, trackedTokenIds);
+            
             // Get recent listings from SentX
-            const recentListings = await sentxService.getRecentListings(50);
+            const recentListings = await sentxService.getRecentListings(100);
             
             if (!recentListings || recentListings.length === 0) {
                 await interaction.editReply('❌ No recent listings found for testing');
                 return;
             }
             
-            // Get the most recent listing
-            const testListing = recentListings[0];
+            // Filter for listings from tracked collections only
+            const trackedListings = recentListings.filter(listing => 
+                trackedTokenIds.includes(listing.token_id || listing.tokenId)
+            );
             
-            console.log(`Using listing for testing: ${testListing.nftName || testListing.nft_name} from ${testListing.collectionName || testListing.collection_name}`);
-            console.log('Test listing data:', JSON.stringify(testListing, null, 2));
+            if (trackedListings.length === 0) {
+                const collectionNames = trackedCollections.map(c => c.name).join(', ');
+                await interaction.editReply(`❌ No recent listings found for your tracked collections: ${collectionNames}\n\nTry again later when new listings appear for these collections.`);
+                return;
+            }
+            
+            // Get the most recent tracked listing
+            const testListing = trackedListings[0];
+            const collectionName = trackedCollections.find(c => 
+                (c.token_id || c.tokenId) === (testListing.token_id || testListing.tokenId)
+            )?.name || testListing.collection_name;
+            
+            console.log(`Using listing for testing: ${testListing.nft_name} from ${collectionName}`);
             
             // Get HBAR rate
             const hbarRate = await currencyService.getHbarToUsdRate();
@@ -1185,7 +1220,7 @@ class NFTSalesBot {
             
             // Send test listing notification
             await interaction.editReply({
-                content: '📝 **Test Listing Notification** (Latest from marketplace):',
+                content: `📝 **Test Listing from Tracked Collection:**\n*Latest listing from ${collectionName}*`,
                 embeds: [embed]
             });
             
@@ -1193,8 +1228,16 @@ class NFTSalesBot {
             
         } catch (error) {
             console.error('Error testing latest listing:', error);
-            console.error('Error details:', error.stack);
-            await interaction.editReply(`❌ Error occurred while testing listing functionality: ${error.message}`);
+            // Try to respond safely without causing interaction errors
+            try {
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply(`❌ Error occurred while testing listing functionality: ${error.message}`);
+                } else {
+                    await interaction.editReply(`❌ Error occurred while testing listing functionality: ${error.message}`);
+                }
+            } catch (responseError) {
+                console.error('Error responding to interaction:', responseError);
+            }
         }
     }
 

@@ -157,6 +157,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Updated slash command registration to include new test option
   - Test command now supports: Regular Sale, Order Fill, Rooster Cartel Order Fill, and Latest Listing
   - Provides comprehensive testing capabilities for both sales and listings notification systems
+- July 10, 2025: Enhanced test listing command and fixed interaction errors
+  - Fixed Discord interaction timing errors with proper deferReply handling
+  - Enhanced test listing command to filter by server's tracked collections only
+  - Added validation to ensure collections are tracked before testing listings
+  - Improved error handling for Discord API interaction responses
+  - Test listing now shows latest listing from tracked collections specific to the server
+  - Cleaned up console output to show only essential tracking information with emojis
 
 ## User Preferences
 
