@@ -267,6 +267,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Applied fix to both sales and listings notifications for consistent image display
   - Verified working solution with The Ape Anthology (0.0.8308459) and other HCS collections
   - Hashinal images now display reliably in Discord notifications without complex decompression
+- July 10, 2025: Enhanced Hashinal support with multiple CDN options
+  - Added HashPack CDN support using https://hashpack-hashinal.b-cdn.net/api/inscription-cdn/{tokenId}/{serialId}?network=mainnet
+  - Fixed variable initialization error causing "Cannot access 'isHCSImageToken' before initialization" crashes
+  - Enhanced Discord interaction timeout handling to prevent "Unknown interaction" errors in test commands
+  - Applied comprehensive Hashinal detection for both known tokens and HCS-5 standard markers
+  - Both SentX and HashPack CDN URLs now work as fallbacks for different Hashinal collections
 
 ## User Preferences
 

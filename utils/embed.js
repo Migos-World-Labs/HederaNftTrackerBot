@@ -71,19 +71,6 @@ class EmbedUtils {
                        (sale.media && sale.media.image) ||
                        (sale.data && sale.data.image);
                        
-        // For HCS tokens, construct the proper Hashinals URL
-        if (isHCSImageToken && (sale.nftImage?.startsWith('hcs://') || sale.imagecid?.startsWith('hcs://'))) {
-            const hcsUrl = sale.nftImage || sale.imagecid;
-            // Extract topic ID from HCS URL (e.g., hcs://1/0.0.8304646)
-            const topicMatch = hcsUrl.match(/hcs:\/\/1\/(.+)/);
-            if (topicMatch) {
-                const topicId = topicMatch[1];
-                const hashinalUrl = `https://hashinals.sentx.io/${topicId}?optimizer=image&width=640`;
-                imageUrl = hashinalUrl;
-                console.log(`🖼️ [HASHINAL] Using Hashinals service URL: ${hashinalUrl}`);
-            }
-        }
-        
         // Special debugging for Hashinals and problematic collections
         const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228'];
         const hcsImageTokens = ['0.0.8308459']; // The Ape Anthology - uses HCS for images
@@ -97,6 +84,28 @@ class EmbedUtils {
         const isHCSImageToken = hcsImageTokens.includes(sale.token_id) || 
             (sale.nftImage && sale.nftImage.startsWith('hcs://')) ||
             (sale.imagecid && sale.imagecid.startsWith('hcs://'));
+        
+        // For HCS tokens, construct the proper Hashinals URL
+        if (isHCSImageToken && (sale.nftImage?.startsWith('hcs://') || sale.imagecid?.startsWith('hcs://'))) {
+            const hcsUrl = sale.nftImage || sale.imagecid;
+            // Extract topic ID from HCS URL (e.g., hcs://1/0.0.8304646)
+            const topicMatch = hcsUrl.match(/hcs:\/\/1\/(.+)/);
+            if (topicMatch) {
+                const topicId = topicMatch[1];
+                const hashinalUrl = `https://hashinals.sentx.io/${topicId}?optimizer=image&width=640`;
+                imageUrl = hashinalUrl;
+                console.log(`🖼️ [HASHINAL] Using Hashinals service URL: ${hashinalUrl}`);
+            }
+        }
+        
+        // For Hashinals with token ID, use HashPack CDN URL format
+        if (isHashinal && sale.token_id && sale.serial_number) {
+            const hashpackUrl = `https://hashpack-hashinal.b-cdn.net/api/inscription-cdn/${sale.token_id}/${sale.serial_number}?network=mainnet`;
+            if (!imageUrl) {
+                imageUrl = hashpackUrl;
+                console.log(`🖼️ [HASHINAL] Using HashPack CDN URL: ${hashpackUrl}`);
+            }
+        }
         
         // Enhanced debugging for image detection issues
         if (isHashinal || isHCSImageToken || (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) || !imageUrl) {
@@ -349,11 +358,21 @@ class EmbedUtils {
                        (listing.media && listing.media.image) ||
                        (listing.data && listing.data.image);
 
-        // For HCS tokens in listings, construct the proper Hashinals URL
-        const isHCSListing = listing.token_id === '0.0.8308459' || 
+        // Special debugging for Hashinals and problematic collections in listings
+        const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228'];
+        const hcsImageTokens = ['0.0.8308459']; // The Ape Anthology - uses HCS for images
+        const isHashinalListing = listing.collection_name && (
+            listing.collection_name.toLowerCase().includes('hashinal') ||
+            listing.collection_name.toLowerCase().includes('hcs-') ||
+            listing.nft_name?.toLowerCase().includes('hashinal') ||
+            knownHashinalTokens.includes(listing.token_id) ||
+            (listing.metadata && listing.metadata.p === 'hcs-5') // HCS-5 standard marker
+        );
+        const isHCSListing = hcsImageTokens.includes(listing.token_id) || 
                             (listing.nftImage && listing.nftImage.startsWith('hcs://')) ||
                             (listing.imagecid && listing.imagecid.startsWith('hcs://'));
         
+        // For HCS tokens in listings, construct the proper Hashinals URL
         if (isHCSListing && (listing.nftImage?.startsWith('hcs://') || listing.imagecid?.startsWith('hcs://'))) {
             const hcsUrl = listing.nftImage || listing.imagecid;
             const topicMatch = hcsUrl.match(/hcs:\/\/1\/(.+)/);
@@ -365,6 +384,15 @@ class EmbedUtils {
             }
         }
         
+        // For Hashinals with token ID, use HashPack CDN URL format
+        if (isHashinalListing && listing.token_id && listing.serial_number) {
+            const hashpackUrl = `https://hashpack-hashinal.b-cdn.net/api/inscription-cdn/${listing.token_id}/${listing.serial_number}?network=mainnet`;
+            if (!imageUrl) {
+                imageUrl = hashpackUrl;
+                console.log(`🖼️ [HASHINAL LISTING] Using HashPack CDN URL: ${hashpackUrl}`);
+            }
+        }
+        
         // Additional checks for image URLs in nested data
         if (!imageUrl && listing.nft_data) {
             imageUrl = listing.nft_data.imageCDN || 
@@ -373,43 +401,15 @@ class EmbedUtils {
                       (listing.nft_data.metadata && listing.nft_data.metadata.image);
         }
         
-        // Special debugging for Hashinals and other problematic collections
-        const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228'];
-        const isHashinal = listing.collection_name && (
-            listing.collection_name.toLowerCase().includes('hashinal') ||
-            listing.collection_name.toLowerCase().includes('hcs-') ||
-            listing.nft_name?.toLowerCase().includes('hashinal') ||
-            knownHashinalTokens.includes(listing.token_id) ||
-            (listing.metadata && listing.metadata.p === 'hcs-5') // HCS-5 standard marker
-        );
-        
-        if (isHashinal || !imageUrl) {
-            const debugType = isHashinal ? 'HASHINAL LISTING' : 'NO IMAGE LISTING';
+        // Debug logging for listings with image issues
+        if (isHashinalListing || isHCSListing || !imageUrl) {
+            const debugType = isHashinalListing ? 'HASHINAL LISTING' : 
+                              isHCSListing ? 'HCS LISTING' : 'NO IMAGE LISTING';
             console.log(`🖼️ [${debugType}] Processing image for ${listing.nft_name}`);
-            console.log(`  Selected imageUrl: ${imageUrl}`);
-            console.log(`  imageCDN: ${listing.imageCDN}`);
-            console.log(`  nftImage: ${listing.nftImage}`);
-            console.log(`  image_url: ${listing.image_url}`);
-            console.log(`  image: ${listing.image}`);
-            console.log(`  imageFile: ${listing.imageFile}`);
-            console.log(`  metadata.image: ${listing.metadata?.image}`);
-            console.log(`  data.image: ${listing.data?.image}`);
-            
-            // Check for Hashinal-specific image fields
-            if (listing.metadata) {
-                console.log(`  metadata.files: ${JSON.stringify(listing.metadata.files)}`);
-                console.log(`  metadata.uri: ${listing.metadata.uri}`);
-                console.log(`  metadata.image_data: ${listing.metadata.image_data}`);
-            }
-            
-            // Log all available fields for Hashinals
-            if (isHashinal) {
-                console.log(`  [HASHINAL DEBUG] All listing fields:`, Object.keys(listing));
-            }
         }
-
+        
         // Use Hashinal service for enhanced image resolution
-        if (isHashinal && !imageUrl) {
+        if ((isHashinalListing || isHCSListing) && !imageUrl) {
             console.log(`🔧 [HASHINAL] Attempting enhanced listing image resolution...`);
             try {
                 imageUrl = await this.hashinalService.resolveHashinalImage(listing);

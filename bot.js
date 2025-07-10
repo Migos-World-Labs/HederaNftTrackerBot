@@ -1256,6 +1256,12 @@ class NFTSalesBot {
             const testType = interaction.options?.getString('type') || 'tracked-sale';
             console.log(`Test command triggered with type: ${testType}`);
             
+            // Check if interaction is still valid before deferring
+            if (!interaction.isRepliable()) {
+                console.log('Interaction expired before test command could start');
+                return;
+            }
+            
             // Defer reply once at the beginning
             await interaction.deferReply();
             
