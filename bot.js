@@ -712,6 +712,12 @@ class NFTSalesBot {
                                 value: 'listing'
                             }
                         ]
+                    },
+                    {
+                        name: 'collection',
+                        type: 3, // STRING
+                        description: 'Token ID of collection to test (for listing tests)',
+                        required: false
                     }
                 ]
             }
@@ -1182,8 +1188,31 @@ class NFTSalesBot {
                 return;
             }
             
-            const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
-            console.log(`Looking for listings from ${trackedTokenIds.length} tracked collections:`, trackedTokenIds);
+            // Check if user specified a specific collection
+            const specifiedCollection = interaction.options?.getString('collection');
+            let targetTokenIds;
+            let targetCollectionName;
+            
+            if (specifiedCollection) {
+                // Validate the specified collection is tracked
+                const matchingCollection = trackedCollections.find(c => 
+                    (c.token_id || c.tokenId) === specifiedCollection
+                );
+                
+                if (!matchingCollection) {
+                    const trackedNames = trackedCollections.map(c => `${c.name} (${c.token_id || c.tokenId})`).join('\n');
+                    await interaction.editReply(`❌ Collection \`${specifiedCollection}\` is not tracked in this server.\n\n**Tracked collections:**\n${trackedNames}`);
+                    return;
+                }
+                
+                targetTokenIds = [specifiedCollection];
+                targetCollectionName = matchingCollection.name;
+                console.log(`Looking for listings from specific collection: ${targetCollectionName} (${specifiedCollection})`);
+            } else {
+                // Use all tracked collections
+                targetTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+                console.log(`Looking for listings from ${targetTokenIds.length} tracked collections:`, targetTokenIds);
+            }
             
             // Get recent listings from SentX
             const recentListings = await sentxService.getRecentListings(100);
@@ -1193,19 +1222,23 @@ class NFTSalesBot {
                 return;
             }
             
-            // Filter for listings from tracked collections only
-            const trackedListings = recentListings.filter(listing => 
-                trackedTokenIds.includes(listing.token_id || listing.tokenId)
+            // Filter for listings from target collections
+            const targetListings = recentListings.filter(listing => 
+                targetTokenIds.includes(listing.token_id || listing.tokenId)
             );
             
-            if (trackedListings.length === 0) {
-                const collectionNames = trackedCollections.map(c => c.name).join(', ');
-                await interaction.editReply(`❌ No recent listings found for your tracked collections: ${collectionNames}\n\nTry again later when new listings appear for these collections.`);
+            if (targetListings.length === 0) {
+                if (specifiedCollection) {
+                    await interaction.editReply(`❌ No recent listings found for ${targetCollectionName}.\n\nTry again later when new listings appear for this collection.`);
+                } else {
+                    const collectionNames = trackedCollections.map(c => c.name).join(', ');
+                    await interaction.editReply(`❌ No recent listings found for your tracked collections: ${collectionNames}\n\nTry again later when new listings appear for these collections.`);
+                }
                 return;
             }
             
-            // Get the most recent tracked listing
-            const testListing = trackedListings[0];
+            // Get the most recent listing
+            const testListing = targetListings[0];
             const collectionName = trackedCollections.find(c => 
                 (c.token_id || c.tokenId) === (testListing.token_id || testListing.tokenId)
             )?.name || testListing.collection_name;
@@ -1219,8 +1252,12 @@ class NFTSalesBot {
             const embed = await embedUtils.createListingEmbed(testListing, hbarRate);
             
             // Send test listing notification
+            const contentMessage = specifiedCollection 
+                ? `📝 **Test Listing from ${collectionName}:**\n*Latest listing from specified collection*`
+                : `📝 **Test Listing from Tracked Collection:**\n*Latest listing from ${collectionName}*`;
+            
             await interaction.editReply({
-                content: `📝 **Test Listing from Tracked Collection:**\n*Latest listing from ${collectionName}*`,
+                content: contentMessage,
                 embeds: [embed]
             });
             

@@ -164,6 +164,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Improved error handling for Discord API interaction responses
   - Test listing now shows latest listing from tracked collections specific to the server
   - Cleaned up console output to show only essential tracking information with emojis
+- July 10, 2025: Added collection selection option to test listing command
+  - Extended /test command with optional "collection" parameter for specific collection testing
+  - Users can now specify a token ID to test listings from a specific tracked collection
+  - Added validation to ensure specified collection is tracked in the server
+  - Displays helpful error messages listing all tracked collections when invalid token ID provided
+  - Supports both general listing tests (all collections) and specific collection tests
 
 ## User Preferences
 
