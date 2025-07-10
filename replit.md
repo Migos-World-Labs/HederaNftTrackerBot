@@ -236,6 +236,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added special debugging for Hashinals and other problematic NFT collections
   - Enhanced notification logging to show which servers receive/reject notifications and why
   - Fixed collection URL generation for both sales and listings with proper SentX marketplace links
+- July 10, 2025: Fixed Discord interaction timeout errors
+  - Added proper interaction expiration checking with isRepliable() validation
+  - Enhanced error handling for "Unknown interaction" (10062) and "Interaction already acknowledged" (40060) errors
+  - Added graceful timeout handling for all slash commands (add, remove, list, status, test)
+  - Implemented proper deferReply for longer-running test commands to prevent 3-second Discord timeouts
+  - Added comprehensive error logging without breaking bot functionality when interactions expire
 
 ## User Preferences
 

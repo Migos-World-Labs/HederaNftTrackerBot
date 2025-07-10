@@ -919,21 +919,34 @@ class NFTSalesBot {
     }
 
     async handleAddCommand(interaction, options) {
-        const tokenId = options.getString('token_id');
-        const name = options.getString('name') || 'Unknown Collection';
-        const guildId = interaction.guildId;
-
-        // Validate token ID format
-        if (!tokenId.match(/^0\.0\.\d+$/)) {
-            await interaction.reply({
-                content: '❌ Invalid token ID format. Please use format: 0.0.123456',
-                ephemeral: true
-            });
-            return;
-        }
-
         try {
+            // Check if interaction has expired
+            if (!interaction.isRepliable()) {
+                console.log('Interaction expired before handling add command');
+                return;
+            }
+
+            const tokenId = options.getString('token_id');
+            const name = options.getString('name') || 'Unknown Collection';
+            const guildId = interaction.guildId;
+
+            // Validate token ID format
+            if (!tokenId.match(/^0\.0\.\d+$/)) {
+                if (interaction.isRepliable()) {
+                    await interaction.reply({
+                        content: '❌ Invalid token ID format. Please use format: 0.0.123456',
+                        ephemeral: true
+                    });
+                }
+                return;
+            }
+
             const result = await this.storage.addCollection(guildId, tokenId, name, true);
+            
+            if (!interaction.isRepliable()) {
+                console.log('Interaction expired while processing add command');
+                return;
+            }
             
             if (result) {
                 await interaction.reply({
@@ -949,19 +962,35 @@ class NFTSalesBot {
 
         } catch (error) {
             console.error('Error adding collection:', error);
-            await interaction.reply({
-                content: '❌ Error adding collection. Please try again.',
-                ephemeral: true
-            });
+            try {
+                if (interaction.isRepliable()) {
+                    await interaction.reply({
+                        content: '❌ Error adding collection. Please try again.',
+                        ephemeral: true
+                    });
+                }
+            } catch (replyError) {
+                console.error('Failed to reply to add command error:', replyError.message);
+            }
         }
     }
 
     async handleRemoveCommand(interaction, options) {
-        const tokenId = options.getString('token_id');
-        const guildId = interaction.guildId;
-
         try {
+            if (!interaction.isRepliable()) {
+                console.log('Interaction expired before handling remove command');
+                return;
+            }
+
+            const tokenId = options.getString('token_id');
+            const guildId = interaction.guildId;
+
             const success = await this.storage.removeCollection(guildId, tokenId);
+            
+            if (!interaction.isRepliable()) {
+                console.log('Interaction expired while processing remove command');
+                return;
+            }
             
             if (success) {
                 await interaction.reply({
@@ -977,10 +1006,16 @@ class NFTSalesBot {
 
         } catch (error) {
             console.error('Error removing collection:', error);
-            await interaction.reply({
-                content: '❌ Error removing collection. Please try again.',
-                ephemeral: true
-            });
+            try {
+                if (interaction.isRepliable()) {
+                    await interaction.reply({
+                        content: '❌ Error removing collection. Please try again.',
+                        ephemeral: true
+                    });
+                }
+            } catch (replyError) {
+                console.error('Failed to reply to remove command error:', replyError.message);
+            }
         }
     }
 
@@ -1106,8 +1141,18 @@ class NFTSalesBot {
 
     async handleListCommand(interaction) {
         try {
+            if (!interaction.isRepliable()) {
+                console.log('Interaction expired before handling list command');
+                return;
+            }
+
             const guildId = interaction.guildId;
             const collections = await this.storage.getCollections(guildId);
+
+            if (!interaction.isRepliable()) {
+                console.log('Interaction expired while processing list command');
+                return;
+            }
 
             if (collections.length === 0) {
                 await interaction.reply({
@@ -1138,42 +1183,72 @@ class NFTSalesBot {
 
         } catch (error) {
             console.error('Error listing collections:', error);
-            await interaction.reply({
-                content: '❌ Error loading collections. Please try again.',
-                ephemeral: true
-            });
+            try {
+                if (interaction.isRepliable()) {
+                    await interaction.reply({
+                        content: '❌ Error loading collections. Please try again.',
+                        ephemeral: true
+                    });
+                }
+            } catch (replyError) {
+                console.error('Failed to reply to list command error:', replyError.message);
+            }
         }
     }
 
     async handleStatusSlashCommand(interaction) {
-        const serverConfigs = await this.storage.getAllServerConfigs();
-        const hbarRate = await currencyService.getHbarToUsdRate();
+        try {
+            if (!interaction.isRepliable()) {
+                console.log('Interaction expired before handling status command');
+                return;
+            }
 
-        const embed = {
-            title: '🤖 Bot Status',
-            color: this.isMonitoring ? 0x00ff00 : 0xff0000,
-            fields: [
-                {
-                    name: '📊 Monitoring Status',
-                    value: this.isMonitoring ? '✅ Active' : '❌ Inactive',
-                    inline: true
-                },
-                {
-                    name: '🏦 HBAR Rate',
-                    value: `$${hbarRate.toFixed(4)} USD`,
-                    inline: true
-                },
-                {
-                    name: '🌐 Connected Servers',
-                    value: `${serverConfigs.length} servers`,
-                    inline: true
+            const serverConfigs = await this.storage.getAllServerConfigs();
+            const hbarRate = await currencyService.getHbarToUsdRate();
+
+            if (!interaction.isRepliable()) {
+                console.log('Interaction expired while processing status command');
+                return;
+            }
+
+            const embed = {
+                title: '🤖 Bot Status',
+                color: this.isMonitoring ? 0x00ff00 : 0xff0000,
+                fields: [
+                    {
+                        name: '📊 Monitoring Status',
+                        value: this.isMonitoring ? '✅ Active' : '❌ Inactive',
+                        inline: true
+                    },
+                    {
+                        name: '🏦 HBAR Rate',
+                        value: `$${hbarRate.toFixed(4)} USD`,
+                        inline: true
+                    },
+                    {
+                        name: '🌐 Connected Servers',
+                        value: `${serverConfigs.length} servers`,
+                        inline: true
+                    }
+                ],
+                timestamp: new Date().toISOString(),
+                footer: { text: 'NFT Sales Bot' }
+            };
+
+            await interaction.reply({ embeds: [embed] });
+        } catch (error) {
+            console.error('Error handling status command:', error);
+            try {
+                if (interaction.isRepliable()) {
+                    await interaction.reply({
+                        content: '❌ Error loading status. Please try again.',
+                        ephemeral: true
+                    });
                 }
-            ],
-            timestamp: new Date().toISOString(),
-            footer: { text: 'NFT Sales Bot' }
-        };
-
-        await interaction.reply({ embeds: [embed] });
+            } catch (replyError) {
+                console.error('Failed to reply to status command error:', replyError.message);
+            }
+        }
     }
 
     async handleTestCommand(interaction) {
