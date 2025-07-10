@@ -210,6 +210,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced image detection with comprehensive fallback options for rapid listings
   - Improved URL generation to properly link to specific NFT listings on SentX marketplace
   - Reduced console spam by eliminating repeated logging for same listings detection
+- July 10, 2025: Fixed test command error for new users
+  - Resolved error "No Wild Tigers or Rooster Cartel Gen0 collection sales found" 
+  - Modified test command to prioritize tracked collections, then any recent sale, then demo data
+  - Added intelligent fallback system: tracked collections → recent sales → mock data
+  - Improved user experience for servers without tracked collections or recent sales
+  - Enhanced test messages to clarify data source (real vs demo) and guide users to add collections
 
 ## User Preferences
 

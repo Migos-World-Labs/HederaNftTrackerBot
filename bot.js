@@ -1163,50 +1163,84 @@ class NFTSalesBot {
                 await this.testLatestListing(interaction);
                 return;
             } else {
-                console.log('Testing floor price feature with recent sale...');
+                console.log('Testing with recent sale data...');
                 
                 // Get recent sales from SentX
                 const recentSales = await sentxService.getRecentSales(100);
                 
-                if (!recentSales || recentSales.length === 0) {
-                    await interaction.editReply('❌ No recent sales found for testing');
-                    return;
+                let testSale = null;
+                
+                if (recentSales && recentSales.length > 0) {
+                    // Try to find a sale from tracked collections first
+                    const trackedCollections = await this.storage.getCollections(interaction.guildId);
+                    if (trackedCollections && trackedCollections.length > 0) {
+                        const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+                        testSale = recentSales.find(sale => trackedTokenIds.includes(sale.token_id));
+                    }
+                    
+                    // If no tracked collection sales found, use any recent sale
+                    if (!testSale) {
+                        testSale = recentSales[0]; // Use the most recent sale
+                    }
                 }
                 
-                // Find Wild Tigers or Rooster Cartel Gen0 collection sales
-                const wildTigersTokenId = '0.0.6024491';
-                const roosterCartelGen0TokenId = '0.0.2173899';
-                
-                let testSale = recentSales.find(sale => sale.token_id === wildTigersTokenId);
-                
+                // If still no sale found, create mock data
                 if (!testSale) {
-                    testSale = recentSales.find(sale => sale.token_id === roosterCartelGen0TokenId);
-                }
-                
-                if (!testSale) {
-                    await interaction.editReply('❌ No Wild Tigers or Rooster Cartel Gen0 collection sales found in recent data. Try again later when there are new sales.');
-                    return;
+                    console.log('No recent sales found, using mock data for test');
+                    testSale = {
+                        id: 'test-sale-' + Date.now(),
+                        nft_name: 'Sample NFT #1234 (Demo)',
+                        collection_name: 'Demo Collection',
+                        token_id: '0.0.123456',
+                        serial_id: 1234,
+                        serial_number: 1234,
+                        price_hbar: 100,
+                        buyer: '0.0.789012',
+                        seller: '0.0.345678',
+                        timestamp: new Date().toISOString(),
+                        imageCDN: 'https://via.placeholder.com/400x400/7c3aed/ffffff?text=Demo+NFT',
+                        image_url: 'https://via.placeholder.com/400x400/7c3aed/ffffff?text=Demo+NFT',
+                        collection_url: 'https://sentx.io/nft-marketplace',
+                        marketplace: 'SentX',
+                        sale_type: 'Sale',
+                        transaction_hash: '0.0.12345@1640995200.123456789',
+                        rarity: 0.25,
+                        rank: 250
+                    };
                 }
                 
                 console.log(`Using sale for testing: ${testSale.nft_name} from ${testSale.collection_name}`);
                 
-                // Add collection URL to test sale data
-                testSale.collection_url = testSale.token_id === wildTigersTokenId 
-                    ? 'https://sentx.io/nft-marketplace/wild-tigers'
-                    : 'https://sentx.io/nft-marketplace/rooster-cartel-gen0';
+                // Ensure collection URL is set
+                if (!testSale.collection_url) {
+                    testSale.collection_url = 'https://sentx.io/nft-marketplace';
+                }
                 
                 // Get HBAR rate and process the sale
                 const hbarRate = await currencyService.getHbarToUsdRate();
                 
-                // Create embed with floor price
+                // Create embed
                 const embed = await embedUtils.createSaleEmbed(testSale, hbarRate);
                 
+                // Determine message based on data source
+                const isTrackedCollection = recentSales && recentSales.length > 0;
+                const isMockData = testSale.id && testSale.id.startsWith('test-sale-');
+                
+                let content;
+                if (isMockData) {
+                    content = `🧪 **Test Notification (Demo Data):**\nThis shows how sale notifications would appear. Add collections with \`/add\` to track real sales!`;
+                } else if (isTrackedCollection) {
+                    content = `🧪 **Test Sale Notification:**\nUsing recent marketplace data to demonstrate bot functionality.`;
+                } else {
+                    content = `🧪 **Test Sale Notification:**\nShowing how notifications appear with real marketplace data.`;
+                }
+                
                 await interaction.editReply({ 
-                    content: `🧪 **Test ${testSale.collection_name} Sale with Floor Price:**`,
+                    content: content,
                     embeds: [embed] 
                 });
                 
-                console.log('Test sale with floor price posted successfully!');
+                console.log('Test sale notification posted successfully!');
             }
             
         } catch (error) {
