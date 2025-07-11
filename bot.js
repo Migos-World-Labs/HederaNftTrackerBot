@@ -1242,22 +1242,22 @@ class NFTSalesBot {
 
     async handleTestCommand(interaction) {
         try {
-            const testType = interaction.options?.getString('type') || 'tracked-sale';
-            console.log(`Test command triggered with type: ${testType}`);
-            
-            // Immediate validation and defer - this must be the first action
-            if (!interaction.isRepliable()) {
-                console.log('Interaction expired before test command could start');
+            // Check interaction validity immediately
+            if (!interaction || interaction.replied || interaction.deferred) {
                 return;
             }
+            
+            const testType = interaction.options?.getString('type') || 'tracked-sale';
             
             // Defer reply immediately as the very first action
             try {
                 await interaction.deferReply();
-                console.log('Successfully deferred test command interaction');
             } catch (deferError) {
-                console.log('Failed to defer interaction:', deferError.message, 'Code:', deferError.code);
-                // Don't continue if we can't defer
+                if (deferError.code === 10062) {
+                    // Unknown interaction - already expired
+                    return;
+                }
+                console.error('Failed to defer interaction:', deferError.message);
                 return;
             }
             
@@ -1283,20 +1283,30 @@ class NFTSalesBot {
             
             // Send the response
             try {
-                await interaction.editReply({
-                    embeds: [embed]
-                });
-                console.log(`Test command completed successfully for type: ${testType}`);
+                if (interaction.deferred && !interaction.replied) {
+                    await interaction.editReply({
+                        embeds: [embed]
+                    });
+                }
             } catch (replyError) {
-                console.log('Error sending test response:', replyError.message, 'Code:', replyError.code);
+                if (replyError.code === 10062) {
+                    // Unknown interaction - expired, ignore
+                    return;
+                }
+                console.error('Error sending test response:', replyError.message);
             }
             
         } catch (error) {
-            console.error('Error in test command:', error);
+            // Silently handle interaction expiry errors
+            if (error.code === 10062) {
+                return; // Unknown interaction - expired
+            }
+            
+            console.error('Error in test command:', error.message);
             
             // Only try to reply if interaction is still valid
-            if (interaction.isRepliable() && error.code !== 10062 && error.code !== 40060) {
-                try {
+            try {
+                if (interaction.deferred && !interaction.replied) {
                     const errorEmbed = this.embedUtils.createErrorEmbed(
                         'Test Command Failed',
                         'An error occurred while running the test command.',
@@ -1306,11 +1316,9 @@ class NFTSalesBot {
                     await interaction.editReply({
                         embeds: [errorEmbed]
                     });
-                } catch (replyError) {
-                    console.error('Failed to send error reply:', replyError);
                 }
-            } else {
-                console.log('Interaction expired, unable to send error message');
+            } catch (replyError) {
+                // Silently ignore reply errors
             }
         }
     }
@@ -1640,92 +1648,68 @@ class NFTSalesBot {
 
     async handleAutocomplete(interaction) {
         try {
-            const focusedOption = interaction.options.getFocused(true);
-            
-            if (focusedOption.name === 'collection') {
-                // Get tracked collections for this server
-                const guildId = interaction.guildId;
-                console.log(`Autocomplete requested for guild ${guildId}`);
+            // Check if interaction is still valid (not expired)
+            if (!interaction || !interaction.responded && !interaction.deferred) {
+                const focusedOption = interaction.options.getFocused(true);
                 
-                const trackedCollections = await this.storage.getCollections(guildId);
-                console.log(`Found ${trackedCollections ? trackedCollections.length : 0} collections for guild ${guildId}`);
-                
-                if (!trackedCollections || trackedCollections.length === 0) {
-                    console.log('No collections found, responding with help message');
-                    await interaction.respond([{
-                        name: 'No collections tracked - Use /add to track collections first',
-                        value: 'none'
-                    }]);
-                    return;
-                }
-                
-                // Filter collections based on what user is typing
-                const searchValue = (focusedOption.value || '').toLowerCase();
-                const filtered = trackedCollections.filter(collection => {
-                    try {
+                if (focusedOption.name === 'collection') {
+                    // Get tracked collections for this server quickly
+                    const guildId = interaction.guildId;
+                    const trackedCollections = await this.storage.getCollections(guildId);
+                    
+                    if (!trackedCollections || trackedCollections.length === 0) {
+                        await interaction.respond([{
+                            name: 'No collections tracked - Use /add to track collections first',
+                            value: 'none'
+                        }]);
+                        return;
+                    }
+                    
+                    // Quick filter without logging to prevent delays
+                    const searchValue = (focusedOption.value || '').toLowerCase();
+                    const filtered = trackedCollections.filter(collection => {
                         const tokenId = collection.tokenId || collection.token_id;
                         const name = collection.name || '';
                         
-                        // Only include collections that have valid token IDs
                         if (!tokenId || tokenId === 'undefined' || tokenId === 'null') {
-                            console.log(`Filtering out collection with invalid token_id: ${collection.name}`);
                             return false;
                         }
                         
                         return name.toLowerCase().includes(searchValue) || 
                                tokenId.includes(searchValue);
-                    } catch (filterError) {
-                        console.error('Error filtering collection:', collection, filterError);
-                        return false;
-                    }
-                }).slice(0, 25); // Discord limit is 25 choices
-                
-                console.log(`Autocomplete for guild ${guildId}: ${trackedCollections.length} total, ${filtered.length} filtered`);
-                
-                const choices = filtered.map(collection => {
-                    try {
+                    }).slice(0, 25); // Discord limit is 25 choices
+                    
+                    const choices = filtered.map(collection => {
                         const tokenId = collection.tokenId || collection.token_id;
                         const name = collection.name || 'Unknown Collection';
                         return {
                             name: `${name} (${tokenId})`,
                             value: tokenId
                         };
-                    } catch (mapError) {
-                        console.error('Error mapping collection to choice:', collection, mapError);
-                        return {
-                            name: 'Error loading collection',
-                            value: 'error'
-                        };
+                    });
+                    
+                    if (choices.length === 0) {
+                        await interaction.respond([{
+                            name: 'No valid collections found - Check /list to see tracked collections',
+                            value: 'none'
+                        }]);
+                    } else {
+                        await interaction.respond(choices);
                     }
-                });
-                
-                if (choices.length === 0) {
-                    console.log('No valid choices, responding with help message');
-                    await interaction.respond([{
-                        name: 'No valid collections found - Check /list to see tracked collections',
-                        value: 'none'
-                    }]);
                 } else {
-                    console.log(`Responding with ${choices.length} choices`);
-                    await interaction.respond(choices);
+                    await interaction.respond([{
+                        name: 'Unknown option',
+                        value: 'unknown'
+                    }]);
                 }
-            } else {
-                console.log(`Autocomplete for unknown option: ${focusedOption.name}`);
-                await interaction.respond([{
-                    name: 'Unknown option',
-                    value: 'unknown'
-                }]);
             }
         } catch (error) {
-            console.error('Error handling autocomplete:', error);
-            try {
-                await interaction.respond([{
-                    name: '❌ Error loading options - Try again',
-                    value: 'error'
-                }]);
-            } catch (responseError) {
-                console.error('Failed to respond to autocomplete error:', responseError);
+            // Silently handle autocomplete errors to prevent spam
+            if (error.code === 10062) {
+                // Unknown interaction - already expired, ignore
+                return;
             }
+            console.error('Autocomplete error:', error.message);
         }
     }
 
