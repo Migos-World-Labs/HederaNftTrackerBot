@@ -821,7 +821,7 @@ class NFTSalesBot {
         try {
             console.log('Cleaning up and registering slash commands...');
             
-            // First, clear all existing guild commands to remove duplicates
+            // Clear all existing guild commands to remove duplicates
             for (const guild of this.client.guilds.cache.values()) {
                 try {
                     await rest.put(
@@ -833,8 +833,22 @@ class NFTSalesBot {
                     console.error(`Error clearing guild commands for ${guild.name}:`, guildError);
                 }
             }
+
+            // Also clear any existing global commands first
+            try {
+                await rest.put(
+                    Routes.applicationCommands(this.client.user.id),
+                    { body: [] }
+                );
+                console.log('Cleared existing global commands');
+                
+                // Wait a moment for clearing to take effect
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            } catch (clearError) {
+                console.error('Error clearing global commands:', clearError);
+            }
             
-            // Register commands globally only (avoids duplicates)
+            // Register fresh commands globally
             await rest.put(
                 Routes.applicationCommands(this.client.user.id),
                 { body: commands }
