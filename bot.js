@@ -1244,22 +1244,20 @@ class NFTSalesBot {
             const testType = interaction.options?.getString('type') || 'tracked-sale';
             console.log(`Test command triggered with type: ${testType}`);
             
-            // Check if interaction is still valid and defer immediately
+            // Immediate validation and defer - this must be the first action
             if (!interaction.isRepliable()) {
                 console.log('Interaction expired before test command could start');
                 return;
             }
             
-            // Defer reply immediately to prevent timeout
+            // Defer reply immediately as the very first action
             try {
                 await interaction.deferReply();
+                console.log('Successfully deferred test command interaction');
             } catch (deferError) {
-                console.log('Failed to defer interaction:', deferError.message);
-                if (deferError.code === 10062 || deferError.code === 40060) {
-                    console.log('Interaction already expired or acknowledged');
-                    return;
-                }
-                throw deferError;
+                console.log('Failed to defer interaction:', deferError.message, 'Code:', deferError.code);
+                // Don't continue if we can't defer
+                return;
             }
             
             // Route to appropriate test method
@@ -1279,21 +1277,14 @@ class NFTSalesBot {
                 embed = await this.getTestTrackedSaleEmbed(interaction.guildId);
             }
             
-            // Send the response with timeout protection
-            if (interaction.isRepliable()) {
-                try {
-                    await interaction.editReply({
-                        embeds: [embed]
-                    });
-                } catch (replyError) {
-                    if (replyError.code === 10062 || replyError.code === 40060) {
-                        console.log('Interaction expired while sending test result');
-                    } else {
-                        throw replyError;
-                    }
-                }
-            } else {
-                console.log('Interaction no longer repliable, skipping response');
+            // Send the response
+            try {
+                await interaction.editReply({
+                    embeds: [embed]
+                });
+                console.log(`Test command completed successfully for type: ${testType}`);
+            } catch (replyError) {
+                console.log('Error sending test response:', replyError.message, 'Code:', replyError.code);
             }
             
         } catch (error) {
@@ -1539,8 +1530,10 @@ class NFTSalesBot {
             const recentSales = await sentxService.getRecentSales(50);
             
             if (!recentSales || recentSales.length === 0) {
-                await interaction.editReply('❌ No recent sales found on SentX marketplace');
-                return;
+                return this.embedUtils.createErrorEmbed(
+                    'No Recent Sales',
+                    'No recent sales found on SentX marketplace'
+                );
             }
             
             // Use the most recent sale
@@ -1559,26 +1552,15 @@ class NFTSalesBot {
             const hbarRate = await currencyService.getHbarToUsdRate();
             
             // Create sale embed
-            const embed = await embedUtils.createSaleEmbed(testSale, hbarRate);
-            
-            await interaction.editReply({
-                content: `📈 **Most Recent Sale on SentX:**\n*Showing the latest NFT sale from the marketplace*`,
-                embeds: [embed]
-            });
-            
-            console.log('Most recent sale test completed successfully!');
+            return await embedUtils.createSaleEmbed(testSale, hbarRate);
             
         } catch (error) {
             console.error('Error testing most recent sale:', error);
-            try {
-                if (error.code === 10062 || error.code === 40060) {
-                    console.log('Interaction expired during recent sale test');
-                } else {
-                    await interaction.editReply(`❌ Error testing most recent sale: ${error.message}`);
-                }
-            } catch (responseError) {
-                console.error('Could not respond to recent sale test interaction:', responseError.message);
-            }
+            return this.embedUtils.createErrorEmbed(
+                'Test Failed',
+                'Error testing most recent sale',
+                error.message
+            );
         }
     }
     
@@ -1590,8 +1572,10 @@ class NFTSalesBot {
             const recentListings = await sentxService.getRecentListings(50, true);
             
             if (!recentListings || recentListings.length === 0) {
-                await interaction.editReply('❌ No recent listings found on SentX marketplace');
-                return;
+                return this.embedUtils.createErrorEmbed(
+                    'No Recent Listings',
+                    'No recent listings found on SentX marketplace'
+                );
             }
             
             // Use the most recent listing
@@ -1610,14 +1594,7 @@ class NFTSalesBot {
             const hbarRate = await currencyService.getHbarToUsdRate();
             
             // Create listing embed
-            const embed = await embedUtils.createListingEmbed(testListing, hbarRate);
-            
-            await interaction.editReply({
-                content: `📝 **Most Recent Listing on SentX:**\n*Showing the latest NFT listing from the marketplace*`,
-                embeds: [embed]
-            });
-            
-            console.log('Most recent listing test completed successfully!');
+            return await embedUtils.createListingEmbed(testListing, hbarRate);
             
         } catch (error) {
             console.error('Error testing most recent listing:', error);
