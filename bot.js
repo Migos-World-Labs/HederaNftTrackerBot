@@ -1645,9 +1645,13 @@ class NFTSalesBot {
             if (focusedOption.name === 'collection') {
                 // Get tracked collections for this server
                 const guildId = interaction.guildId;
+                console.log(`Autocomplete requested for guild ${guildId}`);
+                
                 const trackedCollections = await this.storage.getCollections(guildId);
+                console.log(`Found ${trackedCollections ? trackedCollections.length : 0} collections for guild ${guildId}`);
                 
                 if (!trackedCollections || trackedCollections.length === 0) {
+                    console.log('No collections found, responding with help message');
                     await interaction.respond([{
                         name: 'No collections tracked - Use /add to track collections first',
                         value: 'none'
@@ -1656,49 +1660,71 @@ class NFTSalesBot {
                 }
                 
                 // Filter collections based on what user is typing
+                const searchValue = (focusedOption.value || '').toLowerCase();
                 const filtered = trackedCollections.filter(collection => {
-                    const searchValue = focusedOption.value.toLowerCase();
-                    const tokenId = collection.tokenId || collection.token_id;
-                    const name = collection.name || '';
-                    
-                    // Only include collections that have valid token IDs
-                    if (!tokenId || tokenId === 'undefined' || tokenId === 'null') {
+                    try {
+                        const tokenId = collection.tokenId || collection.token_id;
+                        const name = collection.name || '';
+                        
+                        // Only include collections that have valid token IDs
+                        if (!tokenId || tokenId === 'undefined' || tokenId === 'null') {
+                            console.log(`Filtering out collection with invalid token_id: ${collection.name}`);
+                            return false;
+                        }
+                        
+                        return name.toLowerCase().includes(searchValue) || 
+                               tokenId.includes(searchValue);
+                    } catch (filterError) {
+                        console.error('Error filtering collection:', collection, filterError);
                         return false;
                     }
-                    
-                    return name.toLowerCase().includes(searchValue) || 
-                           tokenId.includes(searchValue);
                 }).slice(0, 25); // Discord limit is 25 choices
                 
-                // Debug logging
                 console.log(`Autocomplete for guild ${guildId}: ${trackedCollections.length} total, ${filtered.length} filtered`);
                 
                 const choices = filtered.map(collection => {
-                    const tokenId = collection.tokenId || collection.token_id;
-                    return {
-                        name: `${collection.name} (${tokenId})`,
-                        value: tokenId
-                    };
+                    try {
+                        const tokenId = collection.tokenId || collection.token_id;
+                        const name = collection.name || 'Unknown Collection';
+                        return {
+                            name: `${name} (${tokenId})`,
+                            value: tokenId
+                        };
+                    } catch (mapError) {
+                        console.error('Error mapping collection to choice:', collection, mapError);
+                        return {
+                            name: 'Error loading collection',
+                            value: 'error'
+                        };
+                    }
                 });
                 
                 if (choices.length === 0) {
+                    console.log('No valid choices, responding with help message');
                     await interaction.respond([{
                         name: 'No valid collections found - Check /list to see tracked collections',
                         value: 'none'
                     }]);
                 } else {
+                    console.log(`Responding with ${choices.length} choices`);
                     await interaction.respond(choices);
                 }
+            } else {
+                console.log(`Autocomplete for unknown option: ${focusedOption.name}`);
+                await interaction.respond([{
+                    name: 'Unknown option',
+                    value: 'unknown'
+                }]);
             }
         } catch (error) {
             console.error('Error handling autocomplete:', error);
             try {
                 await interaction.respond([{
-                    name: '❌ Error loading collections',
+                    name: '❌ Error loading options - Try again',
                     value: 'error'
                 }]);
             } catch (responseError) {
-                console.error('Failed to respond to autocomplete:', responseError);
+                console.error('Failed to respond to autocomplete error:', responseError);
             }
         }
     }
