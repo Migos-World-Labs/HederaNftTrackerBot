@@ -811,8 +811,9 @@ class NFTSalesBot {
                     {
                         name: 'collection',
                         type: 3, // STRING
-                        description: 'Token ID of collection to test (for listing tests)',
-                        required: false
+                        description: 'Token ID of collection to test (optional - shows tracked collections)',
+                        required: false,
+                        autocomplete: true
                     }
                 ]
             }
@@ -1260,11 +1261,14 @@ class NFTSalesBot {
                 return;
             }
             
+            // Get optional collection parameter
+            const specificCollection = interaction.options?.getString('collection');
+            
             // Route to appropriate test method
             let embed;
             if (testType === 'tracked-listing') {
                 console.log('Executing tracked collection listing test...');
-                embed = await this.getTestListingEmbed(interaction.guildId);
+                embed = await this.getTestListingEmbed(interaction.guildId, specificCollection);
             } else if (testType === 'recent-sale') {
                 console.log('Testing most recent marketplace sale...');
                 embed = await this.getTestRecentSaleEmbed();
@@ -1274,7 +1278,7 @@ class NFTSalesBot {
             } else {
                 // Default: tracked-sale
                 console.log('Testing latest sale from tracked collections...');
-                embed = await this.getTestTrackedSaleEmbed(interaction.guildId);
+                embed = await this.getTestTrackedSaleEmbed(interaction.guildId, specificCollection);
             }
             
             // Send the response
@@ -1383,12 +1387,12 @@ class NFTSalesBot {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    async getTestListingEmbed(guildId) {
+    async getTestListingEmbed(guildId, specificTokenId = null) {
         try {
             console.log('Creating test listing embed...');
             
             // Get tracked collections for this server
-            const trackedCollections = await this.storage.getCollections(guildId);
+            let trackedCollections = await this.storage.getCollections(guildId);
             
             if (!trackedCollections || trackedCollections.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1397,7 +1401,21 @@ class NFTSalesBot {
                 );
             }
             
-            // Use all tracked collections
+            // Filter to specific collection if requested
+            if (specificTokenId && specificTokenId !== 'none') {
+                trackedCollections = trackedCollections.filter(c => 
+                    (c.token_id || c.tokenId) === specificTokenId
+                );
+                
+                if (trackedCollections.length === 0) {
+                    return this.embedUtils.createErrorEmbed(
+                        'Collection Not Found',
+                        `Collection ${specificTokenId} is not being tracked in this server.`
+                    );
+                }
+            }
+            
+            // Use tracked collections (all or filtered)
             const targetTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
             console.log(`Looking for listings from ${targetTokenIds.length} tracked collections:`, targetTokenIds);
             
@@ -1455,18 +1473,32 @@ class NFTSalesBot {
         }
     }
 
-    async getTestTrackedSaleEmbed(guildId) {
+    async getTestTrackedSaleEmbed(guildId, specificTokenId = null) {
         try {
             console.log('Creating test sale embed from tracked collections...');
             
             // Get tracked collections for this server
-            const trackedCollections = await this.storage.getCollections(guildId);
+            let trackedCollections = await this.storage.getCollections(guildId);
             
             if (!trackedCollections || trackedCollections.length === 0) {
                 return this.embedUtils.createErrorEmbed(
                     'No Collections Tracked',
                     'No collections are being tracked in this server. Use `/add` to track collections first.'
                 );
+            }
+            
+            // Filter to specific collection if requested
+            if (specificTokenId && specificTokenId !== 'none') {
+                trackedCollections = trackedCollections.filter(c => 
+                    (c.token_id || c.tokenId) === specificTokenId
+                );
+                
+                if (trackedCollections.length === 0) {
+                    return this.embedUtils.createErrorEmbed(
+                        'Collection Not Found',
+                        `Collection ${specificTokenId} is not being tracked in this server.`
+                    );
+                }
             }
             
             // Get recent sales from SentX
@@ -1612,7 +1644,36 @@ class NFTSalesBot {
 
     async handleAutocomplete(interaction) {
         try {
-            // No autocomplete handlers currently active
+            const focusedOption = interaction.options.getFocused(true);
+            
+            if (focusedOption.name === 'collection') {
+                // Get tracked collections for this server
+                const guildId = interaction.guildId;
+                const trackedCollections = await this.storage.getCollections(guildId);
+                
+                if (!trackedCollections || trackedCollections.length === 0) {
+                    await interaction.respond([{
+                        name: 'No collections tracked in this server',
+                        value: 'none'
+                    }]);
+                    return;
+                }
+                
+                // Filter collections based on what user is typing
+                const filtered = trackedCollections.filter(collection => {
+                    const searchValue = focusedOption.value.toLowerCase();
+                    return collection.name.toLowerCase().includes(searchValue) || 
+                           collection.tokenId.includes(searchValue) ||
+                           (collection.token_id && collection.token_id.includes(searchValue));
+                }).slice(0, 25); // Discord limit is 25 choices
+                
+                const choices = filtered.map(collection => ({
+                    name: `${collection.name} (${collection.tokenId || collection.token_id})`,
+                    value: collection.tokenId || collection.token_id
+                }));
+                
+                await interaction.respond(choices);
+            }
         } catch (error) {
             console.error('Error handling autocomplete:', error);
             try {
