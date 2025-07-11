@@ -340,6 +340,14 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Removed analytics functions from utils/embed.js (createCoreStatsEmbed, createAdvancedMetricsEmbed, etc.)
   - Bot now focuses on core NFT tracking functionality: sales/listings notifications, collection management, and test commands
   - Analytics features completely eliminated per user request
+- July 11, 2025: Fixed KOKO LABS notification issues and Discord interaction errors
+  - Fixed critical database issue where KOKO LABS collections had undefined token_id values preventing marketplace matching
+  - Updated all KOKO LABS collection token_ids in database: The Ape Anthology (0.0.8308459), Kekistan (0.0.8233324), HeliSwap Pool Tokens (0.0.8233316), Klaytn Invasion (0.0.8233302)
+  - Resolved Discord interaction timeout errors ("Unknown interaction" error 10062) in test commands
+  - Enhanced Discord embed validation to prevent "List item values required" API errors
+  - Restored full collection selection autocomplete functionality for test commands
+  - Bot now properly detects and processes sales/listings from KOKO LABS tracked collections
+  - Verified Discord channel access and permissions for KOKO LABS server
 
 ## User Preferences
 
