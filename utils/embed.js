@@ -814,46 +814,46 @@ class EmbedUtils {
      */
     createCoreStatsEmbed(analytics, collectionNames = []) {
         const coreStats = analytics.coreStats;
-        const collectionsText = collectionNames.length > 0 ? collectionNames.join(', ') : 'All Collections';
+        const collectionsText = collectionNames.length > 0 ? collectionNames.join(', ') : 'All Tracked Collections';
         
         const embed = new EmbedBuilder()
-            .setTitle('📊 Core Statistics')
-            .setDescription(`Analytics for: **${collectionsText}**`)
+            .setTitle('📊 Core Statistics - Overview')
+            .setDescription(`**${collectionsText}**\n\n*Complete historical analysis of trading activity*`)
             .setColor('#3498db')
             .addFields(
                 {
-                    name: '💰 Total Volume',
-                    value: `${coreStats.totalVolume.toLocaleString()} HBAR`,
+                    name: '💰 Total Trading Volume',
+                    value: `**${coreStats.totalVolume.toLocaleString()} HBAR**\n*All-time marketplace activity*`,
                     inline: true
                 },
                 {
-                    name: '🔢 Total Sales',
-                    value: coreStats.totalSales.toLocaleString(),
+                    name: '🔢 Total Sales Count',
+                    value: `**${coreStats.totalSales.toLocaleString()}** sales\n*Completed transactions*`,
                     inline: true
                 },
                 {
-                    name: '📈 Average Price',
-                    value: `${coreStats.avgPrice.toFixed(2)} HBAR`,
+                    name: '📈 Average Sale Price',
+                    value: `**${coreStats.avgPrice.toFixed(2)} HBAR**\n*Mean transaction value*`,
                     inline: true
                 },
                 {
-                    name: '👥 Unique Buyers',
-                    value: coreStats.uniqueBuyers.toLocaleString(),
+                    name: '👥 Community Engagement',
+                    value: `**${coreStats.uniqueBuyers.toLocaleString()}** buyers\n**${coreStats.uniqueSellers.toLocaleString()}** sellers\n*Active participants*`,
                     inline: true
                 },
                 {
-                    name: '🏪 Unique Sellers',
-                    value: coreStats.uniqueSellers.toLocaleString(),
+                    name: '🎯 Market Health Score',
+                    value: `**${((coreStats.uniqueBuyers + coreStats.uniqueSellers) / Math.max(1, coreStats.totalSales) * 100).toFixed(1)}%**\n*Participant diversity*`,
                     inline: true
                 },
                 {
-                    name: '📊 Market Activity',
-                    value: `${((coreStats.uniqueBuyers + coreStats.uniqueSellers) / Math.max(1, coreStats.totalSales) * 100).toFixed(1)}% diversity`,
+                    name: '📊 Trading Insights',
+                    value: `${coreStats.totalSales > 100 ? '🔥 **High Activity**' : coreStats.totalSales > 50 ? '📈 **Moderate Activity**' : '💤 **Low Activity**'}\n*Based on transaction count*`,
                     inline: true
                 }
             )
             .setTimestamp()
-            .setFooter({ text: 'Data from SentX Marketplace • Live Analytics' });
+            .setFooter({ text: '📈 Live data from SentX Marketplace • Updated every 3 seconds' });
 
         return embed;
     }
@@ -867,42 +867,43 @@ class EmbedUtils {
         const metrics = analytics.advancedMetrics;
         
         const embed = new EmbedBuilder()
-            .setTitle('🔬 Advanced Metrics')
+            .setTitle('🔬 Advanced Metrics - Deep Analysis')
+            .setDescription('*Advanced trading patterns and market behavior analysis*')
             .setColor('#9b59b6')
             .addFields(
                 {
                     name: '⚡ Sales Velocity',
-                    value: `${metrics.salesVelocity.toFixed(1)} sales/day`,
+                    value: `**${metrics.salesVelocity.toFixed(1)} sales/day**\n*Trading frequency*\n${metrics.salesVelocity > 5 ? '🔥 High activity' : metrics.salesVelocity > 2 ? '📈 Moderate activity' : '💤 Low activity'}`,
                     inline: true
                 },
                 {
                     name: '📊 Price Volatility',
-                    value: `${(metrics.priceVolatility * 100).toFixed(1)}%`,
+                    value: `**${(metrics.priceVolatility * 100).toFixed(1)}%**\n*Price stability*\n${metrics.priceVolatility > 0.5 ? '🌪️ Highly volatile' : metrics.priceVolatility > 0.2 ? '📈 Moderate swings' : '🎯 Stable prices'}`,
                     inline: true
                 },
                 {
                     name: '🐋 Whale Activity',
-                    value: `${(metrics.whaleActivity * 100).toFixed(1)}% of sales`,
+                    value: `**${(metrics.whaleActivity * 100).toFixed(1)}%** of sales\n*Large holder influence*\n${metrics.whaleActivity > 0.3 ? '🐋 Whale dominated' : metrics.whaleActivity > 0.1 ? '🐟 Mixed activity' : '🦐 Retail focused'}`,
                     inline: true
                 },
                 {
-                    name: '💧 Liquidity Score',
-                    value: `${(analytics.marketHealth.liquidityScore * 100).toFixed(0)}%`,
+                    name: '💧 Market Liquidity',
+                    value: `**${(analytics.marketHealth.liquidityScore * 100).toFixed(0)}%** score\n*Ease of trading*\n${analytics.marketHealth.liquidityScore > 0.7 ? '🌊 Highly liquid' : analytics.marketHealth.liquidityScore > 0.4 ? '💧 Moderate liquidity' : '🏜️ Low liquidity'}`,
                     inline: true
                 },
                 {
                     name: '🔄 Market Momentum',
-                    value: `${analytics.marketHealth.momentum > 0 ? '+' : ''}${(analytics.marketHealth.momentum * 100).toFixed(2)}%`,
+                    value: `**${analytics.marketHealth.momentum > 0 ? '+' : ''}${(analytics.marketHealth.momentum * 100).toFixed(2)}%**\n*Price trend direction*\n${analytics.marketHealth.momentum > 0.1 ? '🚀 Strong uptrend' : analytics.marketHealth.momentum > -0.1 ? '➡️ Sideways' : '📉 Downtrend'}`,
                     inline: true
                 },
                 {
-                    name: '🎯 Diversity Index',
-                    value: `${(analytics.marketHealth.diversityIndex * 100).toFixed(0)}%`,
+                    name: '🎯 Trader Diversity',
+                    value: `**${(analytics.marketHealth.diversityIndex * 100).toFixed(0)}%** index\n*Market participation*\n${analytics.marketHealth.diversityIndex > 0.7 ? '🌈 Highly diverse' : analytics.marketHealth.diversityIndex > 0.4 ? '🎨 Moderate diversity' : '🎯 Concentrated'}`,
                     inline: true
                 }
             )
             .setTimestamp()
-            .setFooter({ text: 'Advanced market analysis • SentX Data' });
+            .setFooter({ text: '🔬 Advanced market analysis • Real-time SentX data' });
 
         return embed;
     }
@@ -920,42 +921,43 @@ class EmbedUtils {
         const total = Object.values(ranges).reduce((sum, count) => sum + count, 0);
         const createBar = (count) => {
             const percentage = total > 0 ? count / total : 0;
-            const barLength = Math.round(percentage * 20);
-            return '█'.repeat(barLength) + '░'.repeat(20 - barLength);
+            const barLength = Math.round(percentage * 15);
+            return '█'.repeat(barLength) + '░'.repeat(15 - barLength);
         };
         
         const embed = new EmbedBuilder()
-            .setTitle('💹 Price Distribution')
+            .setTitle('💹 Price Distribution - Trading Ranges')
+            .setDescription(`*Visual breakdown of ${total.toLocaleString()} sales across different price tiers*`)
             .setColor('#e74c3c')
             .addFields(
                 {
-                    name: '💰 Under 100 HBAR',
-                    value: `${createBar(ranges.under_100)}\n${ranges.under_100} sales (${total > 0 ? (ranges.under_100/total*100).toFixed(1) : 0}%)`,
+                    name: '💰 Budget Range (Under 100 HBAR)',
+                    value: `${createBar(ranges.under_100)} **${(total > 0 ? (ranges.under_100/total*100).toFixed(1) : 0)}%**\n**${ranges.under_100.toLocaleString()}** sales • *Entry-level pricing*`,
                     inline: false
                 },
                 {
-                    name: '💎 100-500 HBAR',
-                    value: `${createBar(ranges['100_500'])}\n${ranges['100_500']} sales (${total > 0 ? (ranges['100_500']/total*100).toFixed(1) : 0}%)`,
+                    name: '💎 Mid-Range (100-500 HBAR)',
+                    value: `${createBar(ranges['100_500'])} **${(total > 0 ? (ranges['100_500']/total*100).toFixed(1) : 0)}%**\n**${ranges['100_500'].toLocaleString()}** sales • *Popular trading range*`,
                     inline: false
                 },
                 {
-                    name: '🏆 500-1000 HBAR',
-                    value: `${createBar(ranges['500_1000'])}\n${ranges['500_1000']} sales (${total > 0 ? (ranges['500_1000']/total*100).toFixed(1) : 0}%)`,
+                    name: '🏆 Premium (500-1,000 HBAR)',
+                    value: `${createBar(ranges['500_1000'])} **${(total > 0 ? (ranges['500_1000']/total*100).toFixed(1) : 0)}%**\n**${ranges['500_1000'].toLocaleString()}** sales • *High-value trades*`,
                     inline: false
                 },
                 {
-                    name: '👑 1000-5000 HBAR',
-                    value: `${createBar(ranges['1000_5000'])}\n${ranges['1000_5000']} sales (${total > 0 ? (ranges['1000_5000']/total*100).toFixed(1) : 0}%)`,
+                    name: '👑 Luxury (1,000-5,000 HBAR)',
+                    value: `${createBar(ranges['1000_5000'])} **${(total > 0 ? (ranges['1000_5000']/total*100).toFixed(1) : 0)}%**\n**${ranges['1000_5000'].toLocaleString()}** sales • *Premium collections*`,
                     inline: false
                 },
                 {
-                    name: '🚀 Over 5000 HBAR',
-                    value: `${createBar(ranges.over_5000)}\n${ranges.over_5000} sales (${total > 0 ? (ranges.over_5000/total*100).toFixed(1) : 0}%)`,
+                    name: '🚀 Ultra-Premium (Over 5,000 HBAR)',
+                    value: `${createBar(ranges.over_5000)} **${(total > 0 ? (ranges.over_5000/total*100).toFixed(1) : 0)}%**\n**${ranges.over_5000.toLocaleString()}** sales • *Rare & valuable assets*`,
                     inline: false
                 }
             )
             .setTimestamp()
-            .setFooter({ text: `Total: ${total} sales analyzed` });
+            .setFooter({ text: `📊 ${total.toLocaleString()} total sales analyzed • Price distribution insights` });
 
         return embed;
     }
@@ -980,38 +982,42 @@ class EmbedUtils {
             'stable': '#f39c12'
         };
         
+        const healthScore = (health.liquidityScore + health.diversityIndex + (health.momentum > 0 ? 1 : 0.5)) / 3;
+        const healthRating = healthScore > 0.7 ? '🟢 **Excellent**' : healthScore > 0.5 ? '🟡 **Good**' : healthScore > 0.3 ? '🟠 **Fair**' : '🔴 **Poor**';
+        
         const embed = new EmbedBuilder()
-            .setTitle(`${trendEmoji[health.trend]} Market Health`)
+            .setTitle(`${trendEmoji[health.trend]} Market Health Analysis`)
+            .setDescription(`*Overall Market Rating: ${healthRating}*\n*Comprehensive health assessment of trading conditions*`)
             .setColor(trendColor[health.trend])
             .addFields(
                 {
-                    name: '📊 Overall Trend',
-                    value: `**${health.trend.toUpperCase()}** ${trendEmoji[health.trend]}`,
+                    name: '📊 Market Trend Direction',
+                    value: `**${health.trend.toUpperCase()}** ${trendEmoji[health.trend]}\n*${health.trend === 'up' ? 'Prices generally increasing' : health.trend === 'down' ? 'Prices generally decreasing' : 'Prices moving sideways'}*`,
                     inline: true
                 },
                 {
-                    name: '⚡ Momentum',
-                    value: `${health.momentum > 0 ? '+' : ''}${(health.momentum * 100).toFixed(2)}%`,
+                    name: '⚡ Price Momentum',
+                    value: `**${health.momentum > 0 ? '+' : ''}${(health.momentum * 100).toFixed(2)}%**\n*${Math.abs(health.momentum * 100) > 10 ? 'Strong momentum' : Math.abs(health.momentum * 100) > 5 ? 'Moderate momentum' : 'Weak momentum'}*`,
                     inline: true
                 },
                 {
-                    name: '💧 Liquidity',
-                    value: `${(health.liquidityScore * 100).toFixed(0)}%`,
+                    name: '💧 Trading Liquidity',
+                    value: `**${(health.liquidityScore * 100).toFixed(0)}%** score\n*${health.liquidityScore > 0.7 ? 'Easy to buy/sell' : health.liquidityScore > 0.4 ? 'Moderate liquidity' : 'Low liquidity'}*`,
                     inline: true
                 },
                 {
-                    name: '🎯 Market Diversity',
-                    value: `${(health.diversityIndex * 100).toFixed(0)}%`,
+                    name: '🎯 Market Participation',
+                    value: `**${(health.diversityIndex * 100).toFixed(0)}%** diversity\n*${health.diversityIndex > 0.7 ? 'Many active traders' : health.diversityIndex > 0.4 ? 'Moderate participation' : 'Few active traders'}*`,
                     inline: true
                 },
                 {
-                    name: '🔍 Analysis',
+                    name: '🔮 Market Outlook',
                     value: this.getMarketHealthAnalysis(health),
                     inline: false
                 }
             )
             .setTimestamp()
-            .setFooter({ text: 'Market health indicators • Real-time data' });
+            .setFooter({ text: '📊 Market health indicators • Live trading data analysis' });
 
         return embed;
     }
@@ -1058,34 +1064,35 @@ class EmbedUtils {
         const recommendations = analytics.quickBuyRecommendations;
         
         const embed = new EmbedBuilder()
-            .setTitle('💡 Quick Buy Recommendations')
-            .setDescription('Collections showing strong potential based on recent activity')
+            .setTitle('💡 Smart Buy Recommendations')
+            .setDescription('*AI-powered analysis of collections showing strong potential*\n⚠️ **Not financial advice** - Always do your own research')
             .setColor('#f1c40f');
 
         if (recommendations.length === 0) {
             embed.addFields({
-                name: '📊 No Recommendations',
-                value: 'Not enough recent trading data to generate recommendations. Check back after more market activity.',
+                name: '📊 Insufficient Data',
+                value: '**No recommendations available**\n*Not enough recent trading activity to analyze patterns*\n\n🔄 **Check back later** when there\'s more market activity\n📈 **Recommendations appear** when collections show strong signals',
                 inline: false
             });
         } else {
             recommendations.forEach((rec, index) => {
                 const scoreBar = '⭐'.repeat(Math.ceil(rec.recommendationScore * 5));
+                const confidence = rec.recommendationScore > 0.8 ? '🔥 **High Confidence**' : rec.recommendationScore > 0.6 ? '📈 **Good Confidence**' : '💫 **Moderate Confidence**';
                 
                 embed.addFields({
                     name: `${index + 1}. ${rec.collectionName || rec.tokenId}`,
-                    value: `${scoreBar} (${(rec.recommendationScore * 100).toFixed(0)}%)\n` +
-                           `💰 **Avg Price:** ${rec.avgPrice.toFixed(2)} HBAR\n` +
-                           `🏆 **Floor:** ${rec.floorPrice > 0 ? rec.floorPrice.toFixed(2) : 'N/A'} HBAR\n` +
-                           `📊 **Volume:** ${rec.volume.toFixed(0)} HBAR (${rec.salesCount} sales)\n` +
-                           `🎯 **${rec.reason}**`,
+                    value: `${scoreBar} **${(rec.recommendationScore * 100).toFixed(0)}%** ${confidence}\n\n` +
+                           `💰 **Average Price:** ${rec.avgPrice.toFixed(2)} HBAR\n` +
+                           `🏆 **Floor Price:** ${rec.floorPrice > 0 ? rec.floorPrice.toFixed(2) + ' HBAR' : 'Not available'}\n` +
+                           `📊 **Recent Volume:** ${rec.volume.toFixed(0)} HBAR (${rec.salesCount} sales)\n` +
+                           `🎯 **Why:** ${rec.reason}`,
                     inline: false
                 });
             });
         }
 
         embed.setTimestamp()
-            .setFooter({ text: 'AI-powered recommendations • Not financial advice' });
+            .setFooter({ text: '🤖 AI-powered market analysis • Educational purposes only • Not financial advice' });
 
         return embed;
     }
@@ -1105,45 +1112,51 @@ class EmbedUtils {
         };
         
         const embed = new EmbedBuilder()
-            .setTitle('🌐 Market Overview (24h)')
+            .setTitle('🌐 Complete Market Overview')
+            .setDescription(`*Real-time snapshot of the entire NFT marketplace*\n**Market Status:** ${trendEmoji[overview.marketTrend]} ${overview.marketTrend.toUpperCase()}`)
             .setColor('#3498db')
             .addFields(
                 {
-                    name: '💰 Total Volume',
-                    value: `${overview.total24hVolume.toLocaleString()} HBAR\n$${(overview.total24hVolume * hbarRate).toLocaleString()} USD`,
+                    name: '💰 Total Trading Volume',
+                    value: `**${overview.total24hVolume.toLocaleString()} HBAR**\n*$${(overview.total24hVolume * hbarRate).toLocaleString()} USD*\n📊 All marketplace activity`,
                     inline: true
                 },
                 {
-                    name: '🔢 Total Sales',
-                    value: overview.total24hSales.toLocaleString(),
+                    name: '🔢 Completed Sales',
+                    value: `**${overview.total24hSales.toLocaleString()}** transactions\n*Successful trades*\n🎯 Active trading day`,
                     inline: true
                 },
                 {
-                    name: '📊 Avg Sale Price',
-                    value: `${overview.avgSalePrice24h.toFixed(2)} HBAR\n$${(overview.avgSalePrice24h * hbarRate).toFixed(2)} USD`,
+                    name: '📊 Average Sale Price',
+                    value: `**${overview.avgSalePrice24h.toFixed(2)} HBAR**\n*$${(overview.avgSalePrice24h * hbarRate).toFixed(2)} USD*\n💹 Market average`,
                     inline: true
                 },
                 {
-                    name: '📝 New Listings',
-                    value: overview.total24hListings.toLocaleString(),
+                    name: '📝 New Listings Added',
+                    value: `**${overview.total24hListings.toLocaleString()}** new listings\n*Fresh inventory*\n🆕 Available to buy`,
                     inline: true
                 },
                 {
-                    name: '📈 Market Trend',
-                    value: `${trendEmoji[overview.marketTrend]} ${overview.marketTrend.toUpperCase()}`,
+                    name: '📈 Market Sentiment',
+                    value: `${trendEmoji[overview.marketTrend]} **${overview.marketTrend.toUpperCase()}**\n*${overview.marketTrend === 'bullish' ? 'Prices trending up' : overview.marketTrend === 'bearish' ? 'Prices trending down' : overview.marketTrend === 'neutral' ? 'Stable pricing' : 'Insufficient data'}*`,
                     inline: true
                 },
                 {
-                    name: '🏆 Top Collections',
+                    name: '🚀 Market Activity',
+                    value: `${overview.total24hSales > 100 ? '🔥 **Very Active**' : overview.total24hSales > 50 ? '📈 **Active**' : overview.total24hSales > 20 ? '💫 **Moderate**' : '💤 **Quiet**'}\n*Based on sales volume*`,
+                    inline: true
+                },
+                {
+                    name: '🏆 Top Performing Collections',
                     value: overview.topCollections.length > 0 ? 
-                        overview.topCollections.slice(0, 3).map((col, i) => 
-                            `${i + 1}. **${col.name || col.tokenId}**\n   ${col.volume.toFixed(0)} HBAR (${col.sales} sales)`
-                        ).join('\n\n') : 'No recent activity',
+                        overview.topCollections.slice(0, 4).map((col, i) => 
+                            `**${i + 1}. ${col.name || col.tokenId}**\n   💰 ${col.volume.toFixed(0)} HBAR • 🔢 ${col.sales} sales`
+                        ).join('\n\n') : '📊 **No recent activity**\n*Check back later for trending collections*',
                     inline: false
                 }
             )
             .setTimestamp()
-            .setFooter({ text: 'Live market data from SentX • Updates every 3 seconds' });
+            .setFooter({ text: '🌐 Live marketplace data from SentX • Updates every 3 seconds • Real-time insights' });
 
         return embed;
     }
