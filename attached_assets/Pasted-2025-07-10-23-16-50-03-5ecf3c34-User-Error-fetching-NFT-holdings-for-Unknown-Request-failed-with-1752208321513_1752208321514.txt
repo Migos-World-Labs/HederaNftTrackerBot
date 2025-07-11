@@ -1,0 +1,108 @@
+2025-07-10 23:16:50.03
+5ecf3c34
+User
+Error fetching NFT holdings for Unknown: Request failed with status code 400
+2025-07-10 23:16:50.03
+5ecf3c34
+User
+Error testing most recent sale: ReferenceError: interaction is not defined
+2025-07-10 23:16:50.03
+5ecf3c34
+User
+at NFTSalesBot.getTestRecentSaleEmbed (/home/runner/workspace/bot.js:1564:13)
+2025-07-10 23:16:50.03
+5ecf3c34
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-07-10 23:16:50.03
+5ecf3c34
+User
+at async NFTSalesBot.handleTestCommand (/home/runner/workspace/bot.js:1272:25)
+2025-07-10 23:16:50.03
+5ecf3c34
+User
+at async NFTSalesBot.handleSlashCommand (/home/runner/workspace/bot.js:884:21)
+2025-07-10 23:16:50.03
+5ecf3c34
+User
+at async Client. (/home/runner/workspace/bot.js:91:17)
+2025-07-10 23:16:50.03
+5ecf3c34
+User
+Could not respond to recent sale test interaction: interaction is not defined
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+Error in test command: DiscordAPIError[50035]: Invalid Form Body
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+embeds[0][LIST_ITEM_VALUE_REQUIRED]: List item values of ModelType are required
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+at handleErrors (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:748:13)
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+at async SequentialHandler.runRequest (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:1149:23)
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+at async SequentialHandler.queueRequest (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:980:14)
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+at async _REST.request (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:1293:22)
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+at async InteractionWebhook.editMessage (/home/runner/workspace/node_modules/discord.js/src/structures/Webhook.js:351:15)
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+at async ChatInputCommandInteraction.editReply (/home/runner/workspace/node_modules/discord.js/src/structures/interfaces/InteractionResponses.js:254:17)
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+at async NFTSalesBot.handleTestCommand (/home/runner/workspace/bot.js:1285:21)
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+at async NFTSalesBot.handleSlashCommand (/home/runner/workspace/bot.js:884:21)
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+at async Client. (/home/runner/workspace/bot.js:91:17) {
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+requestBody: {
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+files: [],
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+json: {
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+content: undefined,
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+tts: false,
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+nonce: undefined,
+2025-07-10 23:16:50.20
+5ecf3c34
+User
+enforce_nonce: false,

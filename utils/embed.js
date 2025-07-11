@@ -232,12 +232,15 @@ class EmbedUtils {
             saleInfo.push(`🔢 **NFT #:** ${sale.serial_number}`);
         }
 
-        if (saleInfo.length > 0 && saleInfo.join('\n').trim()) {
-            embed.addFields({
-                name: '📊 Sale Details',
-                value: saleInfo.join('\n'),
-                inline: false
-            });
+        if (saleInfo.length > 0) {
+            const saleInfoText = saleInfo.filter(info => info && info.trim()).join('\n').trim();
+            if (saleInfoText && saleInfoText.length > 0) {
+                embed.addFields({
+                    name: '📊 Sale Details',
+                    value: saleInfoText,
+                    inline: false
+                });
+            }
         }
 
         // Rarity information (if available)
@@ -252,12 +255,15 @@ class EmbedUtils {
                 rarityInfo.push(`✨ **Rarity:** ${rarityTier} (${rarityPercentage}%)`);
             }
             
-            if (rarityInfo.length > 0 && rarityInfo.join('\n').trim()) {
-                embed.addFields({
-                    name: '🌟 Rarity Info',
-                    value: rarityInfo.join('\n'),
-                    inline: false
-                });
+            if (rarityInfo.length > 0) {
+                const rarityInfoText = rarityInfo.filter(info => info && info.trim()).join('\n').trim();
+                if (rarityInfoText && rarityInfoText.length > 0) {
+                    embed.addFields({
+                        name: '🌟 Rarity Info',
+                        value: rarityInfoText,
+                        inline: false
+                    });
+                }
             }
         }
 
@@ -265,43 +271,61 @@ class EmbedUtils {
         const traderInfo = [];
         
         // Buyer info
-        const buyerLabel = buyerTier 
-            ? `${buyerTier.emoji} ${buyerTier.name} Collector`
-            : '🛒 New Buyer';
-        const buyerCount = buyerHoldings ? ` (owns ${hederaService.formatNFTCount(buyerHoldings.nft_count)})` : '';
-        traderInfo.push(`**Bought by:** ${buyerLabel}${buyerCount}`);
-        traderInfo.push(`*Account:* \`${this.formatAccountId(sale.buyer)}\``);
+        if (sale.buyer) {
+            const buyerLabel = buyerTier 
+                ? `${buyerTier.emoji} ${buyerTier.name} Collector`
+                : '🛒 New Buyer';
+            const buyerCount = buyerHoldings ? ` (owns ${hederaService.formatNFTCount(buyerHoldings.nft_count)})` : '';
+            traderInfo.push(`**Bought by:** ${buyerLabel}${buyerCount}`);
+            traderInfo.push(`*Account:* \`${this.formatAccountId(sale.buyer)}\``);
+        }
         
-        traderInfo.push(''); // Empty line for separation
+        if (sale.buyer && sale.seller) {
+            traderInfo.push(''); // Empty line for separation only if both exist
+        }
         
         // Seller info
-        const sellerLabel = sellerTier 
-            ? `${sellerTier.emoji} ${sellerTier.name} Collector`
-            : '🏪 Seller';
-        const sellerCount = sellerHoldings ? ` (owns ${hederaService.formatNFTCount(sellerHoldings.nft_count)})` : '';
-        traderInfo.push(`**Sold by:** ${sellerLabel}${sellerCount}`);
-        traderInfo.push(`*Account:* \`${this.formatAccountId(sale.seller)}\``);
+        if (sale.seller) {
+            const sellerLabel = sellerTier 
+                ? `${sellerTier.emoji} ${sellerTier.name} Collector`
+                : '🏪 Seller';
+            const sellerCount = sellerHoldings ? ` (owns ${hederaService.formatNFTCount(sellerHoldings.nft_count)})` : '';
+            traderInfo.push(`**Sold by:** ${sellerLabel}${sellerCount}`);
+            traderInfo.push(`*Account:* \`${this.formatAccountId(sale.seller)}\``);
+        }
 
-        embed.addFields({
-            name: '👥 Trading Parties',
-            value: traderInfo.join('\n'),
-            inline: false
-        });
+        if (traderInfo.length > 0) {
+            const traderInfoText = traderInfo.filter(info => info !== undefined && info !== null && info.trim() !== '').join('\n').trim();
+            if (traderInfoText && traderInfoText.length > 0) {
+                embed.addFields({
+                    name: '👥 Trading Parties',
+                    value: traderInfoText,
+                    inline: false
+                });
+            }
+        }
 
         // Technical details section (collapsible-like format)
-        const technicalDetails = [
-            `🆔 **Collection ID:** \`${sale.token_id}\``,
-        ];
+        const technicalDetails = [];
+        
+        if (sale.token_id) {
+            technicalDetails.push(`🆔 **Collection ID:** \`${sale.token_id}\``);
+        }
 
         if (sale.transaction_hash) {
             technicalDetails.push(`🔗 **Transaction:** [View on HashScan](https://hashscan.io/mainnet/transaction/${sale.transaction_hash})`);
         }
 
-        embed.addFields({
-            name: '🔧 Technical Details',
-            value: technicalDetails.join('\n'),
-            inline: false
-        });
+        if (technicalDetails.length > 0) {
+            const technicalDetailsText = technicalDetails.filter(detail => detail && detail.trim()).join('\n').trim();
+            if (technicalDetailsText && technicalDetailsText.length > 0) {
+                embed.addFields({
+                    name: '🔧 Technical Details',
+                    value: technicalDetailsText,
+                    inline: false
+                });
+            }
+        }
 
         // Footer with timestamp and branding
         embed.setFooter({
