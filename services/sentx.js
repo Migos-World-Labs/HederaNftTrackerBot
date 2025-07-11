@@ -86,6 +86,73 @@ class SentXService {
     }
 
     /**
+     * Get comprehensive historical sales data for analytics
+     * @param {Array} tokenIds - Array of token IDs to get data for
+     * @returns {Array} Array of historical sale objects
+     */
+    async getHistoricalSales(tokenIds = []) {
+        try {
+            const apiKey = process.env.SENTX_API_KEY;
+            let allSales = [];
+            
+            // Get multiple pages of historical data for comprehensive analytics
+            for (let page = 1; page <= 10; page++) {
+                const params = {
+                    apikey: apiKey,
+                    activityFilter: 'All',
+                    amount: 100, // Max per page
+                    page: page,
+                    hbarMarketOnly: 1
+                };
+                
+                const response = await this.axiosInstance.get('/v1/public/market/activity', {
+                    params: params
+                });
+
+                if (!response.data || !response.data.success || !response.data.marketActivity) {
+                    break;
+                }
+                
+                const pageData = response.data.marketActivity.filter(activity => {
+                    const hasCompletedSale = activity.buyerAddress && 
+                        activity.buyerAddress !== null && 
+                        activity.salePrice && 
+                        activity.salePrice > 0 &&
+                        (activity.saleTransactionId !== null || activity.saletype === 'Order');
+                    
+                    return hasCompletedSale;
+                });
+                
+                if (pageData.length === 0) break;
+                
+                const formattedSales = this.formatSalesData(pageData);
+                
+                // Filter by token IDs if specified
+                const filteredSales = tokenIds.length > 0 
+                    ? formattedSales.filter(sale => tokenIds.includes(sale.token_id))
+                    : formattedSales;
+                
+                allSales = allSales.concat(filteredSales);
+                
+                // Stop if we got less than full page
+                if (pageData.length < 100) break;
+                
+                // For specific collections, keep going until we have good data
+                if (tokenIds.length > 0 && allSales.length < 50) {
+                    continue;
+                }
+            }
+            
+            console.log(`📊 Historical analytics: Found ${allSales.length} sales for analysis`);
+            return allSales;
+
+        } catch (error) {
+            console.error('Error fetching historical sales:', error.message);
+            return [];
+        }
+    }
+
+    /**
      * Get detailed NFT information including metadata
      * @param {string} tokenId - Token ID of the NFT
      * @param {string} serialId - Serial ID of the NFT
@@ -409,7 +476,7 @@ class SentXService {
      * @param {number} days - Number of days to analyze (default 7)
      * @returns {Object} Analytics data
      */
-    async getCollectionAnalytics(tokenIds = [], days = 7) {
+    async getCollectionAnalytics(tokenIds = [], days = 365) {
         try {
             const analyticsData = {
                 coreStats: {
@@ -444,45 +511,39 @@ class SentXService {
                 quickBuyRecommendations: []
             };
 
-            // Get recent sales data for analysis
-            const sales = await this.getRecentSales(200); // Get more data for analysis
+            // Get comprehensive historical sales data for all-time analytics
+            const allSales = await this.getHistoricalSales(tokenIds);
             
-            if (!sales || sales.length === 0) {
+            if (!allSales || allSales.length === 0) {
                 return analyticsData;
             }
 
-            // Filter sales by token IDs if provided
-            const filteredSales = tokenIds.length > 0 
-                ? sales.filter(sale => tokenIds.includes(sale.token_id))
-                : sales;
-
-            // Filter by time range
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - days);
-            
-            const recentSales = filteredSales.filter(sale => {
+            // For all-time analytics, use all historical data instead of time filtering
+            const salesForAnalysis = days >= 365 ? allSales : allSales.filter(sale => {
                 const saleDate = new Date(sale.timestamp);
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - days);
                 return saleDate >= cutoffDate;
             });
 
-            if (recentSales.length === 0) {
+            if (salesForAnalysis.length === 0) {
                 return analyticsData;
             }
 
             // Calculate core statistics
-            this.calculateCoreStats(recentSales, analyticsData.coreStats);
+            this.calculateCoreStats(salesForAnalysis, analyticsData.coreStats);
             
             // Calculate advanced metrics
-            this.calculateAdvancedMetrics(recentSales, analyticsData.advancedMetrics, days);
+            this.calculateAdvancedMetrics(salesForAnalysis, analyticsData.advancedMetrics, days);
             
             // Calculate price distribution
-            this.calculatePriceDistribution(recentSales, analyticsData.priceDistribution);
+            this.calculatePriceDistribution(salesForAnalysis, analyticsData.priceDistribution);
             
             // Calculate market health
-            this.calculateMarketHealth(recentSales, analyticsData.marketHealth, days);
+            this.calculateMarketHealth(salesForAnalysis, analyticsData.marketHealth, days);
             
             // Generate quick buy recommendations
-            await this.generateQuickBuyRecommendations(recentSales, analyticsData.quickBuyRecommendations);
+            await this.generateQuickBuyRecommendations(salesForAnalysis, analyticsData.quickBuyRecommendations);
 
             return analyticsData;
 

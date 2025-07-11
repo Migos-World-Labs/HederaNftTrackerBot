@@ -312,6 +312,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added Market Health scoring with overall ratings (Excellent/Good/Fair/Poor)
   - Enhanced recommendations with confidence levels and clearer disclaimers
   - Made analytics accessible to non-technical users while maintaining comprehensive data
+- July 11, 2025: Enhanced analytics to show specific collections and comprehensive all-time data
+  - Analytics titles now clearly show which specific collection is being analyzed
+  - Added getHistoricalSales() method to fetch comprehensive historical trading data (1,000+ sales)
+  - Changed analytics to analyze all available historical data instead of just recent activity
+  - Collection names prominently displayed in all analytics embed titles and descriptions
+  - Enhanced user experience with clear indication of single collection vs portfolio analysis
+  - System now fetches extensive historical data for thorough all-time insights
 
 ## User Preferences
 

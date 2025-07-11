@@ -1813,16 +1813,16 @@ class NFTSalesBot {
                     embeds.push(this.embedUtils.createCoreStatsEmbed(analytics, collectionNames));
                     
                     // Advanced Metrics
-                    embeds.push(this.embedUtils.createAdvancedMetricsEmbed(analytics));
+                    embeds.push(this.embedUtils.createAdvancedMetricsEmbed(analytics, collectionNames));
                     
                     // Price Distribution
-                    embeds.push(this.embedUtils.createPriceDistributionEmbed(analytics));
+                    embeds.push(this.embedUtils.createPriceDistributionEmbed(analytics, collectionNames));
                     
                     // Market Health
-                    embeds.push(this.embedUtils.createMarketHealthEmbed(analytics));
+                    embeds.push(this.embedUtils.createMarketHealthEmbed(analytics, collectionNames));
                     
                     // Quick Buy Recommendations
-                    embeds.push(this.embedUtils.createQuickBuyRecommendationsEmbed(analytics));
+                    embeds.push(this.embedUtils.createQuickBuyRecommendationsEmbed(analytics, collectionNames));
                     
                     // Market Overview
                     const marketOverview = await this.sentxService.getMarketOverview();
@@ -1838,16 +1838,16 @@ class NFTSalesBot {
                     embed = this.embedUtils.createCoreStatsEmbed(analytics, collectionNames);
                     break;
                 case 'advanced-metrics':
-                    embed = this.embedUtils.createAdvancedMetricsEmbed(analytics);
+                    embed = this.embedUtils.createAdvancedMetricsEmbed(analytics, collectionNames);
                     break;
                 case 'price-distribution':
-                    embed = this.embedUtils.createPriceDistributionEmbed(analytics);
+                    embed = this.embedUtils.createPriceDistributionEmbed(analytics, collectionNames);
                     break;
                 case 'market-health':
-                    embed = this.embedUtils.createMarketHealthEmbed(analytics);
+                    embed = this.embedUtils.createMarketHealthEmbed(analytics, collectionNames);
                     break;
                 case 'recommendations':
-                    embed = this.embedUtils.createQuickBuyRecommendationsEmbed(analytics);
+                    embed = this.embedUtils.createQuickBuyRecommendationsEmbed(analytics, collectionNames);
                     break;
                 case 'market-overview':
                     const overview = await this.sentxService.getMarketOverview();

@@ -814,11 +814,15 @@ class EmbedUtils {
      */
     createCoreStatsEmbed(analytics, collectionNames = []) {
         const coreStats = analytics.coreStats;
-        const collectionsText = collectionNames.length > 0 ? collectionNames.join(', ') : 'All Tracked Collections';
+        const collectionsText = collectionNames.length === 1 
+            ? collectionNames[0] 
+            : collectionNames.length > 1 
+                ? `${collectionNames.length} Collections (${collectionNames.join(', ')})` 
+                : 'All Tracked Collections';
         
         const embed = new EmbedBuilder()
-            .setTitle('📊 Core Statistics - Overview')
-            .setDescription(`**${collectionsText}**\n\n*Complete historical analysis of trading activity*`)
+            .setTitle(`📊 ${collectionNames.length === 1 ? 'Collection' : 'Portfolio'} Statistics - All-Time Data`)
+            .setDescription(`**Analyzing: ${collectionsText}**\n\n*Complete historical analysis of all trading activity since launch*`)
             .setColor('#3498db')
             .addFields(
                 {
@@ -863,12 +867,13 @@ class EmbedUtils {
      * @param {Object} analytics - Analytics data from SentX
      * @returns {EmbedBuilder} Advanced metrics embed
      */
-    createAdvancedMetricsEmbed(analytics) {
+    createAdvancedMetricsEmbed(analytics, collectionNames = []) {
         const metrics = analytics.advancedMetrics;
+        const collectionsText = collectionNames.length === 1 ? collectionNames[0] : `${collectionNames.length} Collections`;
         
         const embed = new EmbedBuilder()
-            .setTitle('🔬 Advanced Metrics - Deep Analysis')
-            .setDescription('*Advanced trading patterns and market behavior analysis*')
+            .setTitle(`🔬 ${collectionsText} - Advanced Metrics`)
+            .setDescription('*All-time trading patterns and market behavior analysis*')
             .setColor('#9b59b6')
             .addFields(
                 {
@@ -913,9 +918,10 @@ class EmbedUtils {
      * @param {Object} analytics - Analytics data from SentX
      * @returns {EmbedBuilder} Price distribution embed
      */
-    createPriceDistributionEmbed(analytics) {
+    createPriceDistributionEmbed(analytics, collectionNames = []) {
         const distribution = analytics.priceDistribution;
         const ranges = distribution.ranges;
+        const collectionsText = collectionNames.length === 1 ? collectionNames[0] : `${collectionNames.length} Collections`;
         
         // Create a visual bar chart using Unicode characters
         const total = Object.values(ranges).reduce((sum, count) => sum + count, 0);
@@ -926,8 +932,8 @@ class EmbedUtils {
         };
         
         const embed = new EmbedBuilder()
-            .setTitle('💹 Price Distribution - Trading Ranges')
-            .setDescription(`*Visual breakdown of ${total.toLocaleString()} sales across different price tiers*`)
+            .setTitle(`💹 ${collectionsText} - Price Distribution`)
+            .setDescription(`*All-time breakdown of ${total.toLocaleString()} sales across different price tiers*`)
             .setColor('#e74c3c')
             .addFields(
                 {
@@ -967,8 +973,9 @@ class EmbedUtils {
      * @param {Object} analytics - Analytics data from SentX
      * @returns {EmbedBuilder} Market health embed
      */
-    createMarketHealthEmbed(analytics) {
+    createMarketHealthEmbed(analytics, collectionNames = []) {
         const health = analytics.marketHealth;
+        const collectionsText = collectionNames.length === 1 ? collectionNames[0] : `${collectionNames.length} Collections`;
         
         const trendEmoji = {
             'up': '📈',
@@ -986,8 +993,8 @@ class EmbedUtils {
         const healthRating = healthScore > 0.7 ? '🟢 **Excellent**' : healthScore > 0.5 ? '🟡 **Good**' : healthScore > 0.3 ? '🟠 **Fair**' : '🔴 **Poor**';
         
         const embed = new EmbedBuilder()
-            .setTitle(`${trendEmoji[health.trend]} Market Health Analysis`)
-            .setDescription(`*Overall Market Rating: ${healthRating}*\n*Comprehensive health assessment of trading conditions*`)
+            .setTitle(`${trendEmoji[health.trend]} ${collectionsText} - Market Health`)
+            .setDescription(`*Overall Market Rating: ${healthRating}*\n*All-time health assessment of trading conditions*`)
             .setColor(trendColor[health.trend])
             .addFields(
                 {
@@ -1060,12 +1067,13 @@ class EmbedUtils {
      * @param {Object} analytics - Analytics data from SentX
      * @returns {EmbedBuilder} Recommendations embed
      */
-    createQuickBuyRecommendationsEmbed(analytics) {
+    createQuickBuyRecommendationsEmbed(analytics, collectionNames = []) {
         const recommendations = analytics.quickBuyRecommendations;
+        const collectionsText = collectionNames.length === 1 ? collectionNames[0] : 'Portfolio';
         
         const embed = new EmbedBuilder()
-            .setTitle('💡 Smart Buy Recommendations')
-            .setDescription('*AI-powered analysis of collections showing strong potential*\n⚠️ **Not financial advice** - Always do your own research')
+            .setTitle(`💡 ${collectionsText} - Smart Buy Recommendations`)
+            .setDescription('*AI-powered analysis based on all-time trading patterns*\n⚠️ **Not financial advice** - Always do your own research')
             .setColor('#f1c40f');
 
         if (recommendations.length === 0) {
