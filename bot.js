@@ -1630,15 +1630,11 @@ class NFTSalesBot {
             
         } catch (error) {
             console.error('Error testing most recent listing:', error);
-            try {
-                if (error.code === 10062 || error.code === 40060) {
-                    console.log('Interaction expired during recent listing test');
-                } else {
-                    await interaction.editReply(`❌ Error testing most recent listing: ${error.message}`);
-                }
-            } catch (responseError) {
-                console.error('Could not respond to recent listing test interaction:', responseError.message);
-            }
+            return this.embedUtils.createErrorEmbed(
+                'Test Failed',
+                'Error testing most recent listing',
+                error.message
+            );
         }
     }
 

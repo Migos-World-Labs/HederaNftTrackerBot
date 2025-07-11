@@ -232,11 +232,13 @@ class EmbedUtils {
             saleInfo.push(`🔢 **NFT #:** ${sale.serial_number}`);
         }
 
-        embed.addFields({
-            name: '📊 Sale Details',
-            value: saleInfo.join('\n'),
-            inline: false
-        });
+        if (saleInfo.length > 0 && saleInfo.join('\n').trim()) {
+            embed.addFields({
+                name: '📊 Sale Details',
+                value: saleInfo.join('\n'),
+                inline: false
+            });
+        }
 
         // Rarity information (if available)
         if (sale.rarity || sale.rank) {
@@ -250,11 +252,13 @@ class EmbedUtils {
                 rarityInfo.push(`✨ **Rarity:** ${rarityTier} (${rarityPercentage}%)`);
             }
             
-            embed.addFields({
-                name: '🌟 Rarity Info',
-                value: rarityInfo.join('\n'),
-                inline: false
-            });
+            if (rarityInfo.length > 0 && rarityInfo.join('\n').trim()) {
+                embed.addFields({
+                    name: '🌟 Rarity Info',
+                    value: rarityInfo.join('\n'),
+                    inline: false
+                });
+            }
         }
 
         // Buyer and seller information in a more friendly format
@@ -458,11 +462,13 @@ class EmbedUtils {
             listingInfo.push(`🔢 **NFT #:** ${listing.serial_number}`);
         }
 
-        embed.addFields({
-            name: '📊 Listing Details',
-            value: listingInfo.join('\n'),
-            inline: false
-        });
+        if (listingInfo.length > 0 && listingInfo.join('\n').trim()) {
+            embed.addFields({
+                name: '📊 Listing Details',
+                value: listingInfo.join('\n'),
+                inline: false
+            });
+        }
 
         // Rarity information (if available)
         if (listing.rarity || listing.rank) {
@@ -476,11 +482,13 @@ class EmbedUtils {
                 rarityInfo.push(`✨ **Rarity:** ${rarityTier} (${rarityPercentage}%)`);
             }
             
-            embed.addFields({
-                name: '🌟 Rarity Info',
-                value: rarityInfo.join('\n'),
-                inline: false
-            });
+            if (rarityInfo.length > 0 && rarityInfo.join('\n').trim()) {
+                embed.addFields({
+                    name: '🌟 Rarity Info',
+                    value: rarityInfo.join('\n'),
+                    inline: false
+                });
+            }
         }
 
         // Add seller whale tier information
@@ -500,19 +508,24 @@ class EmbedUtils {
                     sellerInfo.push(`*Holdings:* ${hederaService.formatNFTCount(sellerHoldings.nft_count)} from this collection`);
                 }
 
-                embed.addFields({
-                    name: '👤 Seller Information',
-                    value: sellerInfo.join('\n'),
-                    inline: false
-                });
+                if (sellerInfo.length > 0 && sellerInfo.join('\n').trim()) {
+                    embed.addFields({
+                        name: '👤 Seller Information',
+                        value: sellerInfo.join('\n'),
+                        inline: false
+                    });
+                }
             } catch (error) {
                 console.error('Error fetching seller holdings for listing:', error);
                 // Fallback without whale tier
-                embed.addFields({
-                    name: '👤 Seller Information',
-                    value: `*Account:* \`${this.formatAccountId(listing.seller)}\``,
-                    inline: false
-                });
+                const fallbackSellerInfo = `*Account:* \`${this.formatAccountId(listing.seller)}\``;
+                if (fallbackSellerInfo.trim()) {
+                    embed.addFields({
+                        name: '👤 Seller Information',
+                        value: fallbackSellerInfo,
+                        inline: false
+                    });
+                }
             }
         }
 
@@ -525,11 +538,13 @@ class EmbedUtils {
             technicalDetails.push(`🔗 **View Listing:** [Open on SentX](${listing.listing_url})`);
         }
 
-        embed.addFields({
-            name: '🔧 Technical Details',
-            value: technicalDetails.join('\n'),
-            inline: false
-        });
+        if (technicalDetails.length > 0 && technicalDetails.join('\n').trim()) {
+            embed.addFields({
+                name: '🔧 Technical Details',
+                value: technicalDetails.join('\n'),
+                inline: false
+            });
+        }
 
         // Footer with timestamp and branding
         embed.setFooter({
