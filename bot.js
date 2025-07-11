@@ -1738,12 +1738,18 @@ class NFTSalesBot {
 
     async handleAnalyticsCommand(interaction, options) {
         try {
-            // Defer immediately to prevent timeout - no validation needed first
+            // Check if interaction is still valid before starting
+            if (!interaction.isRepliable()) {
+                console.log('Analytics interaction expired before processing');
+                return;
+            }
+            
+            // Defer immediately to prevent timeout
             try {
                 await interaction.deferReply();
             } catch (deferError) {
-                if (deferError.code === 10062) {
-                    console.log('Interaction expired before analytics could start');
+                if (deferError.code === 10062 || deferError.code === 40060) {
+                    console.log('Analytics interaction expired during defer:', deferError.code);
                     return;
                 }
                 throw deferError;
@@ -1792,8 +1798,20 @@ class NFTSalesBot {
                 collectionNames = trackedCollections.map(col => col.name || (col.tokenId || col.token_id));
             }
 
+            // Check interaction is still valid before API call
+            if (!interaction.isRepliable()) {
+                console.log('Analytics interaction expired before API call');
+                return;
+            }
+            
             // Get analytics data from SentX
             const analytics = await this.sentxService.getCollectionAnalytics(tokenIds, days);
+            
+            // Check interaction is still valid after API call
+            if (!interaction.isRepliable()) {
+                console.log('Analytics interaction expired after API call');
+                return;
+            }
             
             if (!analytics) {
                 await interaction.editReply({

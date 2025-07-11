@@ -96,7 +96,7 @@ class SentXService {
             let allSales = [];
             
             // Get multiple pages of historical data for comprehensive analytics
-            for (let page = 1; page <= 10; page++) {
+            for (let page = 1; page <= 5; page++) {
                 const params = {
                     apikey: apiKey,
                     activityFilter: 'All',
