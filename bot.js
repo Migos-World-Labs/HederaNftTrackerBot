@@ -1649,7 +1649,7 @@ class NFTSalesBot {
                 
                 if (!trackedCollections || trackedCollections.length === 0) {
                     await interaction.respond([{
-                        name: 'No collections tracked in this server',
+                        name: 'No collections tracked - Use /add to track collections first',
                         value: 'none'
                     }]);
                     return;
@@ -1658,17 +1658,37 @@ class NFTSalesBot {
                 // Filter collections based on what user is typing
                 const filtered = trackedCollections.filter(collection => {
                     const searchValue = focusedOption.value.toLowerCase();
-                    return collection.name.toLowerCase().includes(searchValue) || 
-                           collection.tokenId.includes(searchValue) ||
-                           (collection.token_id && collection.token_id.includes(searchValue));
+                    const tokenId = collection.tokenId || collection.token_id;
+                    const name = collection.name || '';
+                    
+                    // Only include collections that have valid token IDs
+                    if (!tokenId || tokenId === 'undefined' || tokenId === 'null') {
+                        return false;
+                    }
+                    
+                    return name.toLowerCase().includes(searchValue) || 
+                           tokenId.includes(searchValue);
                 }).slice(0, 25); // Discord limit is 25 choices
                 
-                const choices = filtered.map(collection => ({
-                    name: `${collection.name} (${collection.tokenId || collection.token_id})`,
-                    value: collection.tokenId || collection.token_id
-                }));
+                // Debug logging
+                console.log(`Autocomplete for guild ${guildId}: ${trackedCollections.length} total, ${filtered.length} filtered`);
                 
-                await interaction.respond(choices);
+                const choices = filtered.map(collection => {
+                    const tokenId = collection.tokenId || collection.token_id;
+                    return {
+                        name: `${collection.name} (${tokenId})`,
+                        value: tokenId
+                    };
+                });
+                
+                if (choices.length === 0) {
+                    await interaction.respond([{
+                        name: 'No valid collections found - Check /list to see tracked collections',
+                        value: 'none'
+                    }]);
+                } else {
+                    await interaction.respond(choices);
+                }
             }
         } catch (error) {
             console.error('Error handling autocomplete:', error);
