@@ -333,6 +333,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Kept all emojis and visual hierarchy while removing embed borders
   - Updated bot.js to handle both content (text analytics) and embeds (market overview only)
   - Enhanced readability and faster loading with simplified text-based display
+- July 11, 2025: Completely removed analytics commands from Discord bot
+  - Removed /analytics slash command from command registration
+  - Deleted handleAnalyticsCommand function and all analytics handlers
+  - Cleaned up analytics autocomplete functionality
+  - Removed analytics functions from utils/embed.js (createCoreStatsEmbed, createAdvancedMetricsEmbed, etc.)
+  - Bot now focuses on core NFT tracking functionality: sales/listings notifications, collection management, and test commands
+  - Analytics features completely eliminated per user request
 
 ## User Preferences
 
