@@ -807,10 +807,10 @@ class EmbedUtils {
     }
 
     /**
-     * Create analytics core stats embed
+     * Create analytics core stats text
      * @param {Object} analytics - Analytics data from SentX
      * @param {Array} collectionNames - Names of collections analyzed
-     * @returns {EmbedBuilder} Core stats embed
+     * @returns {string} Core stats text
      */
     createCoreStatsEmbed(analytics, collectionNames = []) {
         const coreStats = analytics.coreStats;
@@ -837,18 +837,13 @@ class EmbedUtils {
             })}\n` +
             `📱 **Data Source:** SentX Marketplace • Token ID: ${collectionNames.length === 1 ? analytics.tokenId || 'Multiple' : 'Multiple'}`;
         
-        const embed = new EmbedBuilder()
-            .setDescription(description)
-            .setColor('#3498db')
-            .setTimestamp();
-
-        return embed;
+        return description;
     }
 
     /**
-     * Create advanced metrics embed
+     * Create advanced metrics text
      * @param {Object} analytics - Analytics data from SentX
-     * @returns {EmbedBuilder} Advanced metrics embed
+     * @returns {string} Advanced metrics text
      */
     createAdvancedMetricsEmbed(analytics, collectionNames = []) {
         const metrics = analytics.advancedMetrics;
@@ -873,18 +868,13 @@ class EmbedUtils {
             })}\n` +
             `📱 **Data Source:** SentX Marketplace • Token ID: ${collectionNames.length === 1 ? analytics.tokenId || 'Multiple' : 'Multiple'}`;
         
-        const embed = new EmbedBuilder()
-            .setDescription(description)
-            .setColor('#9b59b6')
-            .setTimestamp();
-
-        return embed;
+        return description;
     }
 
     /**
-     * Create price distribution embed
+     * Create price distribution text
      * @param {Object} analytics - Analytics data from SentX
-     * @returns {EmbedBuilder} Price distribution embed
+     * @returns {string} Price distribution text
      */
     createPriceDistributionEmbed(analytics, collectionNames = []) {
         const distribution = analytics.priceDistribution;
@@ -913,12 +903,7 @@ class EmbedUtils {
             })}\n` +
             `📱 **Data Source:** SentX Marketplace • Token ID: ${collectionNames.length === 1 ? analytics.tokenId || 'Multiple' : 'Multiple'}`;
         
-        const embed = new EmbedBuilder()
-            .setDescription(description)
-            .setColor('#e74c3c')
-            .setTimestamp();
-
-        return embed;
+        return description;
     }
 
     /**
@@ -953,12 +938,7 @@ class EmbedUtils {
             })}\n` +
             `📱 **Data Source:** SentX Marketplace • Token ID: ${collectionNames.length === 1 ? analytics.tokenId || 'Multiple' : 'Multiple'}`;
         
-        const embed = new EmbedBuilder()
-            .setDescription(description)
-            .setColor('#2ecc71')
-            .setTimestamp();
-
-        return embed;
+        return description;
     }
 
     /**
@@ -1028,12 +1008,7 @@ class EmbedUtils {
             })}\n` +
             `📱 **Data Source:** SentX Marketplace • Token ID: ${collectionNames.length === 1 ? analytics.tokenId || 'Multiple' : 'Multiple'}`;
         
-        const embed = new EmbedBuilder()
-            .setDescription(description)
-            .setColor('#f1c40f')
-            .setTimestamp();
-
-        return embed;
+        return description;
     }
 
     /**

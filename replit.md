@@ -326,6 +326,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Simplified embed structure with single description containing all data in organized tree format
   - Enhanced visual presentation with Last Updated timestamps and Data Source information
   - All analytics types (Core Statistics, Advanced Metrics, Price Distribution, Market Health, Quick Buy Recommendations) now use consistent tree formatting
+- July 11, 2025: Removed Discord embeds from analytics - converted to plain text format
+  - Changed all analytics functions to return plain text instead of Discord embeds
+  - Maintained tree-style format with ├─ and └─ symbols in plain text
+  - Analytics now display as content messages rather than embedded cards
+  - Kept all emojis and visual hierarchy while removing embed borders
+  - Updated bot.js to handle both content (text analytics) and embeds (market overview only)
+  - Enhanced readability and faster loading with simplified text-based display
 
 ## User Preferences
 

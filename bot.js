@@ -1821,51 +1821,45 @@ class NFTSalesBot {
             }
 
             let embed;
+            let content;
             
             switch (analyticsType) {
                 case 'view-all':
-                    // Create multiple embeds for comprehensive view
-                    const embeds = [];
+                    // Create multiple text sections for comprehensive view
+                    let fullText = '';
                     
                     // Core Stats
-                    embeds.push(this.embedUtils.createCoreStatsEmbed(analytics, collectionNames));
+                    fullText += this.embedUtils.createCoreStatsEmbed(analytics, collectionNames) + '\n\n';
                     
                     // Advanced Metrics
-                    embeds.push(this.embedUtils.createAdvancedMetricsEmbed(analytics, collectionNames));
+                    fullText += this.embedUtils.createAdvancedMetricsEmbed(analytics, collectionNames) + '\n\n';
                     
                     // Price Distribution
-                    embeds.push(this.embedUtils.createPriceDistributionEmbed(analytics, collectionNames));
+                    fullText += this.embedUtils.createPriceDistributionEmbed(analytics, collectionNames) + '\n\n';
                     
                     // Market Health
-                    embeds.push(this.embedUtils.createMarketHealthEmbed(analytics, collectionNames));
+                    fullText += this.embedUtils.createMarketHealthEmbed(analytics, collectionNames) + '\n\n';
                     
                     // Quick Buy Recommendations
-                    embeds.push(this.embedUtils.createQuickBuyRecommendationsEmbed(analytics, collectionNames));
+                    fullText += this.embedUtils.createQuickBuyRecommendationsEmbed(analytics, collectionNames);
                     
-                    // Market Overview
-                    const marketOverview = await this.sentxService.getMarketOverview();
-                    if (marketOverview) {
-                        const hbarRate = await this.currencyService.getHbarToUsdRate();
-                        embeds.push(this.embedUtils.createMarketOverviewEmbed(marketOverview, hbarRate));
-                    }
-                    
-                    await interaction.editReply({ embeds: embeds });
+                    await interaction.editReply({ content: fullText });
                     return;
                     
                 case 'core-stats':
-                    embed = this.embedUtils.createCoreStatsEmbed(analytics, collectionNames);
+                    content = this.embedUtils.createCoreStatsEmbed(analytics, collectionNames);
                     break;
                 case 'advanced-metrics':
-                    embed = this.embedUtils.createAdvancedMetricsEmbed(analytics, collectionNames);
+                    content = this.embedUtils.createAdvancedMetricsEmbed(analytics, collectionNames);
                     break;
                 case 'price-distribution':
-                    embed = this.embedUtils.createPriceDistributionEmbed(analytics, collectionNames);
+                    content = this.embedUtils.createPriceDistributionEmbed(analytics, collectionNames);
                     break;
                 case 'market-health':
-                    embed = this.embedUtils.createMarketHealthEmbed(analytics, collectionNames);
+                    content = this.embedUtils.createMarketHealthEmbed(analytics, collectionNames);
                     break;
                 case 'recommendations':
-                    embed = this.embedUtils.createQuickBuyRecommendationsEmbed(analytics, collectionNames);
+                    content = this.embedUtils.createQuickBuyRecommendationsEmbed(analytics, collectionNames);
                     break;
                 case 'market-overview':
                     const overview = await this.sentxService.getMarketOverview();
@@ -1890,7 +1884,12 @@ class NFTSalesBot {
                 return;
             }
 
-            await interaction.editReply({ embeds: [embed] });
+            // Send as content for text or embed for market overview
+            if (content) {
+                await interaction.editReply({ content: content });
+            } else {
+                await interaction.editReply({ embeds: [embed] });
+            }
 
         } catch (error) {
             console.error('Error handling analytics command:', error);
