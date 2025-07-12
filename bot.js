@@ -1318,7 +1318,7 @@ class NFTSalesBot {
                     },
                     {
                         name: '🏪 Supported Marketplaces',
-                        value: '• **SentX** - Primary marketplace\n• **Kabila** - Secondary coverage',
+                        value: '• **SentX**\n• **Kabila**',
                         inline: false
                     }
                 ],
@@ -1505,7 +1505,7 @@ class NFTSalesBot {
                     },
                     {
                         name: '🏪 Supported Marketplaces',
-                        value: '• **SentX** - Primary marketplace\n• **Kabila** - Secondary coverage\n• Both marketplaces monitored simultaneously',
+                        value: '• **SentX**\n• **Kabila**',
                         inline: true
                     },
                     {
