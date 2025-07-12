@@ -355,26 +355,6 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Fixed autocomplete "loading options failed" errors with enhanced error handling and debugging
   - Improved collection selection autocomplete with helpful messages for servers without tracked collections
   - All test commands now work properly without Discord API validation failures
-- July 12, 2025: Added GIF and MP4 NFT support with multimedia detection
-  - Enhanced media detection to support animated GIFs, MP4 videos, and other multimedia NFT formats
-  - Added detectMediaType() utility function to identify static images, animated GIFs, and video content
-  - Videos (MP4, MOV, WEBM) now display as clickable links in embed descriptions since Discord doesn't auto-play video files
-  - Animated GIFs display directly in Discord embeds using setImage() method for seamless viewing
-  - Enhanced both sales and listing notifications with comprehensive multimedia support
-  - Added animation_url field detection for NFTs with separate static image and animated content
-  - Improved media URL detection with priority for animation_url over static image fields
-- July 12, 2025: Enhanced video support for SentX CDN and fixed autocomplete interactions
-  - Added specific detection for SentX CDN video formats (play_720p.mp4, play_1080p.mp4, vz-*.b-cdn.net)
-  - Enhanced video link formatting to show "HD Video" or "Full HD Video" based on quality
-  - Fixed Discord autocomplete "Unknown interaction" errors with improved interaction.isRepliable() checks
-  - Videos now display as properly formatted clickable links with quality indicators
-  - Enhanced video detection to catch SentX's CDN patterns and streaming video formats
-- July 12, 2025: Added HashPack CDN support for MP4 video NFTs
-  - Added detection for HashPack CDN video formats (hashpack.b-cdn.net/ipfs/*, #t= timestamps)
-  - Enhanced IPFS conversion to prefer HashPack CDN for video content over standard IPFS gateways
-  - Video links now show "HashPack Video" for HashPack CDN sources and "SentX Video" for SentX sources
-  - Added support for video timestamp parameters (#t=0.1) commonly used in HashPack video URLs
-  - Improved video streaming compatibility with HashPack's optimized CDN infrastructure
 
 ## User Preferences
 
