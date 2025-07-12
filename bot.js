@@ -1483,7 +1483,7 @@ class NFTSalesBot {
             const supportEmbed = {
                 title: '🛟 Get Support & Help',
                 description: 'Need help with the NFT Sales Bot? Join our support server!',
-                color: 0x00d4ff,
+                color: 0xffffff,
                 thumbnail: {
                     url: 'attachment://migos-logo.png'
                 },
