@@ -184,7 +184,7 @@ class NFTSalesBot {
                 if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
                     try {
                         await interaction.reply({
-                            content: `❌ **Bot Setup Issue Detected**\n\nThe bot can't properly access this server. This usually happens when using Discord's "Add App" feature.\n\n**To fix this:**\n1. Remove this bot from the server completely\n2. Use this invite link instead: https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissions=19520&scope=bot%20applications.commands\n3. Make sure to grant all requested permissions\n\n*This will properly add the bot and show the welcome message.*`,
+                            content: `❌ **Bot Access Issue**\n\nThere's a connection problem with this server. This commonly happens when using Discord's "Add App" feature instead of the direct invite link.\n\n**Quick Fix:**\n1. Remove this bot from your server\n2. Re-add using this link: https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissions=19520&scope=bot%20applications.commands\n3. Grant all permissions when prompted\n\n✅ **This will fix the issue and show the welcome message**\n\n💬 Need help? Join our support: https://discord.gg/fkKEgckbYH`,
                             flags: 64 // MessageFlags.Ephemeral
                         });
                     } catch (error) {
