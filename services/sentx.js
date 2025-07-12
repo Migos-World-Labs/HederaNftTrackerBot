@@ -171,35 +171,45 @@ class SentXService {
                 params.serial = serialId;
             }
             
-            console.log(`🔍 SentX API call: /v1/public/nft/details with params:`, params);
+            console.log(`🔍 Comprehensive search for ${tokenId}/${serialId} across SentX marketplace...`);
             
-            // Since the NFT details endpoint doesn't exist, search market activity for this NFT
-            // Try multiple pages to find the specific NFT
+            // Strategy 1: Search recent market activity (multiple pages)
             let allActivities = [];
-            for (let page = 1; page <= 5; page++) {
-                const marketResponse = await this.axiosInstance.get('/v1/public/market/activity', {
-                    params: {
-                        apikey: apiKey,
-                        activityFilter: 'All',
-                        amount: 100,
-                        page: page
-                    }
-                });
-                
-                if (marketResponse.data && marketResponse.data.success && marketResponse.data.marketActivity) {
-                    allActivities = allActivities.concat(marketResponse.data.marketActivity);
+            console.log(`🔍 Strategy 1: Searching recent market activity...`);
+            for (let page = 1; page <= 15; page++) {
+                try {
+                    const marketResponse = await this.axiosInstance.get('/v1/public/market/activity', {
+                        params: {
+                            apikey: apiKey,
+                            activityFilter: 'All',
+                            amount: 100,
+                            page: page
+                        }
+                    });
                     
-                    // Stop if we found our target NFT
-                    const targetSerial = serialId ? parseInt(serialId) : null;
-                    const found = marketResponse.data.marketActivity.find(activity => 
-                        activity.nftTokenAddress === tokenId && 
-                        (!targetSerial || activity.nftSerialId === targetSerial)
-                    );
-                    if (found) break;
-                } else {
+                    if (marketResponse.data && marketResponse.data.success && marketResponse.data.marketActivity) {
+                        allActivities = allActivities.concat(marketResponse.data.marketActivity);
+                        
+                        // Check if we found our target NFT
+                        const targetSerial = serialId ? parseInt(serialId) : null;
+                        const found = marketResponse.data.marketActivity.find(activity => 
+                            activity.nftTokenAddress === tokenId && 
+                            (!targetSerial || activity.nftSerialId === targetSerial)
+                        );
+                        if (found) {
+                            console.log(`✅ Found ${found.nftName} on page ${page}!`);
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                } catch (pageError) {
+                    console.log(`⚠️ Page ${page} failed: ${pageError.message}`);
                     break;
                 }
             }
+            
+            console.log(`📊 Strategy 1 results: Searched ${allActivities.length} activities across multiple pages`);
             
             // Find the NFT in market activity
             let nftData = null;
@@ -226,25 +236,27 @@ class SentXService {
             }
             
             if (!nftData) {
-                console.log(`⚠️ NFT not found in recent market activity, trying direct collection search...`);
+                console.log(`⚠️ Strategy 1 failed - trying alternative search approaches...`);
                 
-                // Try to fetch more historical data by searching more pages
-                try {
-                    for (let extraPage = 6; extraPage <= 10; extraPage++) {
-                        const extraResponse = await this.axiosInstance.get('/v1/public/market/activity', {
+                // Strategy 2: Try different activity filters
+                const filters = ['Sales', 'Listed', 'OrderFill'];
+                for (const filter of filters) {
+                    console.log(`🔍 Strategy 2: Trying filter '${filter}'...`);
+                    try {
+                        const filterResponse = await this.axiosInstance.get('/v1/public/market/activity', {
                             params: {
                                 apikey: apiKey,
-                                activityFilter: 'All',
-                                amount: 100,
-                                page: extraPage
+                                activityFilter: filter,
+                                amount: 200,
+                                page: 1
                             }
                         });
                         
-                        if (extraResponse.data && extraResponse.data.success && extraResponse.data.marketActivity) {
+                        if (filterResponse.data && filterResponse.data.success && filterResponse.data.marketActivity) {
                             const targetSerial = serialId ? parseInt(serialId) : null;
-                            const found = extraResponse.data.marketActivity.find(activity => 
+                            const found = filterResponse.data.marketActivity.find(activity => 
                                 activity.nftTokenAddress === tokenId && 
-                                activity.nftSerialId === targetSerial
+                                (!targetSerial || activity.nftSerialId === targetSerial)
                             );
                             
                             if (found) {
@@ -257,15 +269,44 @@ class SentXService {
                                     image: found.nftImage,
                                     metadata: found.nftMetadata
                                 };
-                                console.log(`✅ Found ${nftData.name} in extended search (page ${extraPage}): Rank ${nftData.rarityRank}, Rarity ${nftData.rarityPct}`);
+                                console.log(`✅ Found ${nftData.name} with filter '${filter}': Rank ${nftData.rarityRank}, Rarity ${nftData.rarityPct}`);
                                 break;
                             }
-                        } else {
-                            break;
                         }
+                    } catch (filterError) {
+                        console.log(`⚠️ Filter '${filter}' failed: ${filterError.message}`);
                     }
-                } catch (searchError) {
-                    console.log(`⚠️ Extended search failed: ${searchError.message}`);
+                }
+                
+                // Strategy 3: Search without serial number to find any NFT from this collection
+                if (!nftData) {
+                    console.log(`🔍 Strategy 3: Searching collection ${tokenId} for any NFT with rarity data...`);
+                    try {
+                        const collectionResponse = await this.axiosInstance.get('/v1/public/market/activity', {
+                            params: {
+                                apikey: apiKey,
+                                activityFilter: 'All',
+                                amount: 300,
+                                page: 1
+                            }
+                        });
+                        
+                        if (collectionResponse.data && collectionResponse.data.success && collectionResponse.data.marketActivity) {
+                            // Find any NFT from this collection that has rarity data
+                            const collectionNFT = collectionResponse.data.marketActivity.find(activity => 
+                                activity.nftTokenAddress === tokenId && 
+                                activity.rarityRank && 
+                                activity.rarityPct !== null
+                            );
+                            
+                            if (collectionNFT) {
+                                console.log(`✅ Found collection sample: ${collectionNFT.nftName} (${collectionNFT.nftSerialId}) has rarity data`);
+                                // Don't use this data directly, but it confirms the collection exists in SentX
+                            }
+                        }
+                    } catch (collectionError) {
+                        console.log(`⚠️ Collection search failed: ${collectionError.message}`);
+                    }
                 }
                 
                 // Final fallback for specific known NFTs
