@@ -1401,14 +1401,6 @@ class NFTSalesBot {
 
     async handleImageEffectsCommand(interaction, options) {
         try {
-            // Immediately defer the reply to prevent timeout
-            if (interaction.isRepliable()) {
-                await interaction.deferReply({ ephemeral: false });
-            } else {
-                console.log('Interaction expired before handling image effects command');
-                return;
-            }
-
             const enabled = options.getBoolean('enabled');
             const guildId = interaction.guildId;
             
@@ -1423,30 +1415,28 @@ class NFTSalesBot {
                 '✨ NFT images will now include:\n• Special borders and frames\n• Rarity-based effects\n• Price milestone animations\n• Collection-specific themes\n• Whale tier indicators' : 
                 '📸 NFT images will now display as original images without special effects.'}`;
             
-            // Edit the deferred reply
-            if (interaction.deferred && !interaction.replied) {
-                await interaction.editReply({
-                    content: responseContent
-                });
-            }
+            // Reply immediately without deferring
+            await interaction.reply({
+                content: responseContent,
+                flags: 0 // Use flags instead of ephemeral property
+            });
             
             console.log(`🎨 [IMAGE FX] Image effects ${statusText} for server ${interaction.guild.name} (${guildId})`);
             
         } catch (error) {
             console.error('Error handling image effects command:', error);
-            try {
-                if (interaction.deferred && !interaction.replied) {
-                    await interaction.editReply({
-                        content: '❌ An error occurred while updating image effects settings. Please try again.'
-                    });
-                } else if (interaction.isRepliable()) {
-                    await interaction.reply({
-                        content: '❌ An error occurred while updating image effects settings. Please try again.',
-                        ephemeral: true
-                    });
+            // Only attempt error response if we haven't responded yet
+            if (error.code !== 10062 && error.code !== 40060) {
+                try {
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({
+                            content: '❌ An error occurred while updating image effects settings. Please try again.',
+                            flags: 64 // EPHEMERAL flag
+                        });
+                    }
+                } catch (replyError) {
+                    console.log('Could not send error response - interaction may have expired');
                 }
-            } catch (replyError) {
-                console.error('Error responding to image effects interaction:', replyError);
             }
         }
     }

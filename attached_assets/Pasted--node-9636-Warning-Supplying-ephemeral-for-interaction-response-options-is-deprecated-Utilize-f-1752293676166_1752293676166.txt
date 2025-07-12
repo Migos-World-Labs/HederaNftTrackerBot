@@ -1,0 +1,37 @@
+(node:9636) Warning: Supplying "ephemeral" for interaction response options is deprecated. Utilize flags instead.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Error handling image effects command: DiscordAPIError[10062]: Unknown interaction
+    at handleErrors (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:748:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async BurstHandler.runRequest (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:852:23)
+    at async _REST.request (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:1293:22)
+    at async ChatInputCommandInteraction.deferReply (/home/runner/workspace/node_modules/discord.js/src/structures/interfaces/InteractionResponses.js:123:22)
+    at async NFTSalesBot.handleImageEffectsCommand (/home/runner/workspace/bot.js:1406:17)
+    at async NFTSalesBot.handleSlashCommand (/home/runner/workspace/bot.js:912:21)
+    at async Client.<anonymous> (/home/runner/workspace/bot.js:93:17) {
+  requestBody: { files: undefined, json: { type: 5, data: [Object] } },
+  rawError: { message: 'Unknown interaction', code: 10062 },
+  code: 10062,
+  status: 404,
+  method: 'POST',
+  url: 'https://discord.com/api/v10/interactions/1393445356385341610/aW50ZXJhY3Rpb246MTM5MzQ0NTM1NjM4NTM0MTYxMDpIMU5sUWNDVkUxRmp2T1B1eTVvT2kzN2pDOXVzTVFyM2JkcXdkME5BTDB3RHlhbTdtcDhzdFhLZW9UU2R2TlRwYTBYcFR3MDNmU1lVTEhrY0t3QlBGMXNURVNwNmdkQ0RHc3dBYkhhaXlJT0dXdzRiQzRVV25JUWVGaXhkUjdIdg/callback?with_response=false'
+}
+Error responding to image effects interaction: DiscordAPIError[40060]: Interaction has already been acknowledged.
+    at handleErrors (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:748:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async BurstHandler.runRequest (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:852:23)
+    at async _REST.request (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:1293:22)
+    at async ChatInputCommandInteraction.reply (/home/runner/workspace/node_modules/discord.js/src/structures/interfaces/InteractionResponses.js:194:22)
+    at async NFTSalesBot.handleImageEffectsCommand (/home/runner/workspace/bot.js:1443:21)
+    at async NFTSalesBot.handleSlashCommand (/home/runner/workspace/bot.js:912:21)
+    at async Client.<anonymous> (/home/runner/workspace/bot.js:93:17) {
+  requestBody: { files: [], json: { type: 4, data: [Object] } },
+  rawError: {
+    message: 'Interaction has already been acknowledged.',
+    code: 40060
+  },
+  code: 40060,
+  status: 400,
+  method: 'POST',
+  url: 'https://discord.com/api/v10/interactions/1393445356385341610/aW50ZXJhY3Rpb246MTM5MzQ0NTM1NjM4NTM0MTYxMDpIMU5sUWNDVkUxRmp2T1B1eTVvT2kzN2pDOXVzTVFyM2JkcXdkME5BTDB3RHlhbTdtcDhzdFhLZW9UU2R2TlRwYTBYcFR3MDNmU1lVTEhrY0t3QlBGMXNURVNwNmdkQ0RHc3dBYkhhaXlJT0dXdzRiQzRVV25JUWVGaXhkUjdIdg/callback?with_response=false'
+}
