@@ -108,7 +108,8 @@ https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissio
 **Purpose**: Get help with the bot and access community support
 
 **Information provided**:
-- **Support Server Link**: Direct link to Discord support server (https://discord.gg/6KAR52JXzn)
+- **Migos World Labs Discord**: Direct link to Discord support server (https://discord.gg/6KAR52JXzn)
+- **Contact Information**: Specific contacts Mauii and Wise Whale for setup help
 - **Help Topics**: Bot setup, configuration, troubleshooting, feature requests
 - **Quick Commands**: Reference for essential commands
 - **Marketplace Info**: Supported marketplaces and coverage
@@ -120,9 +121,9 @@ https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissio
 ```
 
 **Benefits**:
-- Get immediate help from support team
-- Connect with community of bot users
-- Access troubleshooting assistance
+- Direct contact with Mauii and Wise Whale for personalized support
+- Connect with Migos World Labs Discord community
+- Access comprehensive troubleshooting assistance
 - Request new features or report issues
 
 #### `/status` - Bot Status Information

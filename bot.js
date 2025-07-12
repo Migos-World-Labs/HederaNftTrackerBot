@@ -1486,8 +1486,8 @@ class NFTSalesBot {
                 color: 0x00d4ff,
                 fields: [
                     {
-                        name: '🎮 Join Support Server',
-                        value: '[Click here to join our Discord support server](https://discord.gg/6KAR52JXzn)\n\nGet help with:\n• Bot setup and configuration\n• Adding NFT collections\n• Troubleshooting issues\n• Feature requests and feedback',
+                        name: '🎮 Join Migos World Labs Discord',
+                        value: '[Click here to join our Discord support server](https://discord.gg/6KAR52JXzn)\n\nContact **Mauii** or **Wise Whale** for set up help\n\nGet help with:\n• Bot setup and configuration\n• Adding NFT collections\n• Troubleshooting issues\n• Feature requests and feedback',
                         inline: false
                     },
                     {
@@ -1502,12 +1502,12 @@ class NFTSalesBot {
                     },
                     {
                         name: '🔧 Need Help?',
-                        value: 'Our support team is ready to help you:\n• Set up the bot for your server\n• Configure collections and channels\n• Answer questions about features\n• Resolve any technical issues',
+                        value: 'Contact **Mauii** or **Wise Whale** in Migos World Labs Discord for:\n• Set up the bot for your server\n• Configure collections and channels\n• Answer questions about features\n• Resolve any technical issues',
                         inline: false
                     }
                 ],
                 footer: {
-                    text: 'Built for the Hedera NFT community',
+                    text: 'Built for the Hedera NFT community by Migos World Labs',
                     icon_url: 'https://sentient-bherbhd8e3cyg4dn.z01.azurefd.net/media/web/hedera-logo-128.png'
                 },
                 timestamp: new Date().toISOString()

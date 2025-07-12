@@ -488,6 +488,8 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added comprehensive support information including quick commands, marketplace details, and help offerings
   - Updated slash command registration from 7 to 8 total commands including new support functionality
   - Enhanced user experience with direct access to community support and troubleshooting assistance
+  - Updated support command with Migos World Labs branding and specific contact information (Mauii and Wise Whale)
+  - Enhanced footer attribution to include "Built for the Hedera NFT community by Migos World Labs"
 
 ## Documentation Structure
 
