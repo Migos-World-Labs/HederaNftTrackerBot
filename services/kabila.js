@@ -406,8 +406,7 @@ class KabilaService {
     async enrichWithSentXRarity(kabilaNFTs) {
         if (!kabilaNFTs || kabilaNFTs.length === 0) return kabilaNFTs;
         
-        const SentXService = require('./sentx.js');
-        const sentxService = new SentXService();
+        const sentxService = require('./sentx.js');
         
         const enrichedNFTs = await Promise.all(kabilaNFTs.map(async (nft) => {
             try {
