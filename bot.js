@@ -137,12 +137,23 @@ class NFTSalesBot {
                 console.log(`⚠️ Ignoring command from server bot is not in: ${interaction.guildId}`);
                 console.log(`🔍 Current servers: ${Array.from(this.client.guilds.cache.keys()).join(', ')}`);
                 
-                // Try to fetch the guild manually to see if it exists
+                // Try to fetch the guild manually and refresh cache
                 try {
-                    const guild = await this.client.guilds.fetch(interaction.guildId);
-                    console.log(`🔍 Found guild manually: ${guild.name} (${guild.id}) - forcing cache update`);
-                    // This should add it to the cache
-                    await this.handleNewGuild(guild);
+                    await this.client.guilds.fetch();
+                    console.log(`🔄 Refreshed guild cache, now have ${this.client.guilds.cache.size} servers`);
+                    
+                    if (this.client.guilds.cache.has(interaction.guildId)) {
+                        const guild = this.client.guilds.cache.get(interaction.guildId);
+                        console.log(`✅ Found ${guild.name} after cache refresh - sending welcome message`);
+                        await this.handleNewGuild(guild);
+                        // Process the interaction normally now
+                        return;
+                    } else {
+                        const guild = await this.client.guilds.fetch(interaction.guildId);
+                        console.log(`🔍 Manual fetch found: ${guild.name} (${guild.id})`);
+                        await this.handleNewGuild(guild);
+                        return;
+                    }
                 } catch (fetchError) {
                     console.log(`❌ Cannot fetch guild ${interaction.guildId}: ${fetchError.message}`);
                 }
@@ -1707,6 +1718,23 @@ class NFTSalesBot {
     /**
      * Force clear slash commands from a specific guild
      */
+    async forceRefreshGuilds() {
+        try {
+            console.log('🔄 Forcing guild cache refresh...');
+            await this.client.guilds.fetch();
+            console.log(`✅ Guild refresh complete. Bot is now in ${this.client.guilds.cache.size} servers:`);
+            
+            this.client.guilds.cache.forEach(guild => {
+                console.log(`   - ${guild.name} (${guild.id}) - ${guild.memberCount} members`);
+            });
+            
+            return this.client.guilds.cache.size;
+        } catch (error) {
+            console.error('❌ Error refreshing guilds:', error);
+            return 0;
+        }
+    }
+
     async clearGuildCommands(guildId, guildName = 'Unknown Server') {
         try {
             const { REST, Routes } = require('discord.js');
