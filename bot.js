@@ -1357,10 +1357,10 @@ class NFTSalesBot {
                 embed = await this.getTestRecentSentXListingEmbed();
             } else if (testType === 'recent-kabila-sale') {
                 console.log('Testing most recent Kabila sale...');
-                embed = await this.getTestRecentKabilaSaleEmbed();
+                embed = await this.getTestRecentKabilaSaleEmbed(interaction.guildId);
             } else if (testType === 'recent-kabila-listing') {
                 console.log('Testing most recent Kabila listing...');
-                embed = await this.getTestRecentKabilaListingEmbed();
+                embed = await this.getTestRecentKabilaListingEmbed(interaction.guildId);
             } else {
                 // Default: tracked-sale
                 console.log('Testing latest sale from tracked collections...');
@@ -1873,7 +1873,7 @@ class NFTSalesBot {
         }
     }
 
-    async getTestRecentKabilaSaleEmbed() {
+    async getTestRecentKabilaSaleEmbed(guildId) {
         try {
             console.log('🔍 Creating test Kabila sale embed...');
             console.log('🔍 Calling this.kabilaService.getRecentSales(50)...');
@@ -1890,8 +1890,24 @@ class NFTSalesBot {
                 );
             }
             
-            // Get the most recent sale
-            let testSale = recentSales[0];
+            // Get tracked collections for this server
+            const trackedCollections = await this.storage.getCollections(guildId);
+            const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+            
+            // Filter sales to only show those from tracked collections
+            const trackedSales = recentSales.filter(sale => 
+                trackedTokenIds.includes(sale.token_id || sale.tokenId)
+            );
+            
+            if (trackedSales.length === 0) {
+                return this.embedUtils.createErrorEmbed(
+                    'No Tracked Kabila Sales Found',
+                    `No recent Kabila sales found from your tracked collections.\n\nTracked collections: ${trackedCollections.map(c => c.name || c.token_id).join(', ')}`
+                );
+            }
+            
+            // Get the most recent sale from tracked collections
+            let testSale = trackedSales[0];
             console.log(`🔍 Using Kabila sale data:`, {
                 nft_name: testSale.nft_name,
                 price_hbar: testSale.price_hbar,
@@ -1933,7 +1949,7 @@ class NFTSalesBot {
         }
     }
 
-    async getTestRecentKabilaListingEmbed() {
+    async getTestRecentKabilaListingEmbed(guildId) {
         try {
             console.log('🔍 Creating test Kabila listing embed...');
             console.log('🔍 Calling this.kabilaService.getRecentListings(50, true)...');
@@ -1950,8 +1966,24 @@ class NFTSalesBot {
                 );
             }
             
-            // Get the most recent listing
-            let testListing = recentListings[0];
+            // Get tracked collections for this server
+            const trackedCollections = await this.storage.getCollections(guildId);
+            const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+            
+            // Filter listings to only show those from tracked collections
+            const trackedListings = recentListings.filter(listing => 
+                trackedTokenIds.includes(listing.token_id || listing.tokenId)
+            );
+            
+            if (trackedListings.length === 0) {
+                return this.embedUtils.createErrorEmbed(
+                    'No Tracked Kabila Listings Found',
+                    `No recent Kabila listings found from your tracked collections.\n\nTracked collections: ${trackedCollections.map(c => c.name || c.token_id).join(', ')}`
+                );
+            }
+            
+            // Get the most recent listing from tracked collections
+            let testListing = trackedListings[0];
             console.log(`🔍 Using Kabila listing data:`, {
                 nft_name: testListing.nft_name,
                 price_hbar: testListing.price_hbar,
