@@ -236,6 +236,12 @@ class EmbedUtils {
             saleInfo.push(`🔢 **NFT #:** ${sale.serial_number}`);
         }
 
+        // Add rarity and rank information for Kabila sales
+        if (sale.marketplace === 'Kabila' && sale.rank && sale.rank > 0) {
+            const rarityTier = this.getRankRarityTier(sale.rank);
+            saleInfo.push(`🏆 **Rank:** ${rarityTier.emoji} #${sale.rank} (${rarityTier.name})`);
+        }
+
         if (saleInfo.length > 0) {
             const saleInfoText = saleInfo.filter(info => info && info.trim()).join('\n').trim();
             if (saleInfoText && saleInfoText.length > 0) {
@@ -522,6 +528,12 @@ class EmbedUtils {
 
         if (listing.serial_number) {
             listingInfo.push(`🔢 **NFT #:** ${listing.serial_number}`);
+        }
+
+        // Add rarity and rank information for Kabila listings
+        if (listing.marketplace === 'Kabila' && listing.rank && listing.rank > 0) {
+            const rarityTier = this.getRankRarityTier(listing.rank);
+            listingInfo.push(`🏆 **Rank:** ${rarityTier.emoji} #${listing.rank} (${rarityTier.name})`);
         }
 
         if (listingInfo.length > 0 && listingInfo.join('\n').trim()) {
@@ -881,6 +893,19 @@ class EmbedUtils {
         if (percentage <= 20) return '🟣 Rare';
         if (percentage <= 40) return '🔵 Uncommon';
         return '⚪ Common';
+    }
+
+    /**
+     * Get rarity tier based on rank position (for Kabila marketplace)
+     * @param {number} rank - Rank position in collection
+     * @returns {Object} Rarity tier with emoji and name
+     */
+    getRankRarityTier(rank) {
+        if (rank <= 10) return { emoji: '🔥', name: 'Legendary' };
+        if (rank <= 50) return { emoji: '💎', name: 'Epic' };
+        if (rank <= 200) return { emoji: '🟣', name: 'Rare' };
+        if (rank <= 500) return { emoji: '🔵', name: 'Uncommon' };
+        return { emoji: '⚪', name: 'Common' };
     }
 
     /**

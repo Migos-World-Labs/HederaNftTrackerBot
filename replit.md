@@ -399,6 +399,14 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - All existing collections automatically work with both marketplaces without separate addition needed
   - Enhanced testing capabilities allow users to verify bot functionality across both marketplace APIs
   - Fixed service references to use this.sentxService and this.kabilaService for proper class method access
+- July 12, 2025: Fixed Discord timestamp validation errors and added comprehensive rarity/rank support for Kabila
+  - Resolved "Invalid time value" errors by adding proper timestamp field mapping and validation in Kabila service
+  - Enhanced timestamp handling with comprehensive error checking in both sales and listings embeds
+  - Added rank and rarity information display for Kabila marketplace NFTs in both sales and listings
+  - Created getRankRarityTier() function to categorize NFTs by rank position (Legendary, Epic, Rare, Uncommon, Common)
+  - Rank display includes emoji indicators and rarity tier names (e.g., "🔥 #5 (Legendary)")
+  - All Kabila sales and listings now show comprehensive rank information when available from API
+  - Both marketplaces now work seamlessly with enhanced visual rarity indicators and proper error handling
 
 ## User Preferences
 
