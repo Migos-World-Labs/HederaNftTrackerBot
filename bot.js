@@ -75,6 +75,29 @@ class NFTSalesBot {
                 await this.registerSlashCommands();
                 await this.startMonitoring();
                 
+                // Set up periodic guild refresh to catch servers added via "Add App"
+                setInterval(async () => {
+                    try {
+                        const oldSize = this.client.guilds.cache.size;
+                        await this.client.guilds.fetch();
+                        const newSize = this.client.guilds.cache.size;
+                        
+                        if (newSize > oldSize) {
+                            console.log(`🔄 Detected ${newSize - oldSize} new server(s) via periodic refresh`);
+                            // Check for newly detected servers and send welcome messages
+                            for (const [guildId, guild] of this.client.guilds.cache) {
+                                const existingConfig = await this.storage.getServerConfig(guildId);
+                                if (!existingConfig) {
+                                    console.log(`📩 Sending delayed welcome message to: ${guild.name}`);
+                                    await this.handleNewGuild(guild);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error in periodic guild refresh:', error);
+                    }
+                }, 30000); // Check every 30 seconds
+                
                 console.log('✅ Bot fully initialized and ready!');
             } catch (error) {
                 console.error('❌ Critical error during bot initialization:', error);
