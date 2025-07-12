@@ -850,12 +850,20 @@ class NFTSalesBot {
                                 value: 'tracked-listing'
                             },
                             {
-                                name: 'Recent Marketplace Sale',
-                                value: 'recent-sale'
+                                name: 'Recent SentX Sale',
+                                value: 'recent-sentx-sale'
                             },
                             {
-                                name: 'Recent Marketplace Listing',
-                                value: 'recent-listing'
+                                name: 'Recent SentX Listing',
+                                value: 'recent-sentx-listing'
+                            },
+                            {
+                                name: 'Recent Kabila Sale',
+                                value: 'recent-kabila-sale'
+                            },
+                            {
+                                name: 'Recent Kabila Listing',
+                                value: 'recent-kabila-listing'
                             }
                         ]
                     },
@@ -1299,12 +1307,18 @@ class NFTSalesBot {
             if (testType === 'tracked-listing') {
                 console.log('Executing tracked collection listing test...');
                 embed = await this.getTestListingEmbed(interaction.guildId, specificCollection);
-            } else if (testType === 'recent-sale') {
-                console.log('Testing most recent marketplace sale...');
-                embed = await this.getTestRecentSaleEmbed();
-            } else if (testType === 'recent-listing') {
-                console.log('Testing most recent marketplace listing...');
-                embed = await this.getTestRecentListingEmbed();
+            } else if (testType === 'recent-sentx-sale') {
+                console.log('Testing most recent SentX sale...');
+                embed = await this.getTestRecentSentXSaleEmbed();
+            } else if (testType === 'recent-sentx-listing') {
+                console.log('Testing most recent SentX listing...');
+                embed = await this.getTestRecentSentXListingEmbed();
+            } else if (testType === 'recent-kabila-sale') {
+                console.log('Testing most recent Kabila sale...');
+                embed = await this.getTestRecentKabilaSaleEmbed();
+            } else if (testType === 'recent-kabila-listing') {
+                console.log('Testing most recent Kabila listing...');
+                embed = await this.getTestRecentKabilaListingEmbed();
             } else {
                 // Default: tracked-sale
                 console.log('Testing latest sale from tracked collections...');
@@ -1748,6 +1762,142 @@ class NFTSalesBot {
     }
 
 
+
+    async getTestRecentSentXSaleEmbed() {
+        try {
+            console.log('Creating test SentX sale embed...');
+            
+            // Get recent sales from SentX only
+            const recentSales = await sentxService.getRecentSales(50);
+            
+            if (!recentSales || recentSales.length === 0) {
+                return this.embedUtils.createErrorEmbed(
+                    'No SentX Sales Found',
+                    'No recent sales found from SentX marketplace'
+                );
+            }
+            
+            // Get the most recent sale
+            const testSale = recentSales[0];
+            console.log(`Using SentX sale: ${testSale.nft_name} for ${testSale.price_hbar} HBAR`);
+            
+            // Get HBAR rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            
+            // Create and return the embed
+            return await this.embedUtils.createSaleEmbed(testSale, hbarRate);
+            
+        } catch (error) {
+            console.error('Error creating test SentX sale embed:', error);
+            return this.embedUtils.createErrorEmbed(
+                'Test Failed',
+                'Failed to create test SentX sale embed',
+                error.message
+            );
+        }
+    }
+
+    async getTestRecentSentXListingEmbed() {
+        try {
+            console.log('Creating test SentX listing embed...');
+            
+            // Get recent listings from SentX only
+            const recentListings = await sentxService.getRecentListings(50, true);
+            
+            if (!recentListings || recentListings.length === 0) {
+                return this.embedUtils.createErrorEmbed(
+                    'No SentX Listings Found',
+                    'No recent listings found from SentX marketplace'
+                );
+            }
+            
+            // Get the most recent listing
+            const testListing = recentListings[0];
+            console.log(`Using SentX listing: ${testListing.nft_name} for ${testListing.price_hbar} HBAR`);
+            
+            // Get HBAR rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            
+            // Create and return the embed
+            return await this.embedUtils.createListingEmbed(testListing, hbarRate);
+            
+        } catch (error) {
+            console.error('Error creating test SentX listing embed:', error);
+            return this.embedUtils.createErrorEmbed(
+                'Test Failed',
+                'Failed to create test SentX listing embed',
+                error.message
+            );
+        }
+    }
+
+    async getTestRecentKabilaSaleEmbed() {
+        try {
+            console.log('Creating test Kabila sale embed...');
+            
+            // Get recent sales from Kabila only
+            const recentSales = await kabilaService.getRecentSales(50);
+            
+            if (!recentSales || recentSales.length === 0) {
+                return this.embedUtils.createErrorEmbed(
+                    'No Kabila Sales Found',
+                    'No recent sales found from Kabila marketplace'
+                );
+            }
+            
+            // Get the most recent sale
+            const testSale = recentSales[0];
+            console.log(`Using Kabila sale: ${testSale.nft_name} for ${testSale.price_hbar} HBAR`);
+            
+            // Get HBAR rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            
+            // Create and return the embed
+            return await this.embedUtils.createSaleEmbed(testSale, hbarRate);
+            
+        } catch (error) {
+            console.error('Error creating test Kabila sale embed:', error);
+            return this.embedUtils.createErrorEmbed(
+                'Test Failed',
+                'Failed to create test Kabila sale embed',
+                error.message
+            );
+        }
+    }
+
+    async getTestRecentKabilaListingEmbed() {
+        try {
+            console.log('Creating test Kabila listing embed...');
+            
+            // Get recent listings from Kabila only
+            const recentListings = await kabilaService.getRecentListings(50, true);
+            
+            if (!recentListings || recentListings.length === 0) {
+                return this.embedUtils.createErrorEmbed(
+                    'No Kabila Listings Found',
+                    'No recent listings found from Kabila marketplace'
+                );
+            }
+            
+            // Get the most recent listing
+            const testListing = recentListings[0];
+            console.log(`Using Kabila listing: ${testListing.nft_name} for ${testListing.price_hbar} HBAR`);
+            
+            // Get HBAR rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            
+            // Create and return the embed
+            return await this.embedUtils.createListingEmbed(testListing, hbarRate);
+            
+        } catch (error) {
+            console.error('Error creating test Kabila listing embed:', error);
+            return this.embedUtils.createErrorEmbed(
+                'Test Failed',
+                'Failed to create test Kabila listing embed',
+                error.message
+            );
+        }
+    }
 
     async testLastSale() {
         try {

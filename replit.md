@@ -390,6 +390,14 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Bot now provides comprehensive coverage of Hedera NFT marketplace activity across both major platforms
   - All existing Discord embed formatting and notification features work seamlessly with Kabila data
   - Maintained same user experience while doubling marketplace coverage
+- July 12, 2025: Added Kabila-specific test commands for marketplace-specific testing
+  - Extended /test command with 4 new Kabila-specific options: Recent Kabila Sale, Recent Kabila Listing
+  - Renamed existing marketplace test options to "Recent SentX Sale" and "Recent SentX Listing" for clarity
+  - Added getTestRecentKabilaSaleEmbed() and getTestRecentKabilaListingEmbed() methods
+  - Added getTestRecentSentXSaleEmbed() and getTestRecentSentXListingEmbed() methods for SentX-specific testing
+  - Test command now supports 6 total options: 2 for tracked collections, 2 for SentX marketplace, 2 for Kabila marketplace
+  - All existing collections automatically work with both marketplaces without separate addition needed
+  - Enhanced testing capabilities allow users to verify bot functionality across both marketplace APIs
 
 ## User Preferences
 
