@@ -898,14 +898,6 @@ class NFTSalesBot {
                         required: false,
                         choices: [
                             {
-                                name: 'Latest Sale from Tracked Collections',
-                                value: 'tracked-sale'
-                            },
-                            {
-                                name: 'Latest Listing from Tracked Collections',
-                                value: 'tracked-listing'
-                            },
-                            {
                                 name: 'Recent SentX Sale',
                                 value: 'recent-sentx-sale'
                             },
@@ -1349,7 +1341,7 @@ class NFTSalesBot {
                 return;
             }
             
-            const testType = interaction.options?.getString('type') || 'tracked-sale';
+            const testType = interaction.options?.getString('type') || 'recent-sentx-sale';
             
             // Defer reply immediately as the very first action
             try {
@@ -1368,10 +1360,7 @@ class NFTSalesBot {
             
             // Route to appropriate test method
             let embed;
-            if (testType === 'tracked-listing') {
-                console.log('Executing tracked collection listing test...');
-                embed = await this.getTestListingEmbed(interaction.guildId, specificCollection);
-            } else if (testType === 'recent-sentx-sale') {
+            if (testType === 'recent-sentx-sale') {
                 console.log('Testing most recent SentX sale...');
                 embed = await this.getTestRecentSentXSaleEmbed(interaction.guildId, specificCollection);
             } else if (testType === 'recent-sentx-listing') {
@@ -1384,9 +1373,9 @@ class NFTSalesBot {
                 console.log('Testing most recent Kabila listing...');
                 embed = await this.getTestRecentKabilaListingEmbed(interaction.guildId, specificCollection);
             } else {
-                // Default: tracked-sale
-                console.log('Testing latest sale from tracked collections...');
-                embed = await this.getTestTrackedSaleEmbed(interaction.guildId, specificCollection);
+                // Default: recent-sentx-sale
+                console.log('Testing most recent SentX sale...');
+                embed = await this.getTestRecentSentXSaleEmbed(interaction.guildId, specificCollection);
             }
             
             // Send the response
