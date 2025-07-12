@@ -513,15 +513,9 @@ class NFTSalesBot {
                                 sale.collection_url = `https://market.kabila.app/en/collections/${tokenNumber}/items`;
                             }
                         } else {
-                            // SentX URL format
+                            // SentX URL format - use proper collection name mapping
                             if (sale.token_id || sale.tokenId) {
-                                const collectionFriendlyUrl = sale.collectionFriendlyurl || sale.collection_friendly_url;
-                                
-                                if (collectionFriendlyUrl) {
-                                    sale.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
-                                } else {
-                                    sale.collection_url = `https://sentx.io/nft-marketplace/collection/${sale.token_id || sale.tokenId}`;
-                                }
+                                sale.collection_url = this.getSentXCollectionUrl(sale.token_id || sale.tokenId);
                             }
                         }
                         
@@ -611,15 +605,9 @@ class NFTSalesBot {
                                 listing.collection_url = `https://market.kabila.app/en/collections/${tokenNumber}/items`;
                             }
                         } else {
-                            // SentX URL format
+                            // SentX URL format - use proper collection name mapping
                             if (listing.token_id || listing.tokenId) {
-                                const collectionFriendlyUrl = listing.collectionFriendlyurl || listing.collection_friendly_url;
-                                
-                                if (collectionFriendlyUrl) {
-                                    listing.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
-                                } else {
-                                    listing.collection_url = `https://sentx.io/nft-marketplace/collection/${listing.token_id || listing.tokenId}`;
-                                }
+                                listing.collection_url = this.getSentXCollectionUrl(listing.token_id || listing.tokenId);
                             }
                         }
                         
@@ -1501,6 +1489,31 @@ class NFTSalesBot {
 
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /**
+     * Get proper SentX collection URL based on token ID
+     * @param {string} tokenId - Token ID of the collection
+     * @returns {string} Proper SentX collection URL
+     */
+    getSentXCollectionUrl(tokenId) {
+        // Map token IDs to their proper SentX collection URLs
+        const collectionMapping = {
+            '0.0.6024491': 'https://sentx.io/nft-marketplace/wild-tigers',
+            '0.0.8308459': 'https://sentx.io/nft-marketplace/the-ape-anthology',
+            '0.0.8233324': 'https://sentx.io/nft-marketplace/kekistan',
+            '0.0.8233316': 'https://sentx.io/nft-marketplace/heliswap-pool-tokens',
+            '0.0.8233302': 'https://sentx.io/nft-marketplace/klaytn-invasion',
+            '0.0.5552189': 'https://sentx.io/nft-marketplace/hashinals',
+            '0.0.2173899': 'https://sentx.io/nft-marketplace/hashinals',
+            '0.0.789064': 'https://sentx.io/nft-marketplace/hashinals',
+            '0.0.1097228': 'https://sentx.io/nft-marketplace/hashinals',
+            '0.0.8293984': 'https://sentx.io/nft-marketplace/hashinals',
+            '0.0.1006183': 'https://sentx.io/nft-marketplace/hedera-monkeys',
+            '0.0.878200': 'https://sentx.io/nft-marketplace/rooster-cartel'
+        };
+        
+        return collectionMapping[tokenId] || `https://sentx.io/nft-marketplace/collection/${tokenId}`;
     }
 
     async getTestListingEmbed(guildId, specificTokenId = null) {

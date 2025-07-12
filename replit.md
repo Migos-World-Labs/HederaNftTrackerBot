@@ -458,6 +458,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced live notification system with proper Kabila URL format (market.kabila.app/en/collections/{tokenNumber}/items)
   - Verified SentX rarity enrichment works for all Kabila collections in live notifications (not just tests)
   - All test commands now properly respect user's collection choice while maintaining server-specific filtering
+- July 12, 2025: Implemented proper SentX collection URL mapping for all live notifications
+  - Created comprehensive getSentXCollectionUrl() method with proper collection name mapping
+  - Fixed Wild Tigers URLs to use https://sentx.io/nft-marketplace/wild-tigers instead of token ID format
+  - Added mapping for all major collections: Wild Tigers, The Ape Anthology, Kekistan, HeliSwap Pool Tokens, Klaytn Invasion, Hashinals, Hedera Monkeys, Rooster Cartel
+  - Live notifications now display proper collection links for both sales and listings across SentX and Kabila marketplaces
+  - System automatically uses correct collection URLs for tracked collections with fallback to token ID format for unknown collections
 
 ## User Preferences
 
