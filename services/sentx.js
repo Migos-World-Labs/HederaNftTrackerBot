@@ -219,10 +219,21 @@ class SentXService {
                         serialNumber: parseInt(serialId)
                     };
                     console.log(`✅ Using fallback data for Wild Tigers #3108: Rank 1634, Rarity 0.4913`);
+                } else if (tokenId === '0.0.6024491') {
+                    // For other Wild Tigers, provide some fallback data
+                    nftData = {
+                        name: `Wild Tigers #${serialId}`,
+                        rarityRank: null,
+                        rarityPct: null,
+                        tokenId: tokenId,
+                        serialNumber: parseInt(serialId || 0)
+                    };
+                    console.log(`✅ Using basic fallback data for ${nftData.name}`);
                 }
             }
             
             const response = { data: { success: !!nftData, nft: nftData } };
+            console.log(`📊 SentX enrichment result: ${nftData ? 'Found data' : 'No data'} for ${tokenId}/${serialId}`);
             
             if (response.data && response.data.success && response.data.nft) {
                 console.log(`✅ SentX NFT data: ${response.data.nft.name}, Rank: ${response.data.nft.rarityRank}, Rarity: ${response.data.nft.rarityPct}`);
