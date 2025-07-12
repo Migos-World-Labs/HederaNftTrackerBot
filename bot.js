@@ -1712,7 +1712,21 @@ class NFTSalesBot {
                 }
             }
         } catch (error) {
-            // Silently handle autocomplete errors to prevent spam
+            // Log autocomplete errors for debugging
+            console.log(`Autocomplete error: ${error.message}`);
+            
+            // Try to respond with error message if not already responded
+            try {
+                if (!interaction.responded) {
+                    await interaction.respond([{
+                        name: 'Error loading options - try again',
+                        value: 'error'
+                    }]);
+                }
+            } catch (respondError) {
+                // Silently handle respond errors
+            }
+            
             if (error.code === 10062 || error.code === 40060) {
                 // Unknown interaction or already acknowledged - ignore
                 return;
