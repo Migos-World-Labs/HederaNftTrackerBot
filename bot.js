@@ -2,7 +2,7 @@
  * Discord bot implementation for tracking NFT sales
  */
 
-const { Client, GatewayIntentBits, Events } = require('discord.js');
+const { Client, GatewayIntentBits, Events, AttachmentBuilder } = require('discord.js');
 const cron = require('node-cron');
 const config = require('./config');
 const sentxService = require('./services/sentx');
@@ -1484,6 +1484,9 @@ class NFTSalesBot {
                 title: '🛟 Get Support & Help',
                 description: 'Need help with the NFT Sales Bot? Join our support server!',
                 color: 0x00d4ff,
+                thumbnail: {
+                    url: 'attachment://migos-logo.png'
+                },
                 fields: [
                     {
                         name: '🎮 Join Migos World Labs Discord',
@@ -1513,8 +1516,10 @@ class NFTSalesBot {
                 timestamp: new Date().toISOString()
             };
 
+            const attachment = new AttachmentBuilder('./migos-logo.png', { name: 'migos-logo.png' });
             await interaction.reply({
                 embeds: [supportEmbed],
+                files: [attachment],
                 ephemeral: false
             });
         } catch (error) {
