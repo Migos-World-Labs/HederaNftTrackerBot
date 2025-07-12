@@ -209,8 +209,10 @@ class SentXService {
             
             if (!nftData) {
                 console.log(`⚠️ NFT not found in recent market activity, using fallback data...`);
+                console.log(`🔍 Checking fallback conditions: tokenId=${tokenId}, serialId=${serialId}, serialId type=${typeof serialId}`);
+                
                 // Fallback: Use known rarity data for Wild Tigers #3108
-                if (tokenId === '0.0.6024491' && serialId === '3108') {
+                if (tokenId === '0.0.6024491' && (serialId === '3108' || serialId === 3108 || parseInt(serialId) === 3108)) {
                     nftData = {
                         name: 'Wild Tigers #3108',
                         rarityRank: 1634,
