@@ -407,6 +407,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Rank display includes emoji indicators and rarity tier names (e.g., "🔥 #5 (Legendary)")
   - All Kabila sales and listings now show comprehensive rank information when available from API
   - Both marketplaces now work seamlessly with enhanced visual rarity indicators and proper error handling
+- July 12, 2025: Fixed Kabila marketplace integration issues per user feedback
+  - Disabled Kabila rank display since their ranking system doesn't match SentX rarity (ranks go into thousands vs 1-based system)
+  - Fixed collection URLs to use proper collection names instead of token IDs for both Kabila and SentX marketplaces
+  - Enhanced image handling for Kabila with improved formatImageUrl method supporting multiple image field sources
+  - Added getCollectionUrl() method with proper collection name mapping for Wild Tigers, The Ape Anthology, etc.
+  - Kabila notifications now show images properly and use correct marketplace collection URLs
+  - Maintained consistent user experience between both marketplaces while respecting their different data structures
 
 ## User Preferences
 

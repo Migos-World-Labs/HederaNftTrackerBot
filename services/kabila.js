@@ -244,8 +244,8 @@ class KabilaService {
                 nftImage: this.formatImageUrl(listing),
                 imageCDN: this.formatImageUrl(listing),
                 
-                // Collection URL for Kabila marketplace
-                collection_url: `https://kabila.app/collection/${listing.tokenId}`,
+                // Collection URL for Kabila marketplace (use collection name, not token ID)
+                collection_url: this.getCollectionUrl(listing.tokenId),
                 
                 // Additional Kabila-specific data
                 rank: listing.rank || null,
@@ -283,8 +283,8 @@ class KabilaService {
                 nftImage: this.formatImageUrl(sale),
                 imageCDN: this.formatImageUrl(sale),
                 
-                // Collection URL for Kabila marketplace
-                collection_url: `https://kabila.app/collection/${sale.tokenId}`,
+                // Collection URL for Kabila marketplace (use collection name, not token ID)
+                collection_url: this.getCollectionUrl(sale.tokenId),
                 
                 // Additional Kabila-specific data
                 rank: sale.rank || null,
@@ -303,19 +303,30 @@ class KabilaService {
     formatImageUrl(nft) {
         if (!nft) return null;
         
-        // Handle IPFS CIDs
-        if (nft.imageCid) {
-            if (nft.imageCid.startsWith('ipfs://')) {
+        // Priority order for image sources
+        const imageFields = ['imageCid', 'image', 'imageUrl', 'nftImage', 'imageCDN'];
+        
+        for (const field of imageFields) {
+            const imageValue = nft[field];
+            if (!imageValue) continue;
+            
+            // Handle different image URL formats
+            if (imageValue.startsWith('http://') || imageValue.startsWith('https://')) {
+                return imageValue; // Already a valid HTTP URL
+            } else if (imageValue.startsWith('ipfs://')) {
                 // Convert IPFS URL to HTTP gateway
-                const cid = nft.imageCid.replace('ipfs://', '');
+                const cid = imageValue.replace('ipfs://', '');
                 return `https://ipfs.io/ipfs/${cid}`;
-            } else if (nft.imageCid.startsWith('hcs://')) {
+            } else if (imageValue.startsWith('hcs://')) {
                 // Handle HCS (Hedera Consensus Service) URLs
-                const topicId = nft.imageCid.replace('hcs://1/', '');
+                const topicId = imageValue.replace('hcs://1/', '');
                 return `https://hashinals.sentx.io/${topicId}?optimizer=image&width=640`;
-            } else {
-                // Assume it's a bare CID
-                return `https://ipfs.io/ipfs/${nft.imageCid}`;
+            } else if (imageValue.startsWith('data:')) {
+                // Handle data URIs
+                return imageValue;
+            } else if (imageValue.length > 20 && !imageValue.includes(' ')) {
+                // Assume it's a bare CID if it's long enough and has no spaces
+                return `https://ipfs.io/ipfs/${imageValue}`;
             }
         }
         
@@ -355,6 +366,26 @@ class KabilaService {
         
         // Otherwise return as-is (might be account ID format)
         return address;
+    }
+
+    /**
+     * Get proper collection URL based on token ID
+     * @param {string} tokenId - Token ID of the collection
+     * @returns {string} Proper collection URL
+     */
+    getCollectionUrl(tokenId) {
+        // Map token IDs to their proper collection URLs using collection names
+        const collectionMapping = {
+            '0.0.6024491': 'https://kabila.app/collection/wild-tigers',
+            '0.0.8308459': 'https://kabila.app/collection/the-ape-anthology',
+            '0.0.8233324': 'https://kabila.app/collection/kekistan',
+            '0.0.8233316': 'https://kabila.app/collection/heliswap-pool-tokens',
+            '0.0.8233302': 'https://kabila.app/collection/klaytn-invasion',
+            '0.0.5552189': 'https://kabila.app/collection/hashinals',
+            '0.0.2173899': 'https://kabila.app/collection/rooster-cartel-gen0'
+        };
+        
+        return collectionMapping[tokenId] || `https://kabila.app/collection/${tokenId}`;
     }
 
     /**
