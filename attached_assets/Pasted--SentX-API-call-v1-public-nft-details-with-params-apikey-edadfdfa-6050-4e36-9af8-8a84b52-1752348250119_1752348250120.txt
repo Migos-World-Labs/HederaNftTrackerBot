@@ -1,0 +1,44 @@
+🔍 SentX API call: /v1/public/nft/details with params: {
+  apikey: 'edadfdfa-6050-4e36-9af8-8a84b52fcd6c',
+  token: '0.0.6024491',
+  serial: 2566
+}
+⚠️ NFT not found in recent market activity, using fallback data...
+🔍 Checking fallback conditions: tokenId=0.0.6024491, serialId=2566, serialId type=number
+✅ Using basic fallback data for Wild Tigers #2566
+📊 SentX enrichment result: Found data for 0.0.6024491/2566
+✅ SentX NFT data: Wild Tigers #2566, Rank: null, Rarity: null
+❌ No SentX rarity data found for Wild Tigers #2566 (0.0.6024491/2566)
+📋 NEW LISTING: Wild Tigers #2566 - 250 HBAR
+🔍 Checking 10 server(s) for collection tracking: 0.0.6024491
+  ✅ Migos World Labs: collection tracked, posting listing...
+Fetching seller holdings for listing: 0.0.8537160
+Fetching NFT holdings for 0.0.8537160 in token 0.0.6024491
+    📝 Posted to #【📝】𝐍𝐞𝐰-𝐋𝐢𝐬𝐭𝐢𝐧𝐠𝐬 (listings channel)
+  ✅ Wild Tigers: collection tracked, posting listing...
+Fetching seller holdings for listing: 0.0.8537160
+    📝 Posted to #new-listings (listings channel)
+  ⏭️ The Returnals: collection not tracked
+  ⏭️ KOKO LABS: collection not tracked
+  ⏭️ Source Code: collection not tracked
+  ⏭️ FIL: collection not tracked
+  ⏭️ Hoker HBAR: collection not tracked
+  ⏭️ House of Ingwe: collection not tracked
+  ⏭️ The GRAFFs Club: collection not tracked
+  ✅ Wise Testing: collection tracked, posting listing...
+Fetching seller holdings for listing: 0.0.8537160
+    📝 Posted to #new-listings (listings channel)
+📝 Posted listing notification to 3/3 eligible server(s): Wild Tigers #2566 listed for 250 HBAR
+🔄 Enriching 1 Kabila listings with SentX rarity data...
+🔄 Enriching Wild Tigers #2566 (0.0.6024491/2566) with SentX rarity...
+🔍 SentX API call: /v1/public/nft/details with params: {
+  apikey: 'edadfdfa-6050-4e36-9af8-8a84b52fcd6c',
+  token: '0.0.6024491',
+  serial: 2566
+}
+⚠️ NFT not found in recent market activity, using fallback data...
+🔍 Checking fallback conditions: tokenId=0.0.6024491, serialId=2566, serialId type=number
+✅ Using basic fallback data for Wild Tigers #2566
+📊 SentX enrichment result: Found data for 0.0.6024491/2566
+✅ SentX NFT data: Wild Tigers #2566, Rank: null, Rarity: null
+❌ No SentX rarity data found for Wild Tigers #2566 (0.0.6024491/2566)
