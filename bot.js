@@ -10,6 +10,7 @@ const sentxService = require('./services/sentx');
 const currencyService = require('./services/currency');
 const embedUtils = require('./utils/embed');
 const DatabaseStorage = require('./database-storage');
+const ImageEffectsService = require('./services/image-effects');
 
 class NFTSalesBot {
     constructor(sentxService, embedUtils, currencyService, storage) {
@@ -18,6 +19,7 @@ class NFTSalesBot {
         this.embedUtils = embedUtils; 
         this.currencyService = currencyService;
         this.storage = storage || new DatabaseStorage();
+        this.imageEffectsService = new ImageEffectsService();
         
         this.client = new Client({
             intents: [
@@ -439,9 +441,16 @@ class NFTSalesBot {
                             }
                         }
                         
-                        // Create Discord embed for the sale
-                        const embed = await embedUtils.createSaleEmbed(sale, hbarRate);
-                        const message = await channel.send({ embeds: [embed] });
+                        // Create Discord embed for the sale with image effects based on server setting
+                        const embed = await embedUtils.createSaleEmbed(sale, hbarRate, serverConfig.guildId);
+                        
+                        // Handle attachment if present
+                        const messageOptions = { embeds: [embed] };
+                        if (embed.files && embed.files.length > 0) {
+                            messageOptions.files = embed.files;
+                        }
+                        
+                        const message = await channel.send(messageOptions);
                         
                         // Add fire emoji reaction
                         try {
@@ -521,9 +530,16 @@ class NFTSalesBot {
                             }
                         }
                         
-                        // Create Discord embed for the listing
-                        const embed = await embedUtils.createListingEmbed(listing, hbarRate);
-                        const message = await channel.send({ embeds: [embed] });
+                        // Create Discord embed for the listing with image effects based on server setting
+                        const embed = await embedUtils.createListingEmbed(listing, hbarRate, serverConfig.guildId);
+                        
+                        // Handle attachment if present
+                        const messageOptions = { embeds: [embed] };
+                        if (embed.files && embed.files.length > 0) {
+                            messageOptions.files = embed.files;
+                        }
+                        
+                        const message = await channel.send(messageOptions);
                         
                         // Add appropriate emoji reaction based on listing type
                         try {
@@ -818,6 +834,18 @@ class NFTSalesBot {
                         autocomplete: true
                     }
                 ]
+            },
+            {
+                name: 'image-effects',
+                description: 'Toggle image effects on/off for this server',
+                options: [
+                    {
+                        name: 'enabled',
+                        type: 5, // BOOLEAN
+                        description: 'Enable or disable image effects',
+                        required: true
+                    }
+                ]
             }
         ];
 
@@ -888,6 +916,9 @@ class NFTSalesBot {
                     break;
                 case 'set-listings-channel':
                     await this.handleSetListingsChannelCommand(interaction, options);
+                    break;
+                case 'image-effects':
+                    await this.handleImageEffectsCommand(interaction, options);
                     break;
                 default:
                     await interaction.reply('Unknown command');
@@ -1377,6 +1408,51 @@ class NFTSalesBot {
         }
     }
 
+    async handleImageEffectsCommand(interaction, options) {
+        try {
+            // Check if interaction has expired
+            if (!interaction.isRepliable()) {
+                console.log('Interaction expired before handling image effects command');
+                return;
+            }
+
+            const enabled = options.getBoolean('enabled');
+            const guildId = interaction.guildId;
+            
+            // Store the setting in the bot state
+            const settingKey = `image_effects_${guildId}`;
+            await this.storage.setBotState(settingKey, enabled);
+            
+            const statusText = enabled ? 'enabled' : 'disabled';
+            const emoji = enabled ? '🎨' : '🚫';
+            
+            // Double-check interaction is still valid before replying
+            if (interaction.isRepliable()) {
+                await interaction.reply({
+                    content: `${emoji} **Image effects ${statusText}** for this server!\n\n${enabled ? 
+                        '✨ NFT images will now include:\n• Special borders and frames\n• Rarity-based effects\n• Price milestone animations\n• Collection-specific themes\n• Whale tier indicators' : 
+                        '📸 NFT images will now display as original images without special effects.'}`,
+                    ephemeral: false
+                });
+            }
+            
+            console.log(`🎨 [IMAGE FX] Image effects ${statusText} for server ${interaction.guild.name} (${guildId})`);
+            
+        } catch (error) {
+            console.error('Error handling image effects command:', error);
+            try {
+                if (interaction.isRepliable()) {
+                    await interaction.reply({
+                        content: '❌ An error occurred while updating image effects settings. Please try again.',
+                        ephemeral: true
+                    });
+                }
+            } catch (replyError) {
+                console.error('Error responding to image effects interaction:', replyError);
+            }
+        }
+    }
+
     async initializeDatabase() {
         try {
             console.log('Initializing database storage...');
@@ -1385,6 +1461,20 @@ class NFTSalesBot {
             // Clean up old processed sales on startup (older than 3 days)
             console.log('Cleaning up old processed sales...');
             await this.storage.cleanupOldProcessedSales();
+            
+            // Clean up old temporary image files
+            console.log('🎨 [IMAGE FX] Cleaning up old temporary files...');
+            await this.imageEffectsService.cleanupTempFiles();
+            
+            // Schedule periodic cleanup every hour
+            cron.schedule('0 * * * *', async () => {
+                try {
+                    console.log('🧹 [SCHEDULED] Running hourly cleanup...');
+                    await this.imageEffectsService.cleanupTempFiles();
+                } catch (error) {
+                    console.error('Error during scheduled cleanup:', error);
+                }
+            });
             
             console.log('Database storage ready');
         } catch (error) {

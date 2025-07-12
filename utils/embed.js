@@ -7,18 +7,21 @@ const currencyService = require('../services/currency');
 const sentxService = require('../services/sentx');
 const hederaService = require('../services/hedera');
 const HashinalService = require('../services/hashinal');
+const ImageEffectsService = require('../services/image-effects');
 
 class EmbedUtils {
     constructor() {
         this.hashinalService = new HashinalService();
+        this.imageEffectsService = new ImageEffectsService();
     }
     /**
      * Create a Discord embed for an NFT sale
      * @param {Object} sale - Sale data object
      * @param {number} hbarRate - Current HBAR to USD rate
+     * @param {string} guildId - Discord server ID (for checking image effects setting)
      * @returns {EmbedBuilder} Discord embed object
      */
-    async createSaleEmbed(sale, hbarRate) {
+    async createSaleEmbed(sale, hbarRate, guildId = null) {
         const usdValue = sale.price_hbar * hbarRate;
         const marketplace = sale.marketplace || 'SentX';
         
@@ -193,9 +196,71 @@ class EmbedUtils {
         if (imageUrl) {
             const convertedImageUrl = this.convertIpfsToHttp(imageUrl);
             if (convertedImageUrl) {
-                embed.setImage(convertedImageUrl);
+                // Check if image effects are enabled for this server
+                let imageEffectsEnabled = true; // Default to enabled
+                if (guildId) {
+                    try {
+                        const DatabaseStorage = require('../database-storage');
+                        const storage = new DatabaseStorage();
+                        await storage.init();
+                        const settingKey = `image_effects_${guildId}`;
+                        const setting = await storage.getBotState(settingKey, true); // Default to true
+                        imageEffectsEnabled = setting;
+                    } catch (error) {
+                        console.log('🎨 [IMAGE FX] Could not check image effects setting, defaulting to enabled');
+                        imageEffectsEnabled = true;
+                    }
+                }
+                
+                if (imageEffectsEnabled) {
+                    // Generate enhanced image with special effects
+                    console.log(`🎨 [IMAGE FX] Generating enhanced image for ${sale.nft_name}`);
+                    try {
+                        const enhancedImagePath = await this.imageEffectsService.generateEnhancedImage(convertedImageUrl, sale);
+                        
+                        if (enhancedImagePath) {
+                        // Use enhanced image as Discord attachment
+                        const fs = require('fs').promises;
+                        const path = require('path');
+                        const { AttachmentBuilder } = require('discord.js');
+                        
+                        const imageBuffer = await fs.readFile(enhancedImagePath);
+                        const filename = `enhanced_${sale.token_id}_${sale.serial_number || 'unknown'}.png`;
+                        const attachment = new AttachmentBuilder(imageBuffer, { name: filename });
+                        
+                        embed.setImage(`attachment://${filename}`);
+                        embed.files = [attachment];
+                        
+                        console.log(`🎨 [IMAGE FX] Successfully attached enhanced image: ${filename}`);
+                        
+                        // Clean up after a delay to allow Discord to process
+                        setTimeout(async () => {
+                            try {
+                                await fs.unlink(enhancedImagePath);
+                                console.log(`🎨 [IMAGE FX] Cleaned up temporary file: ${enhancedImagePath}`);
+                            } catch (error) {
+                                console.log(`🎨 [IMAGE FX] Cleanup skipped: ${error.message}`);
+                            }
+                        }, 30000); // 30 seconds delay
+                        
+                        } else {
+                            // Fallback to original image
+                            embed.setImage(convertedImageUrl);
+                            console.log(`🎨 [IMAGE FX] Using original image as fallback: ${convertedImageUrl}`);
+                        }
+                    } catch (error) {
+                        console.error(`🎨 [IMAGE FX] Error generating enhanced image: ${error.message}`);
+                        // Fallback to original image
+                        embed.setImage(convertedImageUrl);
+                    }
+                } else {
+                    // Image effects disabled - use original image
+                    embed.setImage(convertedImageUrl);
+                    console.log(`🎨 [IMAGE FX] Effects disabled for server, using original image: ${convertedImageUrl}`);
+                }
+                
                 if (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) {
-                    console.log(`ROOSTER CARTEL - Successfully set image: ${convertedImageUrl}`);
+                    console.log(`ROOSTER CARTEL - Successfully processed image with effects`);
                 }
             } else {
                 console.log(`Failed to convert image URL: ${imageUrl}`);
@@ -341,7 +406,7 @@ class EmbedUtils {
      * @param {number} hbarRate - Current HBAR to USD rate
      * @returns {EmbedBuilder} Discord embed object
      */
-    async createListingEmbed(listing, hbarRate) {
+    async createListingEmbed(listing, hbarRate, guildId = null) {
         const usdValue = listing.price_hbar * hbarRate;
         const marketplace = listing.marketplace || 'SentX';
         
@@ -462,7 +527,79 @@ class EmbedUtils {
         if (imageUrl) {
             const convertedImageUrl = this.convertIpfsToHttp(imageUrl);
             if (convertedImageUrl) {
-                embed.setImage(convertedImageUrl);
+                // Check if image effects are enabled for this server
+                let imageEffectsEnabled = true; // Default to enabled
+                if (guildId) {
+                    try {
+                        const DatabaseStorage = require('../database-storage');
+                        const storage = new DatabaseStorage();
+                        await storage.init();
+                        const settingKey = `image_effects_${guildId}`;
+                        const setting = await storage.getBotState(settingKey, true); // Default to true
+                        imageEffectsEnabled = setting;
+                    } catch (error) {
+                        console.log('🎨 [IMAGE FX] Could not check image effects setting for listing, defaulting to enabled');
+                        imageEffectsEnabled = true;
+                    }
+                }
+                
+                if (imageEffectsEnabled) {
+                    // Generate enhanced image with special effects for listings
+                    console.log(`🎨 [IMAGE FX] Generating enhanced listing image for ${listing.nft_name}`);
+                    try {
+                        // Create a modified listing object with sales-like structure for effects
+                        const listingForEffects = {
+                            ...listing,
+                            price_hbar: listing.price_hbar,
+                            nft_name: listing.nft_name,
+                            collection_name: listing.collection_name,
+                            rarity: listing.rarity,
+                            rank: listing.rank,
+                            token_id: listing.token_id,
+                            serial_number: listing.serial_number
+                        };
+                        
+                        const enhancedImagePath = await this.imageEffectsService.generateEnhancedImage(convertedImageUrl, listingForEffects);
+                        
+                        if (enhancedImagePath) {
+                        // Use enhanced image as Discord attachment
+                        const fs = require('fs').promises;
+                        const { AttachmentBuilder } = require('discord.js');
+                        
+                        const imageBuffer = await fs.readFile(enhancedImagePath);
+                        const filename = `enhanced_listing_${listing.token_id}_${listing.serial_number || 'unknown'}.png`;
+                        const attachment = new AttachmentBuilder(imageBuffer, { name: filename });
+                        
+                        embed.setImage(`attachment://${filename}`);
+                        embed.files = [attachment];
+                        
+                        console.log(`🎨 [IMAGE FX] Successfully attached enhanced listing image: ${filename}`);
+                        
+                        // Clean up after a delay
+                        setTimeout(async () => {
+                            try {
+                                await fs.unlink(enhancedImagePath);
+                                console.log(`🎨 [IMAGE FX] Cleaned up listing file: ${enhancedImagePath}`);
+                            } catch (error) {
+                                console.log(`🎨 [IMAGE FX] Listing cleanup skipped: ${error.message}`);
+                            }
+                        }, 30000);
+                        
+                        } else {
+                            // Fallback to original image
+                            embed.setImage(convertedImageUrl);
+                            console.log(`🎨 [IMAGE FX] Using original listing image as fallback: ${convertedImageUrl}`);
+                        }
+                    } catch (error) {
+                        console.error(`🎨 [IMAGE FX] Error generating enhanced listing image: ${error.message}`);
+                        // Fallback to original image
+                        embed.setImage(convertedImageUrl);
+                    }
+                } else {
+                    // Image effects disabled - use original image
+                    embed.setImage(convertedImageUrl);
+                    console.log(`🎨 [IMAGE FX] Effects disabled for server, using original listing image: ${convertedImageUrl}`);
+                }
             } else {
                 console.log(`Failed to convert listing image URL: ${imageUrl}`);
             }

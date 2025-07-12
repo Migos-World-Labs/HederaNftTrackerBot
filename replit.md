@@ -355,6 +355,15 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Fixed autocomplete "loading options failed" errors with enhanced error handling and debugging
   - Improved collection selection autocomplete with helpful messages for servers without tracked collections
   - All test commands now work properly without Discord API validation failures
+- July 12, 2025: Implemented comprehensive visual image effects system for NFT notifications
+  - Added ImageEffectsService with Canvas-based image processing for enhanced NFT displays
+  - Created multiple effect types: legendary (golden borders), rare (silver borders), whale effects, milestone celebrations, Hashinal themes, and standard enhanced frames
+  - Implemented /image-effects command for servers to toggle visual enhancements on/off
+  - Added automatic system dependencies installation (Cairo, Pango, JPEG, etc.) for Canvas library support
+  - Integrated server-specific image effects settings stored in database with per-server toggle functionality
+  - Enhanced both sales and listings notifications with optional visual effects based on price, rarity, and collection data
+  - Added automatic cleanup system for temporary image files with hourly scheduled cleanup tasks
+  - Effects include special borders, rarity-based styling, price milestone animations, collection-specific themes, and whale tier indicators
 
 ## User Preferences
 

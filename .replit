@@ -2,6 +2,7 @@ modules = ["nodejs-20", "postgresql-16", "python-3.11"]
 
 [nix]
 channel = "stable-24_05"
+packages = ["util-linux", "cairo", "pango", "libjpeg", "giflib", "librsvg"]
 
 [workflows]
 runButton = "Project"
