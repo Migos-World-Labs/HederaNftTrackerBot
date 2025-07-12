@@ -74,35 +74,6 @@ class EmbedUtils {
                        (sale.metadata && sale.metadata.image) ||
                        (sale.media && sale.media.image) ||
                        (sale.data && sale.data.image);
-
-        // Special handling for video collections like 0.0.2124637 (Rooster's Salsa Picante)
-        if (sale.token_id === '0.0.2124637') {
-            console.log(`🎬 [VIDEO COLLECTION] Processing token 0.0.2124637: ${sale.nft_name}`);
-            console.log(`  Current mediaUrl: ${mediaUrl}`);
-            console.log(`  All sale fields:`, Object.keys(sale));
-            
-            // Check if image URL might actually be a video by examining the actual content
-            // Some collections store video URLs in image fields
-            if (mediaUrl) {
-                // If the image URL contains video indicators, treat as video
-                if (mediaUrl.includes('.mp4') || mediaUrl.includes('video') || 
-                    mediaUrl.includes('play_') || mediaUrl.includes('vz-') ||
-                    mediaUrl.includes('b-cdn.net')) {
-                    console.log(`  🎬 Video detected in image field: ${mediaUrl}`);
-                } else {
-                    // For this collection, we might need to construct video URL from image URL
-                    // Check if there's a pattern we can use to derive video URL
-                    console.log(`  🖼️ Static image detected, checking for video alternative...`);
-                    
-                    // Some collections have both image and video versions with similar URLs
-                    const possibleVideoUrl = mediaUrl.replace(/\.(png|jpg|jpeg|gif|webp)(\?.*)?$/i, '.mp4$2');
-                    if (possibleVideoUrl !== mediaUrl) {
-                        console.log(`  🎬 Trying video URL variant: ${possibleVideoUrl}`);
-                        // We'll keep the original URL for now but log the possibility
-                    }
-                }
-            }
-        }
         
         // Detect media type for proper display
         const mediaType = this.detectMediaType(mediaUrl);
@@ -111,7 +82,6 @@ class EmbedUtils {
         // Enhanced Hashinal detection with broader patterns
         const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228', '0.0.8293984'];
         const hcsImageTokens = ['0.0.8308459']; // The Ape Anthology - uses HCS for images
-        const videoCollectionTokens = ['0.0.2124637']; // Collections known to have video content
         const isHashinal = (
             (sale.collection_name && (
                 sale.collection_name.toLowerCase().includes('hashinal') ||
@@ -793,15 +763,6 @@ class EmbedUtils {
             urlLower.includes('play_720p') || urlLower.includes('play_1080p') ||
             urlLower.includes('vz-') || urlLower.includes('b-cdn.net')) {
             return { type: 'video', isVideo: true, isAnimated: false, isStatic: false };
-        }
-        
-        // Check for video collection patterns - some collections store videos as "images"
-        // For known video collections, we should check if image URLs might be videos
-        if (url && (url.includes('sentx.b-cdn.net') || url.includes('ipfs://')) && 
-            url.match(/\.(png|jpg|jpeg)(\?.*)?$/i)) {
-            // Could potentially be a video disguised as an image
-            // We'll still treat as image but log for debugging
-            return { type: 'image', isVideo: false, isAnimated: false, isStatic: true, potentialVideo: true };
         }
         
         // Animated GIF
