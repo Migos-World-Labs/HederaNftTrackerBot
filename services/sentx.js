@@ -173,6 +173,14 @@ class SentXService {
             
             console.log(`🔍 Comprehensive search for ${tokenId}/${serialId} across SentX marketplace...`);
             
+            // Strategy 0: Try direct NFT details API first (most reliable)
+            console.log(`🔍 Strategy 0: Trying direct NFT details API...`);
+            const directResult = await this.getNFTDetailsFromCollection(tokenId, serialId);
+            if (directResult && directResult.success && directResult.nft) {
+                console.log(`✅ Found NFT via direct API: Rank ${directResult.nft.rarityRank}, Rarity ${directResult.nft.rarityPct}`);
+                return directResult;
+            }
+            
             // Strategy 1: Search recent market activity (multiple pages)
             let allActivities = [];
             console.log(`🔍 Strategy 1: Searching recent market activity...`);
@@ -981,6 +989,54 @@ class SentXService {
         if (change > 0.1) return 'bullish';
         if (change < -0.1) return 'bearish';
         return 'neutral';
+    }
+
+    /**
+     * Get NFT details directly from collection endpoint
+     * @param {string} tokenId - Token ID of the collection
+     * @param {string} serialId - Serial ID of the NFT
+     * @returns {Object} NFT details with rarity data
+     */
+    async getNFTDetailsFromCollection(tokenId, serialId) {
+        try {
+            const apiKey = process.env.SENTX_API_KEY;
+            
+            const params = {
+                apikey: apiKey,
+                token: tokenId,
+                serial: serialId
+            };
+            
+            console.log(`🔍 Fetching NFT details directly from SentX collection API for ${tokenId}/${serialId}...`);
+            
+            const response = await this.axiosInstance.get('/v1/public/nft/details', {
+                params: params
+            });
+            
+            if (response.data && response.data.success && response.data.nft) {
+                const nft = response.data.nft;
+                console.log(`✅ Found direct NFT details: Rank ${nft.rarityRank}, Rarity ${nft.rarityPct}`);
+                return {
+                    success: true,
+                    nft: {
+                        name: nft.name,
+                        rarityRank: nft.rarityRank,
+                        rarityPct: nft.rarityPct,
+                        tokenId: nft.tokenId,
+                        serialNumber: nft.serialNumber,
+                        image: nft.image,
+                        metadata: nft.metadata
+                    }
+                };
+            }
+            
+            console.log(`⚠️ Direct API call unsuccessful for ${tokenId}/${serialId}`);
+            return { success: false, nft: null };
+            
+        } catch (error) {
+            console.log(`❌ Error fetching direct NFT details: ${error.message}`);
+            return { success: false, nft: null };
+        }
     }
 
     /**
