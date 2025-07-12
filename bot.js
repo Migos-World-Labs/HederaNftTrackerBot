@@ -1891,7 +1891,7 @@ class NFTSalesBot {
             }
             
             // Get the most recent sale
-            const testSale = recentSales[0];
+            let testSale = recentSales[0];
             console.log(`🔍 Using Kabila sale data:`, {
                 nft_name: testSale.nft_name,
                 price_hbar: testSale.price_hbar,
@@ -1899,6 +1899,23 @@ class NFTSalesBot {
                 token_id: testSale.token_id,
                 collection_name: testSale.collection_name
             });
+            
+            // Enrich Kabila sale with SentX rarity data
+            try {
+                console.log(`🔄 Enriching Kabila sale with SentX rarity data...`);
+                const enrichedSales = await this.kabilaService.enrichWithSentXRarity([testSale]);
+                if (enrichedSales && enrichedSales.length > 0) {
+                    testSale = enrichedSales[0];
+                    if (testSale.rarity || testSale.sentx_rank) {
+                        console.log(`✅ Successfully enriched sale: Rank ${testSale.sentx_rank || testSale.rank}, Rarity ${testSale.rarity}`);
+                    } else {
+                        console.log(`⚠️ No rarity data found for this sale`);
+                    }
+                }
+            } catch (error) {
+                console.log(`❌ Failed to enrich Kabila sale with SentX rarity: ${error.message}`);
+                // Continue with original data if enrichment fails
+            }
             
             // Get HBAR rate
             const hbarRate = await this.currencyService.getHbarToUsdRate();
@@ -1934,7 +1951,7 @@ class NFTSalesBot {
             }
             
             // Get the most recent listing
-            const testListing = recentListings[0];
+            let testListing = recentListings[0];
             console.log(`🔍 Using Kabila listing data:`, {
                 nft_name: testListing.nft_name,
                 price_hbar: testListing.price_hbar,
@@ -1942,6 +1959,23 @@ class NFTSalesBot {
                 token_id: testListing.token_id,
                 collection_name: testListing.collection_name
             });
+            
+            // Enrich Kabila listing with SentX rarity data
+            try {
+                console.log(`🔄 Enriching Kabila listing with SentX rarity data...`);
+                const enrichedListings = await this.kabilaService.enrichWithSentXRarity([testListing]);
+                if (enrichedListings && enrichedListings.length > 0) {
+                    testListing = enrichedListings[0];
+                    if (testListing.rarity || testListing.sentx_rank) {
+                        console.log(`✅ Successfully enriched listing: Rank ${testListing.sentx_rank || testListing.rank}, Rarity ${testListing.rarity}`);
+                    } else {
+                        console.log(`⚠️ No rarity data found for this listing`);
+                    }
+                }
+            } catch (error) {
+                console.log(`❌ Failed to enrich Kabila listing with SentX rarity: ${error.message}`);
+                // Continue with original data if enrichment fails
+            }
             
             // Get HBAR rate
             const hbarRate = await this.currencyService.getHbarToUsdRate();
