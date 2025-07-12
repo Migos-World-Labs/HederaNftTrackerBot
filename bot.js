@@ -1648,46 +1648,52 @@ class NFTSalesBot {
 
     async handleAutocomplete(interaction) {
         try {
-            // Check if interaction is still valid (not expired)
-            if (!interaction || !interaction.responded && !interaction.deferred) {
-                const focusedOption = interaction.options.getFocused(true);
+            // Check if interaction has already been responded to
+            if (interaction.responded) {
+                return;
+            }
+            
+            const focusedOption = interaction.options.getFocused(true);
+            
+            if (focusedOption.name === 'collection') {
+                // Get tracked collections for this server quickly
+                const guildId = interaction.guildId;
+                const trackedCollections = await this.storage.getCollections(guildId);
                 
-                if (focusedOption.name === 'collection') {
-                    // Get tracked collections for this server quickly
-                    const guildId = interaction.guildId;
-                    const trackedCollections = await this.storage.getCollections(guildId);
-                    
-                    if (!trackedCollections || trackedCollections.length === 0) {
+                if (!trackedCollections || trackedCollections.length === 0) {
+                    if (!interaction.responded) {
                         await interaction.respond([{
                             name: 'No collections tracked - Use /add to track collections first',
                             value: 'none'
                         }]);
-                        return;
+                    }
+                    return;
+                }
+                
+                // Quick filter without logging to prevent delays
+                const searchValue = (focusedOption.value || '').toLowerCase();
+                const filtered = trackedCollections.filter(collection => {
+                    const tokenId = collection.tokenId || collection.token_id;
+                    const name = collection.name || '';
+                    
+                    if (!tokenId || tokenId === 'undefined' || tokenId === 'null') {
+                        return false;
                     }
                     
-                    // Quick filter without logging to prevent delays
-                    const searchValue = (focusedOption.value || '').toLowerCase();
-                    const filtered = trackedCollections.filter(collection => {
-                        const tokenId = collection.tokenId || collection.token_id;
-                        const name = collection.name || '';
-                        
-                        if (!tokenId || tokenId === 'undefined' || tokenId === 'null') {
-                            return false;
-                        }
-                        
-                        return name.toLowerCase().includes(searchValue) || 
-                               tokenId.includes(searchValue);
-                    }).slice(0, 25); // Discord limit is 25 choices
-                    
-                    const choices = filtered.map(collection => {
-                        const tokenId = collection.tokenId || collection.token_id;
-                        const name = collection.name || 'Unknown Collection';
-                        return {
-                            name: `${name} (${tokenId})`,
-                            value: tokenId
-                        };
-                    });
-                    
+                    return name.toLowerCase().includes(searchValue) || 
+                           tokenId.includes(searchValue);
+                }).slice(0, 25); // Discord limit is 25 choices
+                
+                const choices = filtered.map(collection => {
+                    const tokenId = collection.tokenId || collection.token_id;
+                    const name = collection.name || 'Unknown Collection';
+                    return {
+                        name: `${name} (${tokenId})`,
+                        value: tokenId
+                    };
+                });
+                
+                if (!interaction.responded) {
                     if (choices.length === 0) {
                         await interaction.respond([{
                             name: 'No valid collections found - Check /list to see tracked collections',
@@ -1696,7 +1702,9 @@ class NFTSalesBot {
                     } else {
                         await interaction.respond(choices);
                     }
-                } else {
+                }
+            } else {
+                if (!interaction.responded) {
                     await interaction.respond([{
                         name: 'Unknown option',
                         value: 'unknown'
@@ -1705,11 +1713,14 @@ class NFTSalesBot {
             }
         } catch (error) {
             // Silently handle autocomplete errors to prevent spam
-            if (error.code === 10062) {
-                // Unknown interaction - already expired, ignore
+            if (error.code === 10062 || error.code === 40060) {
+                // Unknown interaction or already acknowledged - ignore
                 return;
             }
-            console.error('Autocomplete error:', error.message);
+            // Only log if it's not a common interaction error
+            if (!error.message.includes('already been acknowledged')) {
+                console.error('Autocomplete error:', error.message);
+            }
         }
     }
 
