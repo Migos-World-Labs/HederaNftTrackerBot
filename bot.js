@@ -123,6 +123,23 @@ class NFTSalesBot {
 
         // Handle slash commands and autocomplete
         this.client.on(Events.InteractionCreate, async (interaction) => {
+            // Verify bot is still in the server before processing commands
+            if (!this.client.guilds.cache.has(interaction.guildId)) {
+                console.log(`⚠️ Ignoring command from server bot is not in: ${interaction.guildId}`);
+                
+                if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+                    try {
+                        await interaction.reply({
+                            content: 'This bot is no longer available in this server.',
+                            ephemeral: true
+                        });
+                    } catch (error) {
+                        console.log('Could not respond to interaction from departed server');
+                    }
+                }
+                return;
+            }
+            
             if (interaction.isChatInputCommand()) {
                 await this.handleSlashCommand(interaction);
             } else if (interaction.isAutocomplete()) {
