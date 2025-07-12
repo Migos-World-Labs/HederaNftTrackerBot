@@ -1476,7 +1476,7 @@ class NFTSalesBot {
             console.log(`Looking for listings from ${targetTokenIds.length} tracked collections:`, targetTokenIds);
             
             // Get all listings from SentX (without time filter for testing)
-            const allListings = await sentxService.getRecentListings(100, true);
+            const allListings = await this.sentxService.getRecentListings(100, true);
             
             if (!allListings || allListings.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1615,7 +1615,7 @@ class NFTSalesBot {
             console.log('Testing most recent sale from marketplace...');
             
             // Get recent sales from SentX
-            const recentSales = await sentxService.getRecentSales(50);
+            const recentSales = await this.sentxService.getRecentSales(50);
             
             if (!recentSales || recentSales.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1657,7 +1657,7 @@ class NFTSalesBot {
             console.log('Testing most recent listing from marketplace...');
             
             // Get recent listings from SentX
-            const recentListings = await sentxService.getRecentListings(50, true);
+            const recentListings = await this.sentxService.getRecentListings(50, true);
             
             if (!recentListings || recentListings.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1768,7 +1768,7 @@ class NFTSalesBot {
             console.log('Creating test SentX sale embed...');
             
             // Get recent sales from SentX only
-            const recentSales = await sentxService.getRecentSales(50);
+            const recentSales = await this.sentxService.getRecentSales(50);
             
             if (!recentSales || recentSales.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1802,7 +1802,7 @@ class NFTSalesBot {
             console.log('Creating test SentX listing embed...');
             
             // Get recent listings from SentX only
-            const recentListings = await sentxService.getRecentListings(50, true);
+            const recentListings = await this.sentxService.getRecentListings(50, true);
             
             if (!recentListings || recentListings.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1836,7 +1836,7 @@ class NFTSalesBot {
             console.log('Creating test Kabila sale embed...');
             
             // Get recent sales from Kabila only
-            const recentSales = await kabilaService.getRecentSales(50);
+            const recentSales = await this.kabilaService.getRecentSales(50);
             
             if (!recentSales || recentSales.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1870,7 +1870,7 @@ class NFTSalesBot {
             console.log('Creating test Kabila listing embed...');
             
             // Get recent listings from Kabila only
-            const recentListings = await kabilaService.getRecentListings(50, true);
+            const recentListings = await this.kabilaService.getRecentListings(50, true);
             
             if (!recentListings || recentListings.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1904,7 +1904,7 @@ class NFTSalesBot {
             console.log('Testing by posting last Wild Tigers sale...');
             
             // Get recent sales from SentX
-            const recentSales = await sentxService.getRecentSales(100); // Get more sales to find Wild Tigers
+            const recentSales = await this.sentxService.getRecentSales(100); // Get more sales to find Wild Tigers
             
             if (!recentSales || recentSales.length === 0) {
                 console.log('No recent sales found for testing');

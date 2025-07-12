@@ -398,6 +398,7 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Test command now supports 6 total options: 2 for tracked collections, 2 for SentX marketplace, 2 for Kabila marketplace
   - All existing collections automatically work with both marketplaces without separate addition needed
   - Enhanced testing capabilities allow users to verify bot functionality across both marketplace APIs
+  - Fixed service references to use this.sentxService and this.kabilaService for proper class method access
 
 ## User Preferences
 
