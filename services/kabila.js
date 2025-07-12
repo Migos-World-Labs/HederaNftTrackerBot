@@ -230,6 +230,7 @@ class KabilaService {
                 seller: this.formatAddress(listing.sellerId),
                 listing_id: `kabila_${listing.tokenId}_${listing.serialNumber}_${listing.createdAt}`,
                 created_at: listing.createdAt,
+                timestamp: listing.createdAt, // Add timestamp field for embed compatibility
                 marketplace: 'Kabila',
                 
                 // Image handling
@@ -268,6 +269,7 @@ class KabilaService {
                 sale_id: `kabila_${sale.tokenId}_${sale.serialNumber}_${sale.createdAt}`,
                 transaction_id: `kabila_${sale.tokenId}_${sale.serialNumber}_${sale.createdAt}`,
                 created_at: sale.createdAt,
+                timestamp: sale.createdAt, // Add timestamp field for embed compatibility
                 marketplace: 'Kabila',
                 
                 // Image handling

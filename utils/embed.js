@@ -332,8 +332,23 @@ class EmbedUtils {
         }
 
         // Footer with timestamp and branding
+        // Add footer with timestamp validation
+        let footerText = 'Built for Hedera by Mauii - Migos World Labs Inc';
+        if (sale.timestamp) {
+            try {
+                const timestamp = new Date(sale.timestamp);
+                if (!isNaN(timestamp.getTime())) {
+                    footerText += ` • ${timestamp.toLocaleString()}`;
+                } else {
+                    console.warn('Invalid timestamp format for sale:', sale.timestamp);
+                }
+            } catch (error) {
+                console.warn('Error parsing timestamp for sale:', sale.timestamp, error.message);
+            }
+        }
+        
         embed.setFooter({
-            text: `Built for Hedera by Mauii - Migos World Labs Inc • ${new Date(sale.timestamp).toLocaleString()}`
+            text: footerText
         });
 
         return embed;
@@ -364,8 +379,21 @@ class EmbedUtils {
         const embed = new EmbedBuilder()
             .setTitle(`${emoji} ${nftName} ${action}!`)
             .setDescription(`A new ${listingType.toLowerCase()} appeared on ${marketplace} for **$${usdValue.toFixed(2)} USD** (${listing.price_hbar} HBAR)`)
-            .setColor(isAuction ? '#ff6b35' : '#00ff41')
-            .setTimestamp(new Date(listing.timestamp));
+            .setColor(isAuction ? '#ff6b35' : '#00ff41');
+        
+        // Add timestamp with validation to prevent "Invalid time value" errors
+        if (listing.timestamp) {
+            try {
+                const timestamp = new Date(listing.timestamp);
+                if (!isNaN(timestamp.getTime())) {
+                    embed.setTimestamp(timestamp);
+                } else {
+                    console.warn('Invalid timestamp format for listing:', listing.timestamp);
+                }
+            } catch (error) {
+                console.warn('Error parsing timestamp for listing:', listing.timestamp, error.message);
+            }
+        }
 
         // Add collection info prominently with floor price
         if (listing.collection_name && listing.collection_name !== 'Unknown Collection') {
