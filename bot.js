@@ -88,8 +88,14 @@ class NFTSalesBot {
 
         // Handle when bot joins a new server
         this.client.on(Events.GuildCreate, async (guild) => {
-            console.log(`✅ Bot added to new server: ${guild.name} (${guild.id})`);
-            await this.handleNewGuild(guild);
+            console.log(`✅ Bot added to new server: ${guild.name} (${guild.id}) - ${guild.memberCount} members`);
+            console.log(`🔍 Server details: Owner ID: ${guild.ownerId}, Created: ${guild.createdAt}`);
+            try {
+                await this.handleNewGuild(guild);
+                console.log(`💬 Welcome message sent to ${guild.name}`);
+            } catch (error) {
+                console.error(`❌ Error sending welcome message to ${guild.name}:`, error);
+            }
         });
 
         // Handle when bot leaves a server
@@ -129,6 +135,7 @@ class NFTSalesBot {
             // Verify bot is still in the server before processing commands
             if (!this.client.guilds.cache.has(interaction.guildId)) {
                 console.log(`⚠️ Ignoring command from server bot is not in: ${interaction.guildId}`);
+                console.log(`🔍 Current servers: ${Array.from(this.client.guilds.cache.keys()).join(', ')}`);
                 
                 if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
                     try {
