@@ -13,15 +13,16 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Discord NFT Bot"
+args = "Dev Bot"
 
 [[workflows.workflow]]
-name = "Discord NFT Bot"
+name = "Dev Bot"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node index.js"
+args = "node --inspect index.js"
+waitForPort = 9229
 
 [deployment]
 run = ["sh", "-c", "npm install discord.js axios node-cron dotenv && node index.js"]
