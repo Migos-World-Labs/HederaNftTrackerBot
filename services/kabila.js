@@ -376,16 +376,16 @@ class KabilaService {
     getCollectionUrl(tokenId) {
         // Map token IDs to their proper collection URLs using collection names
         const collectionMapping = {
-            '0.0.6024491': 'https://kabila.app/collection/wild-tigers',
-            '0.0.8308459': 'https://kabila.app/collection/the-ape-anthology',
-            '0.0.8233324': 'https://kabila.app/collection/kekistan',
-            '0.0.8233316': 'https://kabila.app/collection/heliswap-pool-tokens',
-            '0.0.8233302': 'https://kabila.app/collection/klaytn-invasion',
-            '0.0.5552189': 'https://kabila.app/collection/hashinals',
-            '0.0.2173899': 'https://kabila.app/collection/rooster-cartel-gen0'
+            '0.0.6024491': 'https://www.kabila.app/collection/wild-tigers',
+            '0.0.8308459': 'https://www.kabila.app/collection/the-ape-anthology',
+            '0.0.8233324': 'https://www.kabila.app/collection/kekistan',
+            '0.0.8233316': 'https://www.kabila.app/collection/heliswap-pool-tokens',
+            '0.0.8233302': 'https://www.kabila.app/collection/klaytn-invasion',
+            '0.0.5552189': 'https://www.kabila.app/collection/hashinals',
+            '0.0.2173899': 'https://www.kabila.app/collection/rooster-cartel-gen0'
         };
         
-        return collectionMapping[tokenId] || `https://kabila.app/collection/${tokenId}`;
+        return collectionMapping[tokenId] || `https://www.kabila.app/collection/${tokenId}`;
     }
 
     /**
