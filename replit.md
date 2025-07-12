@@ -369,6 +369,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Fixed Discord autocomplete "Unknown interaction" errors with improved interaction.isRepliable() checks
   - Videos now display as properly formatted clickable links with quality indicators
   - Enhanced video detection to catch SentX's CDN patterns and streaming video formats
+- July 12, 2025: Added HashPack CDN support for MP4 video NFTs
+  - Added detection for HashPack CDN video formats (hashpack.b-cdn.net/ipfs/*, #t= timestamps)
+  - Enhanced IPFS conversion to prefer HashPack CDN for video content over standard IPFS gateways
+  - Video links now show "HashPack Video" for HashPack CDN sources and "SentX Video" for SentX sources
+  - Added support for video timestamp parameters (#t=0.1) commonly used in HashPack video URLs
+  - Improved video streaming compatibility with HashPack's optimized CDN infrastructure
 
 ## User Preferences
 

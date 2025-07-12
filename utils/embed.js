@@ -205,8 +205,19 @@ class EmbedUtils {
                 if (mediaType.isVideo) {
                     // For videos, add as clickable link since Discord doesn't auto-play most videos
                     const currentDesc = embed.data.description || '';
-                    const videoType = convertedMediaUrl.includes('play_720p') ? 'HD Video' : 
-                                     convertedMediaUrl.includes('play_1080p') ? 'Full HD Video' : 'Video';
+                    let videoType = 'Video';
+                    
+                    // Detect video quality/source
+                    if (convertedMediaUrl.includes('play_720p')) {
+                        videoType = 'HD Video';
+                    } else if (convertedMediaUrl.includes('play_1080p')) {
+                        videoType = 'Full HD Video';
+                    } else if (convertedMediaUrl.includes('hashpack.b-cdn.net')) {
+                        videoType = 'HashPack Video';
+                    } else if (convertedMediaUrl.includes('vz-') && convertedMediaUrl.includes('b-cdn.net')) {
+                        videoType = 'SentX Video';
+                    }
+                    
                     embed.setDescription(`${currentDesc}\n\n🎬 **[Watch ${videoType}](${convertedMediaUrl})**`);
                     console.log(`🎬 Added video link: ${convertedMediaUrl} (${mediaType.type})`);
                 } else if (mediaType.isAnimated) {
@@ -493,8 +504,19 @@ class EmbedUtils {
                 if (mediaType.isVideo) {
                     // For videos, add as clickable link since Discord doesn't auto-play most videos
                     const currentDesc = embed.data.description || '';
-                    const videoType = convertedMediaUrl.includes('play_720p') ? 'HD Video' : 
-                                     convertedMediaUrl.includes('play_1080p') ? 'Full HD Video' : 'Video';
+                    let videoType = 'Video';
+                    
+                    // Detect video quality/source
+                    if (convertedMediaUrl.includes('play_720p')) {
+                        videoType = 'HD Video';
+                    } else if (convertedMediaUrl.includes('play_1080p')) {
+                        videoType = 'Full HD Video';
+                    } else if (convertedMediaUrl.includes('hashpack.b-cdn.net')) {
+                        videoType = 'HashPack Video';
+                    } else if (convertedMediaUrl.includes('vz-') && convertedMediaUrl.includes('b-cdn.net')) {
+                        videoType = 'SentX Video';
+                    }
+                    
                     embed.setDescription(`${currentDesc}\n\n🎬 **[Watch ${videoType}](${convertedMediaUrl})**`);
                     console.log(`🎬 Added video link to listing: ${convertedMediaUrl} (${mediaType.type})`);
                 } else if (mediaType.isAnimated) {
@@ -755,13 +777,14 @@ class EmbedUtils {
         
         const urlLower = url.toLowerCase();
         
-        // Video formats (MP4, MOV, WEBM, etc.) including SentX CDN format
+        // Video formats (MP4, MOV, WEBM, etc.) including SentX and HashPack CDN formats
         if (urlLower.includes('.mp4') || urlLower.includes('.mov') || 
             urlLower.includes('.webm') || urlLower.includes('.avi') ||
             urlLower.includes('.mkv') || urlLower.includes('.m4v') ||
             urlLower.includes('video') || urlLower.includes('.ogv') ||
             urlLower.includes('play_720p') || urlLower.includes('play_1080p') ||
-            urlLower.includes('vz-') || urlLower.includes('b-cdn.net')) {
+            urlLower.includes('vz-') || urlLower.includes('b-cdn.net') ||
+            urlLower.includes('hashpack.b-cdn.net') || urlLower.includes('#t=')) {
             return { type: 'video', isVideo: true, isAnimated: false, isStatic: false };
         }
         
@@ -815,6 +838,14 @@ class EmbedUtils {
         // Handle various IPFS URL formats
         if (ipfsUrl.startsWith('ipfs://')) {
             const hash = ipfsUrl.replace('ipfs://', '');
+            
+            // For video files, prefer HashPack CDN which supports streaming and timestamps
+            const isVideo = hash.includes('.mp4') || hash.includes('.mov') || hash.includes('.webm') ||
+                           hash.includes('video') || hash.includes('#t=');
+            
+            if (isVideo && (hash.startsWith('baf') || hash.length > 40)) {
+                return `https://hashpack.b-cdn.net/ipfs/${hash}`;
+            }
             
             // Check if hash contains path (for traditional NFTs and some collections)
             if (hash.includes('/')) {
