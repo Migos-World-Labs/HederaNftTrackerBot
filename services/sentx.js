@@ -1057,6 +1057,46 @@ class SentXService {
             }
             
             console.log(`⚠️ NFT ${tokenId}/${serialId} not found in ${maxPages} pages of collection activity`);
+            
+            // Final strategy: Try the listings endpoint which may have different data
+            console.log(`🔍 Final strategy: Searching listings endpoint for ${tokenId}/${serialId}...`);
+            try {
+                const listingsResponse = await this.axiosInstance.get('/v1/public/market/listings', {
+                    params: {
+                        apikey: apiKey,
+                        token: tokenId,
+                        limit: 1000, // Get more listings
+                        sortBy: 'serialId',
+                        sortDirection: 'ASC'
+                    }
+                });
+                
+                if (listingsResponse.data && listingsResponse.data.success && listingsResponse.data.marketListings) {
+                    const targetListing = listingsResponse.data.marketListings.find(listing => 
+                        listing.nftTokenAddress === tokenId && 
+                        (listing.nftSerialId == serialId || listing.serialId == serialId)
+                    );
+                    
+                    if (targetListing && (targetListing.rarityRank || targetListing.rarity)) {
+                        console.log(`✅ Found ${targetListing.nftName} in listings: Rank ${targetListing.rarityRank}, Rarity ${targetListing.rarity}`);
+                        return {
+                            success: true,
+                            nft: {
+                                name: targetListing.nftName,
+                                rarityRank: targetListing.rarityRank,
+                                rarityPct: targetListing.rarity,
+                                tokenId: targetListing.nftTokenAddress,
+                                serialNumber: targetListing.nftSerialId || targetListing.serialId,
+                                image: targetListing.nftImage,
+                                metadata: targetListing.nftMetadata
+                            }
+                        };
+                    }
+                }
+            } catch (listingsError) {
+                console.log(`⚠️ Listings endpoint search failed: ${listingsError.message}`);
+            }
+            
             return { success: false, nft: null };
             
         } catch (error) {
