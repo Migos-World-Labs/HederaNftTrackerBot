@@ -38,7 +38,7 @@ class NFTSalesBot {
             console.log(`Bot is in ${this.client.guilds.cache.size} servers`);
             
             // Debug: List all servers the bot is in
-            console.log('\n📊 Connected Servers:');
+            console.log('📊 Connected Servers:');
             console.log('┌─────────────────────────────────────┬───────────────────────┬─────────────┐');
             console.log('│ Server Name                         │ Server ID             │ Members     │');
             console.log('├─────────────────────────────────────┼───────────────────────┼─────────────┤');
@@ -50,12 +50,26 @@ class NFTSalesBot {
                 console.log(`│ ${name} │ ${id} │ ${members} │`);
             });
             
-            console.log('└─────────────────────────────────────┴───────────────────────┴─────────────┘\n');
-            this.generateInviteLink();
-            await this.initializeDatabase();
-            await this.configureExistingServers();
-            await this.registerSlashCommands();
-            await this.startMonitoring();
+            console.log('└─────────────────────────────────────┴───────────────────────┴─────────────┘');
+            console.log('🔗 Invite Link for Other Servers:');
+            console.log(this.generateInviteLink());
+            console.log('Required Permissions: View Channel, Send Messages, Embed Links, Add Reactions, Use Slash Commands');
+            
+            try {
+                console.log('Initializing database storage...');
+                await this.initializeDatabase();
+                
+                console.log('Checking existing servers for configuration...');
+                await this.configureExistingServers();
+                
+                await this.registerSlashCommands();
+                await this.startMonitoring();
+                
+                console.log('✅ Bot fully initialized and ready!');
+            } catch (error) {
+                console.error('❌ Critical error during bot initialization:', error);
+                console.error('Bot will continue running but some features may not work properly');
+            }
         });
 
         this.client.on(Events.Error, (error) => {
@@ -138,6 +152,7 @@ class NFTSalesBot {
     async initializeLastProcessedTimestamp() {
         try {
             const currentTimestamp = Date.now();
+            console.log('Initializing baseline timestamp...');
             
             // Get the most recent sale timestamp from SentX to set as baseline
             const recentSales = await sentxService.getRecentSales(5);
@@ -153,10 +168,18 @@ class NFTSalesBot {
                 await this.storage.setLastProcessedSale(currentTimestamp);
                 console.log(`Set baseline timestamp to current time: ${new Date(currentTimestamp).toISOString()}`);
             }
+            console.log('Timestamp initialization completed');
         } catch (error) {
             console.error('Error initializing timestamp:', error);
-            // Fallback to current time
-            await this.storage.setLastProcessedSale(Date.now());
+            console.log('Using fallback timestamp approach...');
+            try {
+                // Fallback to current time
+                await this.storage.setLastProcessedSale(Date.now());
+                console.log('Fallback timestamp set successfully');
+            } catch (fallbackError) {
+                console.error('Critical error setting fallback timestamp:', fallbackError);
+                throw fallbackError;
+            }
         }
     }
 
@@ -850,24 +873,10 @@ class NFTSalesBot {
         ];
 
         try {
-            console.log('Cleaning up and registering slash commands...');
+            console.log('Registering slash commands...');
             console.log(`Registering ${commands.length} commands including: ${commands.map(c => c.name).join(', ')}`);
             
-            // Clear any existing global commands first
-            try {
-                await rest.put(
-                    Routes.applicationCommands(this.client.user.id),
-                    { body: [] }
-                );
-                console.log('Cleared existing global commands');
-                
-                // Wait for clearing to take effect
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            } catch (clearError) {
-                console.error('Error clearing global commands:', clearError);
-            }
-            
-            // Register fresh commands globally
+            // Register commands globally (no clearing - keeps existing commands intact)
             await rest.put(
                 Routes.applicationCommands(this.client.user.id),
                 { body: commands }
@@ -877,8 +886,10 @@ class NFTSalesBot {
             commands.forEach(cmd => {
                 console.log(`   /${cmd.name} - ${cmd.description}`);
             });
+            console.log('Command registration completed successfully');
         } catch (error) {
             console.error('Error registering slash commands:', error);
+            console.log('Commands may not be available but bot will continue running');
         }
     }
 
