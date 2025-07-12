@@ -31,6 +31,11 @@ class NFTSalesBot {
         
         this.isMonitoring = false;
         this.monitoringTask = null;
+        
+        // Add caching for collections to reduce database calls
+        this.cachedCollections = [];
+        this.lastCollectionFetch = 0;
+        
         this.setupEventHandlers();
     }
 
@@ -142,9 +147,14 @@ class NFTSalesBot {
         // Set initial timestamp to now to avoid posting old sales
         await this.initializeLastProcessedTimestamp();
         
-        // Monitor every 3 seconds for new sales
+        // Monitor every 3 seconds for new sales with error handling
         this.monitoringTask = cron.schedule('*/3 * * * * *', async () => {
-            await this.checkForNewSales();
+            try {
+                await this.checkForNewSales();
+            } catch (error) {
+                console.error('Error in monitoring task:', error.message);
+                // Continue monitoring even if one check fails
+            }
         });
 
         // Don't do initial check to avoid spam - wait for first interval
@@ -189,8 +199,16 @@ class NFTSalesBot {
 
     async checkForNewSales() {
         try {
-            // Get all tracked collections from database first
-            const allTrackedCollections = await this.storage.getCollections();
+            // Get all tracked collections from database first (cache for 30 seconds)
+            const cacheKey = 'tracked_collections';
+            let allTrackedCollections = this.cachedCollections || [];
+            
+            if (!this.lastCollectionFetch || Date.now() - this.lastCollectionFetch > 30000) {
+                allTrackedCollections = await this.storage.getCollections();
+                this.cachedCollections = allTrackedCollections;
+                this.lastCollectionFetch = Date.now();
+            }
+            
             const trackedTokenIds = allTrackedCollections.map(c => c.token_id || c.tokenId);
             
             if (trackedTokenIds.length === 0) {

@@ -17,9 +17,15 @@ class KabilaService {
             }
         });
         
-        // Cache for floor prices (5 minute TTL)
+        // Cache for floor prices (5 minute TTL) and API responses
         this.floorPriceCache = new Map();
+        this.apiResponseCache = new Map();
         this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+        
+        // Setup periodic cache cleanup
+        setInterval(() => {
+            this.cleanupCache();
+        }, 10 * 60 * 1000); // Cleanup every 10 minutes
     }
 
     /**
@@ -29,6 +35,13 @@ class KabilaService {
      */
     async getRecentSales(limit = 50) {
         try {
+            // Check cache first
+            const cacheKey = `kabila_sales_${limit}`;
+            const cached = this.getCachedResponse(cacheKey);
+            if (cached) {
+                return cached;
+            }
+            
             const params = {
                 timeRange: '7d',
                 skip: 0,
@@ -63,7 +76,12 @@ class KabilaService {
                 return hasCompletedSale;
             });
             
-            return this.formatSalesData(salesOnly);
+            const formattedData = this.formatSalesData(salesOnly);
+            
+            // Cache the result for 30 seconds to reduce API calls
+            this.setCachedResponse(cacheKey, formattedData, 30000);
+            
+            return formattedData;
 
         } catch (error) {
             if (error.response) {
@@ -475,6 +493,46 @@ class KabilaService {
         } catch (error) {
             console.error('Kabila API health check failed:', error.message);
             return false;
+        }
+    }
+
+    /**
+     * Cache API responses to reduce load
+     */
+    getCachedResponse(key) {
+        const cached = this.apiResponseCache.get(key);
+        if (cached && Date.now() - cached.timestamp < cached.ttl) {
+            return cached.data;
+        }
+        return null;
+    }
+
+    setCachedResponse(key, data, ttl = 30000) {
+        this.apiResponseCache.set(key, {
+            data,
+            timestamp: Date.now(),
+            ttl
+        });
+    }
+
+    /**
+     * Clean up expired cache entries
+     */
+    cleanupCache() {
+        const now = Date.now();
+        
+        // Clean floor price cache
+        for (const [key, value] of this.floorPriceCache.entries()) {
+            if (now - value.timestamp > this.cacheTimeout) {
+                this.floorPriceCache.delete(key);
+            }
+        }
+        
+        // Clean API response cache
+        for (const [key, value] of this.apiResponseCache.entries()) {
+            if (now - value.timestamp > value.ttl) {
+                this.apiResponseCache.delete(key);
+            }
         }
     }
 }
