@@ -203,17 +203,12 @@ class EmbedUtils {
             if (convertedMediaUrl) {
                 // Use appropriate Discord embed method based on media type
                 if (mediaType.isVideo) {
-                    // For videos, try to use Discord's video capabilities
-                    // Discord can display some video formats directly
-                    try {
-                        embed.setImage(convertedMediaUrl); // Try to display video directly
-                        console.log(`🎬 Added video as image: ${convertedMediaUrl} (${mediaType.type})`);
-                    } catch (error) {
-                        // Fallback to clickable link if direct display fails
-                        const currentDesc = embed.data.description || '';
-                        embed.setDescription(`${currentDesc}\n\n🎬 **[View ${mediaType.type.toUpperCase()} Animation](${convertedMediaUrl})**`);
-                        console.log(`🎬 Added video as link: ${convertedMediaUrl} (${mediaType.type})`);
-                    }
+                    // For videos, add as clickable link since Discord doesn't auto-play most videos
+                    const currentDesc = embed.data.description || '';
+                    const videoType = convertedMediaUrl.includes('play_720p') ? 'HD Video' : 
+                                     convertedMediaUrl.includes('play_1080p') ? 'Full HD Video' : 'Video';
+                    embed.setDescription(`${currentDesc}\n\n🎬 **[Watch ${videoType}](${convertedMediaUrl})**`);
+                    console.log(`🎬 Added video link: ${convertedMediaUrl} (${mediaType.type})`);
                 } else if (mediaType.isAnimated) {
                     // For GIFs and animated content, use setImage (Discord supports animated GIFs)
                     embed.setImage(convertedMediaUrl);
@@ -496,16 +491,12 @@ class EmbedUtils {
             if (convertedMediaUrl) {
                 // Use appropriate Discord embed method based on media type
                 if (mediaType.isVideo) {
-                    // For videos, try to use Discord's video capabilities
-                    try {
-                        embed.setImage(convertedMediaUrl); // Try to display video directly
-                        console.log(`🎬 Added video as image to listing: ${convertedMediaUrl} (${mediaType.type})`);
-                    } catch (error) {
-                        // Fallback to clickable link if direct display fails
-                        const currentDesc = embed.data.description || '';
-                        embed.setDescription(`${currentDesc}\n\n🎬 **[View ${mediaType.type.toUpperCase()} Animation](${convertedMediaUrl})**`);
-                        console.log(`🎬 Added video as link to listing: ${convertedMediaUrl} (${mediaType.type})`);
-                    }
+                    // For videos, add as clickable link since Discord doesn't auto-play most videos
+                    const currentDesc = embed.data.description || '';
+                    const videoType = convertedMediaUrl.includes('play_720p') ? 'HD Video' : 
+                                     convertedMediaUrl.includes('play_1080p') ? 'Full HD Video' : 'Video';
+                    embed.setDescription(`${currentDesc}\n\n🎬 **[Watch ${videoType}](${convertedMediaUrl})**`);
+                    console.log(`🎬 Added video link to listing: ${convertedMediaUrl} (${mediaType.type})`);
                 } else if (mediaType.isAnimated) {
                     // For GIFs and animated content, use setImage
                     embed.setImage(convertedMediaUrl);
@@ -764,11 +755,13 @@ class EmbedUtils {
         
         const urlLower = url.toLowerCase();
         
-        // Video formats (MP4, MOV, WEBM, etc.)
+        // Video formats (MP4, MOV, WEBM, etc.) including SentX CDN format
         if (urlLower.includes('.mp4') || urlLower.includes('.mov') || 
             urlLower.includes('.webm') || urlLower.includes('.avi') ||
             urlLower.includes('.mkv') || urlLower.includes('.m4v') ||
-            urlLower.includes('video') || urlLower.includes('.ogv')) {
+            urlLower.includes('video') || urlLower.includes('.ogv') ||
+            urlLower.includes('play_720p') || urlLower.includes('play_1080p') ||
+            urlLower.includes('vz-') || urlLower.includes('b-cdn.net')) {
             return { type: 'video', isVideo: true, isAnimated: false, isStatic: false };
         }
         

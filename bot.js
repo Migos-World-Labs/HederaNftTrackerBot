@@ -1648,8 +1648,8 @@ class NFTSalesBot {
 
     async handleAutocomplete(interaction) {
         try {
-            // Check if interaction has already been responded to
-            if (interaction.responded) {
+            // Check if interaction has already been responded to or expired
+            if (interaction.responded || !interaction.isRepliable()) {
                 return;
             }
             

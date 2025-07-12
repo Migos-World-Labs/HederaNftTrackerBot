@@ -363,6 +363,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced both sales and listing notifications with comprehensive multimedia support
   - Added animation_url field detection for NFTs with separate static image and animated content
   - Improved media URL detection with priority for animation_url over static image fields
+- July 12, 2025: Enhanced video support for SentX CDN and fixed autocomplete interactions
+  - Added specific detection for SentX CDN video formats (play_720p.mp4, play_1080p.mp4, vz-*.b-cdn.net)
+  - Enhanced video link formatting to show "HD Video" or "Full HD Video" based on quality
+  - Fixed Discord autocomplete "Unknown interaction" errors with improved interaction.isRepliable() checks
+  - Videos now display as properly formatted clickable links with quality indicators
+  - Enhanced video detection to catch SentX's CDN patterns and streaming video formats
 
 ## User Preferences
 
