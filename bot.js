@@ -116,6 +116,9 @@ class NFTSalesBot {
                 console.log(`   - Server config: ${configRemoved ? 'removed' : 'not found'}`);
                 console.log(`   - Collections removed: ${collectionsRemoved}/${serverCollections.length}`);
                 
+                // Force clear slash commands from this server
+                await this.clearGuildCommands(guild.id, guild.name);
+                
             } catch (error) {
                 console.error(`Error cleaning up server data for ${guild.name}:`, error);
             }
@@ -1650,6 +1653,28 @@ class NFTSalesBot {
             
         } catch (error) {
             console.error('Error during orphaned data cleanup:', error);
+        }
+    }
+
+    /**
+     * Force clear slash commands from a specific guild
+     */
+    async clearGuildCommands(guildId, guildName = 'Unknown Server') {
+        try {
+            const { REST, Routes } = require('discord.js');
+            const rest = new REST().setToken(config.DISCORD_TOKEN);
+            
+            console.log(`🧹 Clearing slash commands from departed server: ${guildName}`);
+            
+            // Clear all commands for this specific guild by setting empty array
+            await rest.put(
+                Routes.applicationGuildCommands(this.client.user.id, guildId),
+                { body: [] }
+            );
+            
+            console.log(`✅ Commands cleared from ${guildName}`);
+        } catch (error) {
+            console.log(`⚠️ Could not clear commands from ${guildName}: ${error.message}`);
         }
     }
 
