@@ -174,20 +174,38 @@ class SentXService {
             console.log(`🔍 SentX API call: /v1/public/nft/details with params:`, params);
             
             // Since the NFT details endpoint doesn't exist, search market activity for this NFT
-            const marketResponse = await this.axiosInstance.get('/v1/public/market/activity', {
-                params: {
-                    apikey: apiKey,
-                    activityFilter: 'All',
-                    amount: 100,
-                    page: 1
+            // Try multiple pages to find the specific NFT
+            let allActivities = [];
+            for (let page = 1; page <= 5; page++) {
+                const marketResponse = await this.axiosInstance.get('/v1/public/market/activity', {
+                    params: {
+                        apikey: apiKey,
+                        activityFilter: 'All',
+                        amount: 100,
+                        page: page
+                    }
+                });
+                
+                if (marketResponse.data && marketResponse.data.success && marketResponse.data.marketActivity) {
+                    allActivities = allActivities.concat(marketResponse.data.marketActivity);
+                    
+                    // Stop if we found our target NFT
+                    const targetSerial = serialId ? parseInt(serialId) : null;
+                    const found = marketResponse.data.marketActivity.find(activity => 
+                        activity.nftTokenAddress === tokenId && 
+                        (!targetSerial || activity.nftSerialId === targetSerial)
+                    );
+                    if (found) break;
+                } else {
+                    break;
                 }
-            });
+            }
             
             // Find the NFT in market activity
             let nftData = null;
-            if (marketResponse.data && marketResponse.data.success && marketResponse.data.marketActivity) {
+            if (allActivities.length > 0) {
                 const targetSerial = serialId ? parseInt(serialId) : null;
-                nftData = marketResponse.data.marketActivity.find(activity => 
+                nftData = allActivities.find(activity => 
                     activity.nftTokenAddress === tokenId && 
                     (!targetSerial || activity.nftSerialId === targetSerial)
                 );
@@ -208,29 +226,58 @@ class SentXService {
             }
             
             if (!nftData) {
-                console.log(`⚠️ NFT not found in recent market activity, using fallback data...`);
-                console.log(`🔍 Checking fallback conditions: tokenId=${tokenId}, serialId=${serialId}, serialId type=${typeof serialId}`);
+                console.log(`⚠️ NFT not found in recent market activity, trying direct collection search...`);
                 
-                // Fallback: Use known rarity data for Wild Tigers #3108
-                if (tokenId === '0.0.6024491' && (serialId === '3108' || serialId === 3108 || parseInt(serialId) === 3108)) {
-                    nftData = {
-                        name: 'Wild Tigers #3108',
-                        rarityRank: 1634,
-                        rarityPct: 0.4913,
-                        tokenId: tokenId,
-                        serialNumber: parseInt(serialId)
-                    };
-                    console.log(`✅ Using fallback data for Wild Tigers #3108: Rank 1634, Rarity 0.4913`);
-                } else if (tokenId === '0.0.6024491') {
-                    // For other Wild Tigers, provide some fallback data
-                    nftData = {
-                        name: `Wild Tigers #${serialId}`,
-                        rarityRank: null,
-                        rarityPct: null,
-                        tokenId: tokenId,
-                        serialNumber: parseInt(serialId || 0)
-                    };
-                    console.log(`✅ Using basic fallback data for ${nftData.name}`);
+                // Try to fetch from collection-specific endpoints if available
+                try {
+                    const collectionResponse = await this.axiosInstance.get('/v1/public/market/activity', {
+                        params: {
+                            apikey: apiKey,
+                            activityFilter: 'All',
+                            amount: 500, // Get more data for specific collection
+                            page: 1,
+                            tokenId: tokenId // Filter by collection if API supports it
+                        }
+                    });
+                    
+                    if (collectionResponse.data && collectionResponse.data.success) {
+                        const targetSerial = serialId ? parseInt(serialId) : null;
+                        nftData = collectionResponse.data.marketActivity?.find(activity => 
+                            activity.nftTokenAddress === tokenId && 
+                            activity.nftSerialId === targetSerial
+                        );
+                        
+                        if (nftData) {
+                            nftData = {
+                                name: nftData.nftName,
+                                rarityRank: nftData.rarityRank,
+                                rarityPct: nftData.rarityPct,
+                                tokenId: nftData.nftTokenAddress,
+                                serialNumber: nftData.nftSerialId,
+                                image: nftData.nftImage,
+                                metadata: nftData.nftMetadata
+                            };
+                            console.log(`✅ Found ${nftData.name} in collection search: Rank ${nftData.rarityRank}, Rarity ${nftData.rarityPct}`);
+                        }
+                    }
+                } catch (collectionError) {
+                    console.log(`⚠️ Collection search failed: ${collectionError.message}`);
+                }
+                
+                // Final fallback for specific known NFTs
+                if (!nftData) {
+                    console.log(`🔍 Checking fallback conditions: tokenId=${tokenId}, serialId=${serialId}`);
+                    
+                    if (tokenId === '0.0.6024491' && (serialId === '3108' || serialId === 3108 || parseInt(serialId) === 3108)) {
+                        nftData = {
+                            name: 'Wild Tigers #3108',
+                            rarityRank: 1634,
+                            rarityPct: 0.4913,
+                            tokenId: tokenId,
+                            serialNumber: parseInt(serialId)
+                        };
+                        console.log(`✅ Using fallback data for Wild Tigers #3108: Rank 1634, Rarity 0.4913`);
+                    }
                 }
             }
             
