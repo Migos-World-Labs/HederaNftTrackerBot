@@ -6,6 +6,7 @@ const { Client, GatewayIntentBits, Events } = require('discord.js');
 const cron = require('node-cron');
 const config = require('./config');
 const sentxService = require('./services/sentx');
+const kabilaService = require('./services/kabila');
 
 const currencyService = require('./services/currency');
 const embedUtils = require('./utils/embed');
@@ -13,9 +14,10 @@ const DatabaseStorage = require('./database-storage');
 
 
 class NFTSalesBot {
-    constructor(sentxService, embedUtils, currencyService, storage) {
+    constructor(sentxService, kabilaService, embedUtils, currencyService, storage) {
         // Initialize services
         this.sentxService = sentxService;
+        this.kabilaService = kabilaService;
         this.embedUtils = embedUtils; 
         this.currencyService = currencyService;
         this.storage = storage || new DatabaseStorage();
@@ -154,8 +156,10 @@ class NFTSalesBot {
             const currentTimestamp = Date.now();
             console.log('Initializing baseline timestamp...');
             
-            // Get the most recent sale timestamp from SentX to set as baseline
-            const recentSales = await sentxService.getRecentSales(5);
+            // Get the most recent sale timestamp from both marketplaces to set as baseline
+            const sentxSales = await sentxService.getRecentSales(5);
+            const kabilaSales = await kabilaService.getRecentSales(5);
+            const recentSales = [...sentxSales, ...kabilaSales];
             
             if (recentSales && recentSales.length > 0) {
                 // Use the most recent sale timestamp as baseline
@@ -194,16 +198,22 @@ class NFTSalesBot {
                 return;
             }
 
-            // Get recent sales from SentX marketplace
+            // Get recent sales from both marketplaces
             const sentxSales = await sentxService.getRecentSales();
-            // Get recent listings from SentX marketplace  
+            const kabilaSales = await kabilaService.getRecentSales();
+            // Get recent listings from both marketplaces  
             const sentxListings = await sentxService.getRecentListings();
+            const kabilaListings = await kabilaService.getRecentListings();
+
+            // Combine sales and listings from both marketplaces
+            const allSales = [...sentxSales, ...kabilaSales];
+            const allListings = [...sentxListings, ...kabilaListings];
 
             // Filter for only tracked collections
-            const trackedSales = sentxSales.filter(sale => 
+            const trackedSales = allSales.filter(sale => 
                 trackedTokenIds.includes(sale.token_id || sale.tokenId)
             );
-            const trackedListings = sentxListings.filter(listing => 
+            const trackedListings = allListings.filter(listing => 
                 trackedTokenIds.includes(listing.token_id || listing.tokenId)
             );
             
@@ -229,13 +239,13 @@ class NFTSalesBot {
         }
     }
 
-    async processNewSales(sentxSales, hbarRate) {
+    async processNewSales(allSales, hbarRate) {
         try {
             // Get the timestamp of the last processed sale
             const lastProcessedTimestamp = await this.storage.getLastProcessedSale();
             
             // Filter for truly new sales only (sales that happened after our last check)
-            let newSales = sentxSales.filter(sale => {
+            let newSales = allSales.filter(sale => {
                 const saleTimestamp = new Date(sale.timestamp).getTime();
                 const isNewer = saleTimestamp > lastProcessedTimestamp;
                 
@@ -297,13 +307,13 @@ class NFTSalesBot {
         }
     }
 
-    async processNewListings(sentxListings, hbarRate) {
+    async processNewListings(allListings, hbarRate) {
         try {
             // Get the timestamp of the last processed listing
             const lastProcessedTimestamp = await this.storage.getLastProcessedListing();
             
             // Filter for truly new listings only (listings that happened after our last check)
-            let newListings = sentxListings.filter(listing => {
+            let newListings = allListings.filter(listing => {
                 const listingTimestamp = new Date(listing.timestamp).getTime();
                 const isNewer = listingTimestamp > lastProcessedTimestamp;
                 

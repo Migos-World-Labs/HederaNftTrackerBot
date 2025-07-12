@@ -33,6 +33,7 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
 
 ### Marketplace Services
 - **SentX Service** (`services/sentx.js`): API integration for SentX marketplace sales data
+- **Kabila Service** (`services/kabila.js`): API integration for Kabila marketplace sales and listings data
 - **Hedera Service** (`services/hedera.js`): Integration with Hedera Mirror Node for NFT metadata
 - **Currency Service** (`services/currency.js`): Real-time HBAR to USD conversion using CoinGecko/CoinMarketCap APIs
 
@@ -379,6 +380,16 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Bot now displays original NFT images without special borders or effects
   - Reduced from 8 to 7 slash commands: add, remove, remove-all, list, status, set-listings-channel, test
   - Code reverted to clean, original deployed state focused on core NFT tracking functionality
+- July 12, 2025: Added Kabila marketplace integration for expanded NFT tracking coverage
+  - Created KabilaService (`services/kabila.js`) with full API integration for Kabila marketplace
+  - Integrated both sales and listings tracking from Kabila alongside existing SentX data
+  - Updated bot monitoring logic to fetch from both SentX and Kabila marketplaces simultaneously
+  - Added proper activity type filtering for Kabila API (LISTING, SALE, LAUNCHPAD_SALE)
+  - Enhanced data combination logic to merge sales/listings from both marketplaces
+  - Updated initialization to include Kabila baseline timestamp calculation
+  - Bot now provides comprehensive coverage of Hedera NFT marketplace activity across both major platforms
+  - All existing Discord embed formatting and notification features work seamlessly with Kabila data
+  - Maintained same user experience while doubling marketplace coverage
 
 ## User Preferences
 

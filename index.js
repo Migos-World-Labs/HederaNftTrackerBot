@@ -1,18 +1,19 @@
 /**
  * Main entry point for the Discord NFT Sales Bot
- * Initializes the bot and starts monitoring SentX marketplace
+ * Initializes the bot and starts monitoring SentX and Kabila marketplaces
  */
 
 const NFTSalesBot = require('./bot');
 const config = require('./config');
 const DatabaseStorage = require('./database-storage');
 const sentxService = require('./services/sentx');
+const kabilaService = require('./services/kabila');
 const currencyService = require('./services/currency');
 const embedUtils = require('./utils/embed');
 
 // Initialize services
 const storage = new DatabaseStorage();
-const bot = new NFTSalesBot(sentxService, embedUtils, currencyService, storage);
+const bot = new NFTSalesBot(sentxService, kabilaService, embedUtils, currencyService, storage);
 
 async function initializeBot() {
     try {
