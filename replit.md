@@ -464,6 +464,14 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added mapping for all major collections: Wild Tigers, The Ape Anthology, Kekistan, HeliSwap Pool Tokens, Klaytn Invasion, Hashinals, Hedera Monkeys, Rooster Cartel
   - Live notifications now display proper collection links for both sales and listings across SentX and Kabila marketplaces
   - System automatically uses correct collection URLs for tracked collections with fallback to token ID format for unknown collections
+- July 12, 2025: Fixed SentX rarity enrichment system for Kabila NFTs to display proper rarity classifications
+  - Fixed SentX service instantiation in Kabila enrichment process using proper class constructor
+  - Enhanced data structure handling to correctly parse SentX API response format (success/nft nested structure)
+  - Added support for both serial_id and serial_number field variations across marketplaces
+  - Implemented sentx_enriched flag to track successful rarity enrichment and improve debugging
+  - Kabila NFTs now properly display SentX rank and rarity classifications (uncommon, common, rare, epic, legendary)
+  - All Kabila sales and listings show accurate SentX rarity data with proper tier labels and percentages
+  - Cross-marketplace rarity enrichment now working reliably for comprehensive NFT insights
 
 ## User Preferences
 

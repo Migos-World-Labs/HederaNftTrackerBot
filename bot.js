@@ -272,9 +272,11 @@ class NFTSalesBot {
                 try {
                     console.log(`🔄 Enriching ${kabilaSales.length} Kabila sales with SentX rarity data...`);
                     enrichedKabilaSales = await this.kabilaService.enrichWithSentXRarity(kabilaSales);
-                    const enrichedCount = enrichedKabilaSales.filter(sale => sale.rarity || sale.sentx_rank).length;
+                    const enrichedCount = enrichedKabilaSales.filter(sale => sale.sentx_enriched && (sale.rarity || sale.sentx_rank)).length;
                     if (enrichedCount > 0) {
                         console.log(`✅ Successfully enriched ${enrichedCount}/${kabilaSales.length} Kabila sales with SentX rarity`);
+                    } else {
+                        console.log(`⚠️ No Kabila sales were enriched with SentX rarity data`);
                     }
                 } catch (error) {
                     console.log(`❌ Failed to enrich Kabila sales with SentX rarity: ${error.message}`);
@@ -361,9 +363,11 @@ class NFTSalesBot {
                 try {
                     console.log(`🔄 Enriching ${kabilaListings.length} Kabila listings with SentX rarity data...`);
                     enrichedKabilaListings = await this.kabilaService.enrichWithSentXRarity(kabilaListings);
-                    const enrichedCount = enrichedKabilaListings.filter(listing => listing.rarity || listing.sentx_rank).length;
+                    const enrichedCount = enrichedKabilaListings.filter(listing => listing.sentx_enriched && (listing.rarity || listing.sentx_rank)).length;
                     if (enrichedCount > 0) {
                         console.log(`✅ Successfully enriched ${enrichedCount}/${kabilaListings.length} Kabila listings with SentX rarity`);
+                    } else {
+                        console.log(`⚠️ No Kabila listings were enriched with SentX rarity data`);
                     }
                 } catch (error) {
                     console.log(`❌ Failed to enrich Kabila listings with SentX rarity: ${error.message}`);

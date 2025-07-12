@@ -406,34 +406,44 @@ class KabilaService {
     async enrichWithSentXRarity(kabilaNFTs) {
         if (!kabilaNFTs || kabilaNFTs.length === 0) return kabilaNFTs;
         
-        const sentxService = require('./sentx.js');
+        const SentXService = require('./sentx.js');
+        const sentxService = new SentXService();
         
         const enrichedNFTs = await Promise.all(kabilaNFTs.map(async (nft) => {
             try {
                 // Only enrich if we have token and serial data
-                if (!nft.token_id || !nft.serial_id) {
+                if (!nft.token_id || (!nft.serial_id && !nft.serial_number)) {
                     console.log(`⚠️ Skipping enrichment for ${nft.nft_name}: missing token_id or serial_id`);
                     return nft;
                 }
                 
-                console.log(`🔄 Enriching ${nft.nft_name} (${nft.token_id}/${nft.serial_id}) with SentX rarity...`);
+                const serialId = nft.serial_id || nft.serial_number;
+                console.log(`🔄 Enriching ${nft.nft_name} (${nft.token_id}/${serialId}) with SentX rarity...`);
                 
                 // Get SentX rarity data for this specific NFT
-                const sentxDetails = await sentxService.getNFTDetails(nft.token_id, nft.serial_id);
+                const sentxDetails = await sentxService.getNFTDetails(nft.token_id, serialId);
                 
-                if (sentxDetails && (sentxDetails.rarityRank || sentxDetails.rarityPct)) {
-                    console.log(`✅ Found SentX data for ${nft.nft_name}: Rank ${sentxDetails.rarityRank}, Rarity ${sentxDetails.rarityPct}`);
+                if (sentxDetails && sentxDetails.success && sentxDetails.nft && (sentxDetails.nft.rarityRank || sentxDetails.nft.rarityPct)) {
+                    const rank = sentxDetails.nft.rarityRank;
+                    const rarity = sentxDetails.nft.rarityPct;
+                    console.log(`✅ Found SentX data for ${nft.nft_name}: Rank ${rank}, Rarity ${rarity}`);
                     return {
                         ...nft,
-                        rarity: sentxDetails.rarityPct || null,
-                        sentx_rank: sentxDetails.rarityRank || null,
+                        rarity: rarity || null,
+                        sentx_rank: rank || null,
                         // Keep Kabila rank separate for debugging
                         kabila_rank: nft.rank,
                         // Override rank display to use SentX rank
-                        rank: sentxDetails.rarityRank || nft.rank
+                        rank: rank || nft.rank,
+                        // Add enrichment success flag
+                        sentx_enriched: true
                     };
                 } else {
-                    console.log(`❌ No SentX rarity data found for ${nft.nft_name} (${nft.token_id}/${nft.serial_id})`);
+                    console.log(`❌ SentX API unsuccessful or missing NFT data:`, { 
+                        success: sentxDetails?.success, 
+                        nft: sentxDetails?.nft ? 'found' : 'undefined' 
+                    });
+                    console.log(`❌ No SentX rarity data found for ${nft.nft_name} (${nft.token_id}/${serialId})`);
                 }
                 
                 return nft;
