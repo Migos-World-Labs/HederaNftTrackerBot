@@ -851,21 +851,9 @@ class NFTSalesBot {
 
         try {
             console.log('Cleaning up and registering slash commands...');
+            console.log(`Registering ${commands.length} commands including: ${commands.map(c => c.name).join(', ')}`);
             
-            // Clear all existing guild commands to remove duplicates
-            for (const guild of this.client.guilds.cache.values()) {
-                try {
-                    await rest.put(
-                        Routes.applicationGuildCommands(this.client.user.id, guild.id),
-                        { body: [] }
-                    );
-                    console.log(`Cleared guild commands for: ${guild.name}`);
-                } catch (guildError) {
-                    console.error(`Error clearing guild commands for ${guild.name}:`, guildError);
-                }
-            }
-
-            // Also clear any existing global commands first
+            // Clear any existing global commands first
             try {
                 await rest.put(
                     Routes.applicationCommands(this.client.user.id),
@@ -873,8 +861,8 @@ class NFTSalesBot {
                 );
                 console.log('Cleared existing global commands');
                 
-                // Wait a moment for clearing to take effect
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Wait for clearing to take effect
+                await new Promise(resolve => setTimeout(resolve, 2000));
             } catch (clearError) {
                 console.error('Error clearing global commands:', clearError);
             }
@@ -885,7 +873,10 @@ class NFTSalesBot {
                 { body: commands }
             );
             
-            console.log('Successfully registered slash commands globally');
+            console.log(`✅ Successfully registered ${commands.length} slash commands globally:`);
+            commands.forEach(cmd => {
+                console.log(`   /${cmd.name} - ${cmd.description}`);
+            });
         } catch (error) {
             console.error('Error registering slash commands:', error);
         }
