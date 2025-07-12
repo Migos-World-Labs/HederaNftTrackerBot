@@ -411,24 +411,34 @@ class KabilaService {
         const enrichedNFTs = await Promise.all(kabilaNFTs.map(async (nft) => {
             try {
                 // Only enrich if we have token and serial data
-                if (!nft.token_id || !nft.serial_id) return nft;
+                if (!nft.token_id || !nft.serial_id) {
+                    console.log(`⚠️ Skipping enrichment for ${nft.nft_name}: missing token_id or serial_id`);
+                    return nft;
+                }
+                
+                console.log(`🔄 Enriching ${nft.nft_name} (${nft.token_id}/${nft.serial_id}) with SentX rarity...`);
                 
                 // Get SentX rarity data for this specific NFT
                 const sentxDetails = await sentxService.getNFTDetails(nft.token_id, nft.serial_id);
                 
-                if (sentxDetails) {
+                if (sentxDetails && (sentxDetails.rarityRank || sentxDetails.rarityPct)) {
+                    console.log(`✅ Found SentX data for ${nft.nft_name}: Rank ${sentxDetails.rarityRank}, Rarity ${sentxDetails.rarityPct}`);
                     return {
                         ...nft,
                         rarity: sentxDetails.rarityPct || null,
                         sentx_rank: sentxDetails.rarityRank || null,
-                        // Keep Kabila rank separate for debugging if needed
-                        kabila_rank: nft.rank
+                        // Keep Kabila rank separate for debugging
+                        kabila_rank: nft.rank,
+                        // Override rank display to use SentX rank
+                        rank: sentxDetails.rarityRank || nft.rank
                     };
+                } else {
+                    console.log(`❌ No SentX rarity data found for ${nft.nft_name} (${nft.token_id}/${nft.serial_id})`);
                 }
                 
                 return nft;
             } catch (error) {
-                console.log(`Failed to enrich ${nft.nft_name} with SentX rarity: ${error.message}`);
+                console.log(`❌ Failed to enrich ${nft.nft_name} with SentX rarity: ${error.message}`);
                 return nft;
             }
         }));
