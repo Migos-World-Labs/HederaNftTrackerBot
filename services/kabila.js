@@ -374,18 +374,20 @@ class KabilaService {
      * @returns {string} Proper collection URL
      */
     getCollectionUrl(tokenId) {
-        // Map token IDs to their proper collection URLs using collection names
+        // Map token IDs to their proper collection URLs using Kabila's actual format
         const collectionMapping = {
-            '0.0.6024491': 'https://www.kabila.app/collection/wild-tigers',
-            '0.0.8308459': 'https://www.kabila.app/collection/the-ape-anthology',
-            '0.0.8233324': 'https://www.kabila.app/collection/kekistan',
-            '0.0.8233316': 'https://www.kabila.app/collection/heliswap-pool-tokens',
-            '0.0.8233302': 'https://www.kabila.app/collection/klaytn-invasion',
-            '0.0.5552189': 'https://www.kabila.app/collection/hashinals',
-            '0.0.2173899': 'https://www.kabila.app/collection/rooster-cartel-gen0'
+            '0.0.6024491': 'https://market.kabila.app/en/collections/6024491/items',
+            '0.0.8308459': 'https://market.kabila.app/en/collections/8308459/items',
+            '0.0.8233324': 'https://market.kabila.app/en/collections/8233324/items',
+            '0.0.8233316': 'https://market.kabila.app/en/collections/8233316/items',
+            '0.0.8233302': 'https://market.kabila.app/en/collections/8233302/items',
+            '0.0.5552189': 'https://market.kabila.app/en/collections/5552189/items',
+            '0.0.2173899': 'https://market.kabila.app/en/collections/2173899/items'
         };
         
-        return collectionMapping[tokenId] || `https://www.kabila.app/collection/${tokenId}`;
+        // Extract just the number part from token ID (remove 0.0. prefix)
+        const tokenNumber = tokenId.replace('0.0.', '');
+        return collectionMapping[tokenId] || `https://market.kabila.app/en/collections/${tokenNumber}/items`;
     }
 
     /**

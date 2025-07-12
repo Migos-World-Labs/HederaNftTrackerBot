@@ -414,6 +414,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added getCollectionUrl() method with proper collection name mapping for Wild Tigers, The Ape Anthology, etc.
   - Kabila notifications now show images properly and use correct marketplace collection URLs
   - Maintained consistent user experience between both marketplaces while respecting their different data structures
+- July 12, 2025: Updated collection URLs to use correct marketplace formats per user specifications
+  - Fixed Kabila URLs to use actual format: https://market.kabila.app/en/collections/{tokenNumber}/items
+  - Confirmed SentX URLs already use correct format: https://sentx.io/nft-marketplace/{collection-name}
+  - Updated both test commands and live notifications to use proper collection links
+  - Kabila URLs now extract token number from 0.0.X format and use market.kabila.app subdomain
+  - Both marketplaces now direct users to correct collection pages for browsing and trading
 
 ## User Preferences
 
