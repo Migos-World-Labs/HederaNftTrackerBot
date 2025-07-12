@@ -203,23 +203,34 @@ class EmbedUtils {
             if (convertedMediaUrl) {
                 // Use appropriate Discord embed method based on media type
                 if (mediaType.isVideo) {
-                    // For videos, add as clickable link since Discord doesn't auto-play most videos
-                    const currentDesc = embed.data.description || '';
-                    let videoType = 'Video';
-                    
-                    // Detect video quality/source
-                    if (convertedMediaUrl.includes('play_720p')) {
-                        videoType = 'HD Video';
-                    } else if (convertedMediaUrl.includes('play_1080p')) {
-                        videoType = 'Full HD Video';
-                    } else if (convertedMediaUrl.includes('hashpack.b-cdn.net')) {
-                        videoType = 'HashPack Video';
-                    } else if (convertedMediaUrl.includes('vz-') && convertedMediaUrl.includes('b-cdn.net')) {
-                        videoType = 'SentX Video';
+                    // Try to embed video directly first, then fall back to link if needed
+                    try {
+                        // Set the video as the main embed image/video
+                        embed.setImage(convertedMediaUrl);
+                        console.log(`🎬 Added video embed: ${convertedMediaUrl} (${mediaType.type})`);
+                        
+                        // Also add as clickable link for better user experience
+                        const currentDesc = embed.data.description || '';
+                        let videoType = 'Video';
+                        
+                        // Detect video quality/source
+                        if (convertedMediaUrl.includes('play_720p')) {
+                            videoType = 'HD Video';
+                        } else if (convertedMediaUrl.includes('play_1080p')) {
+                            videoType = 'Full HD Video';
+                        } else if (convertedMediaUrl.includes('hashpack.b-cdn.net')) {
+                            videoType = 'HashPack Video';
+                        } else if (convertedMediaUrl.includes('vz-') && convertedMediaUrl.includes('b-cdn.net')) {
+                            videoType = 'SentX Video';
+                        }
+                        
+                        embed.setDescription(`${currentDesc}\n\n🎬 **[Watch ${videoType}](${convertedMediaUrl})**`);
+                    } catch (error) {
+                        console.log(`Failed to embed video, using link only: ${error.message}`);
+                        // Fall back to link only
+                        const currentDesc = embed.data.description || '';
+                        embed.setDescription(`${currentDesc}\n\n🎬 **[Watch Video](${convertedMediaUrl})**`);
                     }
-                    
-                    embed.setDescription(`${currentDesc}\n\n🎬 **[Watch ${videoType}](${convertedMediaUrl})**`);
-                    console.log(`🎬 Added video link: ${convertedMediaUrl} (${mediaType.type})`);
                 } else if (mediaType.isAnimated) {
                     // For GIFs and animated content, use setImage (Discord supports animated GIFs)
                     embed.setImage(convertedMediaUrl);
@@ -502,23 +513,34 @@ class EmbedUtils {
             if (convertedMediaUrl) {
                 // Use appropriate Discord embed method based on media type
                 if (mediaType.isVideo) {
-                    // For videos, add as clickable link since Discord doesn't auto-play most videos
-                    const currentDesc = embed.data.description || '';
-                    let videoType = 'Video';
-                    
-                    // Detect video quality/source
-                    if (convertedMediaUrl.includes('play_720p')) {
-                        videoType = 'HD Video';
-                    } else if (convertedMediaUrl.includes('play_1080p')) {
-                        videoType = 'Full HD Video';
-                    } else if (convertedMediaUrl.includes('hashpack.b-cdn.net')) {
-                        videoType = 'HashPack Video';
-                    } else if (convertedMediaUrl.includes('vz-') && convertedMediaUrl.includes('b-cdn.net')) {
-                        videoType = 'SentX Video';
+                    // Try to embed video directly first, then fall back to link if needed
+                    try {
+                        // Set the video as the main embed image/video
+                        embed.setImage(convertedMediaUrl);
+                        console.log(`🎬 Added video embed to listing: ${convertedMediaUrl} (${mediaType.type})`);
+                        
+                        // Also add as clickable link for better user experience
+                        const currentDesc = embed.data.description || '';
+                        let videoType = 'Video';
+                        
+                        // Detect video quality/source
+                        if (convertedMediaUrl.includes('play_720p')) {
+                            videoType = 'HD Video';
+                        } else if (convertedMediaUrl.includes('play_1080p')) {
+                            videoType = 'Full HD Video';
+                        } else if (convertedMediaUrl.includes('hashpack.b-cdn.net')) {
+                            videoType = 'HashPack Video';
+                        } else if (convertedMediaUrl.includes('vz-') && convertedMediaUrl.includes('b-cdn.net')) {
+                            videoType = 'SentX Video';
+                        }
+                        
+                        embed.setDescription(`${currentDesc}\n\n🎬 **[Watch ${videoType}](${convertedMediaUrl})**`);
+                    } catch (error) {
+                        console.log(`Failed to embed video, using link only: ${error.message}`);
+                        // Fall back to link only
+                        const currentDesc = embed.data.description || '';
+                        embed.setDescription(`${currentDesc}\n\n🎬 **[Watch Video](${convertedMediaUrl})**`);
                     }
-                    
-                    embed.setDescription(`${currentDesc}\n\n🎬 **[Watch ${videoType}](${convertedMediaUrl})**`);
-                    console.log(`🎬 Added video link to listing: ${convertedMediaUrl} (${mediaType.type})`);
                 } else if (mediaType.isAnimated) {
                     // For GIFs and animated content, use setImage
                     embed.setImage(convertedMediaUrl);
