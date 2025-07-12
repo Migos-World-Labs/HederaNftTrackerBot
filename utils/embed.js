@@ -57,9 +57,13 @@ class EmbedUtils {
             });
         }
 
-        // Add NFT image with comprehensive fallback options
-        // Priority: imageCDN > nftImage > image_url > imageUrl > imageFile > image > metadata.image > media.image
-        let imageUrl = sale.imageCDN || 
+        // Add NFT media with comprehensive fallback options for images, GIFs, MP4s, and animations
+        // Priority: Check animation_url first for GIFs/videos, then static images
+        let mediaUrl = sale.animation_url ||
+                       (sale.metadata && sale.metadata.animation_url) ||
+                       (sale.media && sale.media.animation_url) ||
+                       (sale.data && sale.data.animation_url) ||
+                       sale.imageCDN || 
                        sale.nftImage || 
                        sale.image_url || 
                        sale.imageUrl || 
@@ -70,6 +74,10 @@ class EmbedUtils {
                        (sale.metadata && sale.metadata.image) ||
                        (sale.media && sale.media.image) ||
                        (sale.data && sale.data.image);
+        
+        // Detect media type for proper display
+        const mediaType = this.detectMediaType(mediaUrl);
+        let imageUrl = mediaUrl; // For backwards compatibility
                        
         // Enhanced Hashinal detection with broader patterns
         const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228', '0.0.8293984'];
@@ -190,23 +198,38 @@ class EmbedUtils {
             }
         }
         
-        if (imageUrl) {
-            const convertedImageUrl = this.convertIpfsToHttp(imageUrl);
-            if (convertedImageUrl) {
-                embed.setImage(convertedImageUrl);
+        if (mediaUrl) {
+            const convertedMediaUrl = this.convertIpfsToHttp(mediaUrl);
+            if (convertedMediaUrl) {
+                // Use appropriate Discord embed method based on media type
+                if (mediaType.isVideo) {
+                    // For videos (MP4, etc.), add as description with link since Discord doesn't auto-play videos in embeds
+                    const currentDesc = embed.data.description || '';
+                    embed.setDescription(`${currentDesc}\n\n🎬 **[View ${mediaType.type.toUpperCase()} Animation](${convertedMediaUrl})**`);
+                    console.log(`🎬 Added video media: ${convertedMediaUrl} (${mediaType.type})`);
+                } else if (mediaType.isAnimated) {
+                    // For GIFs and animated content, use setImage (Discord supports animated GIFs)
+                    embed.setImage(convertedMediaUrl);
+                    console.log(`🎞️ Added animated media: ${convertedMediaUrl} (${mediaType.type})`);
+                } else {
+                    // For static images, use setImage as before
+                    embed.setImage(convertedMediaUrl);
+                    console.log(`🖼️ Added static image: ${convertedMediaUrl}`);
+                }
+                
                 if (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) {
-                    console.log(`ROOSTER CARTEL - Successfully set image: ${convertedImageUrl}`);
+                    console.log(`ROOSTER CARTEL - Successfully set media (${mediaType.type}): ${convertedMediaUrl}`);
                 }
             } else {
-                console.log(`Failed to convert image URL: ${imageUrl}`);
+                console.log(`Failed to convert media URL: ${mediaUrl}`);
                 if (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) {
-                    console.log(`ROOSTER CARTEL - Failed to convert URL: ${imageUrl}`);
+                    console.log(`ROOSTER CARTEL - Failed to convert URL: ${mediaUrl}`);
                 }
             }
         } else {
-            console.log(`No image found for NFT: ${sale.nft_name} (${sale.token_id}/${sale.serial_id || sale.serial_number})`);
+            console.log(`No media found for NFT: ${sale.nft_name} (${sale.token_id}/${sale.serial_id || sale.serial_number})`);
             if (sale.collection_name && sale.collection_name.includes('Rooster Cartel')) {
-                console.log(`ROOSTER CARTEL - NO IMAGE FOUND for ${sale.nft_name}`);
+                console.log(`ROOSTER CARTEL - NO MEDIA FOUND for ${sale.nft_name}`);
             }
         }
 
@@ -375,8 +398,12 @@ class EmbedUtils {
             });
         }
 
-        // Add NFT image with comprehensive fallback options for listings
-        let imageUrl = listing.imageCDN || 
+        // Add NFT media with comprehensive fallback options for listings (images, GIFs, MP4s)
+        let mediaUrl = listing.animation_url ||
+                       (listing.metadata && listing.metadata.animation_url) ||
+                       (listing.media && listing.media.animation_url) ||
+                       (listing.data && listing.data.animation_url) ||
+                       listing.imageCDN || 
                        listing.nftImage || 
                        listing.image_url || 
                        listing.imageUrl || 
@@ -387,6 +414,10 @@ class EmbedUtils {
                        (listing.metadata && listing.metadata.image) ||
                        (listing.media && listing.media.image) ||
                        (listing.data && listing.data.image);
+        
+        // Detect media type for proper display
+        const mediaType = this.detectMediaType(mediaUrl);
+        let imageUrl = mediaUrl; // For backwards compatibility
 
         // Enhanced Hashinal detection with broader patterns for listings
         const knownHashinalTokens = ['0.0.5552189', '0.0.2173899', '0.0.789064', '0.0.1097228', '0.0.8293984'];
@@ -453,17 +484,31 @@ class EmbedUtils {
             }
         }
         
-        if (imageUrl) {
-            const convertedImageUrl = this.convertIpfsToHttp(imageUrl);
-            if (convertedImageUrl) {
-                embed.setImage(convertedImageUrl);
+        if (mediaUrl) {
+            const convertedMediaUrl = this.convertIpfsToHttp(mediaUrl);
+            if (convertedMediaUrl) {
+                // Use appropriate Discord embed method based on media type
+                if (mediaType.isVideo) {
+                    // For videos (MP4, etc.), add as description with link
+                    const currentDesc = embed.data.description || '';
+                    embed.setDescription(`${currentDesc}\n\n🎬 **[View ${mediaType.type.toUpperCase()} Animation](${convertedMediaUrl})**`);
+                    console.log(`🎬 Added video media to listing: ${convertedMediaUrl} (${mediaType.type})`);
+                } else if (mediaType.isAnimated) {
+                    // For GIFs and animated content, use setImage
+                    embed.setImage(convertedMediaUrl);
+                    console.log(`🎞️ Added animated media to listing: ${convertedMediaUrl} (${mediaType.type})`);
+                } else {
+                    // For static images, use setImage as before
+                    embed.setImage(convertedMediaUrl);
+                    console.log(`🖼️ Added static image to listing: ${convertedMediaUrl}`);
+                }
             } else {
-                console.log(`Failed to convert listing image URL: ${imageUrl}`);
+                console.log(`Failed to convert listing media URL: ${mediaUrl}`);
             }
         } else {
-            // Only log missing images if we have all the data we expect
+            // Only log missing media if we have all the data we expect
             if (listing.token_id && listing.serial_number) {
-                console.log(`No image found for listing: ${listing.nft_name} (${listing.token_id}/${listing.serial_id || listing.serial_number})`);
+                console.log(`No media found for listing: ${listing.nft_name} (${listing.token_id}/${listing.serial_id || listing.serial_number})`);
             }
         }
 
@@ -692,6 +737,51 @@ class EmbedUtils {
     truncateText(text, maxLength = 1024) {
         if (!text || text.length <= maxLength) return text;
         return text.substring(0, maxLength - 3) + '...';
+    }
+
+    /**
+     * Detect media type from URL or filename
+     * @param {string} url - Media URL to analyze
+     * @returns {Object} Media type information
+     */
+    detectMediaType(url) {
+        if (!url) {
+            return { type: 'unknown', isVideo: false, isAnimated: false, isStatic: true };
+        }
+        
+        const urlLower = url.toLowerCase();
+        
+        // Video formats (MP4, MOV, WEBM, etc.)
+        if (urlLower.includes('.mp4') || urlLower.includes('.mov') || 
+            urlLower.includes('.webm') || urlLower.includes('.avi') ||
+            urlLower.includes('.mkv') || urlLower.includes('.m4v')) {
+            return { type: 'video', isVideo: true, isAnimated: false, isStatic: false };
+        }
+        
+        // Animated GIF
+        if (urlLower.includes('.gif')) {
+            return { type: 'gif', isVideo: false, isAnimated: true, isStatic: false };
+        }
+        
+        // Other animated formats
+        if (urlLower.includes('.webp') && urlLower.includes('animated')) {
+            return { type: 'webp', isVideo: false, isAnimated: true, isStatic: false };
+        }
+        
+        // Static image formats
+        if (urlLower.includes('.png') || urlLower.includes('.jpg') || 
+            urlLower.includes('.jpeg') || urlLower.includes('.webp') ||
+            urlLower.includes('.svg')) {
+            return { type: 'image', isVideo: false, isAnimated: false, isStatic: true };
+        }
+        
+        // Check for animation_url pattern (often indicates animated content)
+        if (url.includes('animation') || url.includes('video')) {
+            return { type: 'animation', isVideo: false, isAnimated: true, isStatic: false };
+        }
+        
+        // Default to static image
+        return { type: 'image', isVideo: false, isAnimated: false, isStatic: true };
     }
 
     /**

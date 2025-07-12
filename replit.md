@@ -355,6 +355,14 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Fixed autocomplete "loading options failed" errors with enhanced error handling and debugging
   - Improved collection selection autocomplete with helpful messages for servers without tracked collections
   - All test commands now work properly without Discord API validation failures
+- July 12, 2025: Added GIF and MP4 NFT support with multimedia detection
+  - Enhanced media detection to support animated GIFs, MP4 videos, and other multimedia NFT formats
+  - Added detectMediaType() utility function to identify static images, animated GIFs, and video content
+  - Videos (MP4, MOV, WEBM) now display as clickable links in embed descriptions since Discord doesn't auto-play video files
+  - Animated GIFs display directly in Discord embeds using setImage() method for seamless viewing
+  - Enhanced both sales and listing notifications with comprehensive multimedia support
+  - Added animation_url field detection for NFTs with separate static image and animated content
+  - Improved media URL detection with priority for animation_url over static image fields
 
 ## User Preferences
 
