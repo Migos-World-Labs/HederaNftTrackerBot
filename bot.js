@@ -1315,6 +1315,11 @@ class NFTSalesBot {
                         name: '🌐 Connected Servers',
                         value: `${serverConfigs.length} servers`,
                         inline: true
+                    },
+                    {
+                        name: '🏪 Supported Marketplaces',
+                        value: '• **SentX** - Primary marketplace\n• **Kabila** - Secondary coverage',
+                        inline: false
                     }
                 ],
                 timestamp: new Date().toISOString(),
