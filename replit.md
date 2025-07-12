@@ -439,6 +439,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Verified working enrichment system: Kabila listings now show SentX rank 1634 instead of incorrect rank 1658
   - Added comprehensive debugging showing successful data flow from Kabila API through SentX enrichment to Discord embeds
   - Both live notifications and test commands now display accurate cross-marketplace rarity data with proper source attribution
+- July 12, 2025: Implemented universal server-specific filtering and enhanced SentX rarity coverage
+  - Added server-specific filtering to all 4 marketplace test commands (SentX sales, SentX listings, Kabila sales, Kabila listings)
+  - Enhanced SentX rarity enrichment to search up to 10 pages (1,000 activities) for comprehensive NFT data coverage
+  - Fixed test commands to only show NFTs from collections tracked in each specific Discord server
+  - Universal rarity enrichment now works for all tracked collections and future collections, not just Wild Tigers #3108
+  - Test commands provide helpful error messages listing tracked collections when no recent activity is found
 
 ## User Preferences
 

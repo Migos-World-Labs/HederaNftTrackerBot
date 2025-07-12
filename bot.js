@@ -1351,10 +1351,10 @@ class NFTSalesBot {
                 embed = await this.getTestListingEmbed(interaction.guildId, specificCollection);
             } else if (testType === 'recent-sentx-sale') {
                 console.log('Testing most recent SentX sale...');
-                embed = await this.getTestRecentSentXSaleEmbed();
+                embed = await this.getTestRecentSentXSaleEmbed(interaction.guildId);
             } else if (testType === 'recent-sentx-listing') {
                 console.log('Testing most recent SentX listing...');
-                embed = await this.getTestRecentSentXListingEmbed();
+                embed = await this.getTestRecentSentXListingEmbed(interaction.guildId);
             } else if (testType === 'recent-kabila-sale') {
                 console.log('Testing most recent Kabila sale...');
                 embed = await this.getTestRecentKabilaSaleEmbed(interaction.guildId);
@@ -1805,7 +1805,7 @@ class NFTSalesBot {
 
 
 
-    async getTestRecentSentXSaleEmbed() {
+    async getTestRecentSentXSaleEmbed(guildId) {
         try {
             console.log('Creating test SentX sale embed...');
             
@@ -1819,12 +1819,28 @@ class NFTSalesBot {
                 );
             }
             
-            // Get the most recent sale
-            const testSale = recentSales[0];
+            // Get tracked collections for this server
+            const trackedCollections = await this.storage.getCollections(guildId);
+            const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+            
+            // Filter sales to only show those from tracked collections
+            const trackedSales = recentSales.filter(sale => 
+                trackedTokenIds.includes(sale.token_id || sale.tokenId)
+            );
+            
+            if (trackedSales.length === 0) {
+                return this.embedUtils.createErrorEmbed(
+                    'No Tracked SentX Sales Found',
+                    `No recent SentX sales found from your tracked collections.\n\nTracked collections: ${trackedCollections.map(c => c.name || c.token_id).join(', ')}`
+                );
+            }
+            
+            // Get the most recent sale from tracked collections
+            const testSale = trackedSales[0];
             console.log(`Using SentX sale: ${testSale.nft_name} for ${testSale.price_hbar} HBAR`);
             
             // Get HBAR rate
-            const hbarRate = await currencyService.getHbarToUsdRate();
+            const hbarRate = await this.currencyService.getHbarToUsdRate();
             
             // Create and return the embed
             return await this.embedUtils.createSaleEmbed(testSale, hbarRate);
@@ -1839,7 +1855,7 @@ class NFTSalesBot {
         }
     }
 
-    async getTestRecentSentXListingEmbed() {
+    async getTestRecentSentXListingEmbed(guildId) {
         try {
             console.log('Creating test SentX listing embed...');
             
@@ -1853,12 +1869,28 @@ class NFTSalesBot {
                 );
             }
             
-            // Get the most recent listing
-            const testListing = recentListings[0];
+            // Get tracked collections for this server
+            const trackedCollections = await this.storage.getCollections(guildId);
+            const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+            
+            // Filter listings to only show those from tracked collections
+            const trackedListings = recentListings.filter(listing => 
+                trackedTokenIds.includes(listing.token_id || listing.tokenId)
+            );
+            
+            if (trackedListings.length === 0) {
+                return this.embedUtils.createErrorEmbed(
+                    'No Tracked SentX Listings Found',
+                    `No recent SentX listings found from your tracked collections.\n\nTracked collections: ${trackedCollections.map(c => c.name || c.token_id).join(', ')}`
+                );
+            }
+            
+            // Get the most recent listing from tracked collections
+            const testListing = trackedListings[0];
             console.log(`Using SentX listing: ${testListing.nft_name} for ${testListing.price_hbar} HBAR`);
             
             // Get HBAR rate
-            const hbarRate = await currencyService.getHbarToUsdRate();
+            const hbarRate = await this.currencyService.getHbarToUsdRate();
             
             // Create and return the embed
             return await this.embedUtils.createListingEmbed(testListing, hbarRate);

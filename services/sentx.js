@@ -228,40 +228,44 @@ class SentXService {
             if (!nftData) {
                 console.log(`⚠️ NFT not found in recent market activity, trying direct collection search...`);
                 
-                // Try to fetch from collection-specific endpoints if available
+                // Try to fetch more historical data by searching more pages
                 try {
-                    const collectionResponse = await this.axiosInstance.get('/v1/public/market/activity', {
-                        params: {
-                            apikey: apiKey,
-                            activityFilter: 'All',
-                            amount: 500, // Get more data for specific collection
-                            page: 1,
-                            tokenId: tokenId // Filter by collection if API supports it
-                        }
-                    });
-                    
-                    if (collectionResponse.data && collectionResponse.data.success) {
-                        const targetSerial = serialId ? parseInt(serialId) : null;
-                        nftData = collectionResponse.data.marketActivity?.find(activity => 
-                            activity.nftTokenAddress === tokenId && 
-                            activity.nftSerialId === targetSerial
-                        );
+                    for (let extraPage = 6; extraPage <= 10; extraPage++) {
+                        const extraResponse = await this.axiosInstance.get('/v1/public/market/activity', {
+                            params: {
+                                apikey: apiKey,
+                                activityFilter: 'All',
+                                amount: 100,
+                                page: extraPage
+                            }
+                        });
                         
-                        if (nftData) {
-                            nftData = {
-                                name: nftData.nftName,
-                                rarityRank: nftData.rarityRank,
-                                rarityPct: nftData.rarityPct,
-                                tokenId: nftData.nftTokenAddress,
-                                serialNumber: nftData.nftSerialId,
-                                image: nftData.nftImage,
-                                metadata: nftData.nftMetadata
-                            };
-                            console.log(`✅ Found ${nftData.name} in collection search: Rank ${nftData.rarityRank}, Rarity ${nftData.rarityPct}`);
+                        if (extraResponse.data && extraResponse.data.success && extraResponse.data.marketActivity) {
+                            const targetSerial = serialId ? parseInt(serialId) : null;
+                            const found = extraResponse.data.marketActivity.find(activity => 
+                                activity.nftTokenAddress === tokenId && 
+                                activity.nftSerialId === targetSerial
+                            );
+                            
+                            if (found) {
+                                nftData = {
+                                    name: found.nftName,
+                                    rarityRank: found.rarityRank,
+                                    rarityPct: found.rarityPct,
+                                    tokenId: found.nftTokenAddress,
+                                    serialNumber: found.nftSerialId,
+                                    image: found.nftImage,
+                                    metadata: found.nftMetadata
+                                };
+                                console.log(`✅ Found ${nftData.name} in extended search (page ${extraPage}): Rank ${nftData.rarityRank}, Rarity ${nftData.rarityPct}`);
+                                break;
+                            }
+                        } else {
+                            break;
                         }
                     }
-                } catch (collectionError) {
-                    console.log(`⚠️ Collection search failed: ${collectionError.message}`);
+                } catch (searchError) {
+                    console.log(`⚠️ Extended search failed: ${searchError.message}`);
                 }
                 
                 // Final fallback for specific known NFTs
