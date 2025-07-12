@@ -451,6 +451,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Successfully verified Wild Tigers #3108 enrichment: found on page 2 with correct rank 1634 and rarity 0.4913
   - Fixed multiple command execution issues and improved test result diversity
   - Universal rarity enrichment now working across all tracked collections with comprehensive marketplace coverage
+- July 12, 2025: Fixed test commands to respect collection selection and improved live notification links
+  - Fixed all 4 marketplace test commands to properly filter by specific collection when selected
+  - Updated test commands to show targeted results instead of random selections when collection specified
+  - Fixed marketplace-specific URL generation for live notifications (SentX and Kabila)
+  - Enhanced live notification system with proper Kabila URL format (market.kabila.app/en/collections/{tokenNumber}/items)
+  - Verified SentX rarity enrichment works for all Kabila collections in live notifications (not just tests)
+  - All test commands now properly respect user's collection choice while maintaining server-specific filtering
 
 ## User Preferences
 

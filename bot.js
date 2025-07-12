@@ -505,14 +505,23 @@ class NFTSalesBot {
                     
                     const channel = this.client.channels.cache.get(serverConfig.channelId);
                     if (channel) {
-                        // Add collection URL for SentX marketplace
-                        if (sale.token_id) {
-                            const collectionFriendlyUrl = sale.collectionFriendlyurl || sale.collection_friendly_url;
-                            
-                            if (collectionFriendlyUrl) {
-                                sale.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
-                            } else {
-                                sale.collection_url = `https://sentx.io/nft-marketplace/collection/${sale.token_id}`;
+                        // Add marketplace-specific collection URLs
+                        if (sale.marketplace === 'Kabila') {
+                            // Kabila URL format
+                            const tokenNumber = (sale.token_id || sale.tokenId || '').replace('0.0.', '');
+                            if (tokenNumber) {
+                                sale.collection_url = `https://market.kabila.app/en/collections/${tokenNumber}/items`;
+                            }
+                        } else {
+                            // SentX URL format
+                            if (sale.token_id || sale.tokenId) {
+                                const collectionFriendlyUrl = sale.collectionFriendlyurl || sale.collection_friendly_url;
+                                
+                                if (collectionFriendlyUrl) {
+                                    sale.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
+                                } else {
+                                    sale.collection_url = `https://sentx.io/nft-marketplace/collection/${sale.token_id || sale.tokenId}`;
+                                }
                             }
                         }
                         
@@ -594,14 +603,23 @@ class NFTSalesBot {
                     const channelType = serverConfig.listingsChannelId ? 'listings' : 'main';
                     
                     if (channel) {
-                        // Add collection URL for SentX marketplace (collection page, not specific NFT)
-                        if (listing.token_id) {
-                            const collectionFriendlyUrl = listing.collectionFriendlyurl || listing.collection_friendly_url;
-                            
-                            if (collectionFriendlyUrl) {
-                                listing.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
-                            } else {
-                                listing.collection_url = `https://sentx.io/nft-marketplace/collection/${listing.token_id}`;
+                        // Add marketplace-specific collection URLs
+                        if (listing.marketplace === 'Kabila') {
+                            // Kabila URL format
+                            const tokenNumber = (listing.token_id || listing.tokenId || '').replace('0.0.', '');
+                            if (tokenNumber) {
+                                listing.collection_url = `https://market.kabila.app/en/collections/${tokenNumber}/items`;
+                            }
+                        } else {
+                            // SentX URL format
+                            if (listing.token_id || listing.tokenId) {
+                                const collectionFriendlyUrl = listing.collectionFriendlyurl || listing.collection_friendly_url;
+                                
+                                if (collectionFriendlyUrl) {
+                                    listing.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
+                                } else {
+                                    listing.collection_url = `https://sentx.io/nft-marketplace/collection/${listing.token_id || listing.tokenId}`;
+                                }
                             }
                         }
                         
@@ -1351,16 +1369,16 @@ class NFTSalesBot {
                 embed = await this.getTestListingEmbed(interaction.guildId, specificCollection);
             } else if (testType === 'recent-sentx-sale') {
                 console.log('Testing most recent SentX sale...');
-                embed = await this.getTestRecentSentXSaleEmbed(interaction.guildId);
+                embed = await this.getTestRecentSentXSaleEmbed(interaction.guildId, specificCollection);
             } else if (testType === 'recent-sentx-listing') {
                 console.log('Testing most recent SentX listing...');
-                embed = await this.getTestRecentSentXListingEmbed(interaction.guildId);
+                embed = await this.getTestRecentSentXListingEmbed(interaction.guildId, specificCollection);
             } else if (testType === 'recent-kabila-sale') {
                 console.log('Testing most recent Kabila sale...');
-                embed = await this.getTestRecentKabilaSaleEmbed(interaction.guildId);
+                embed = await this.getTestRecentKabilaSaleEmbed(interaction.guildId, specificCollection);
             } else if (testType === 'recent-kabila-listing') {
                 console.log('Testing most recent Kabila listing...');
-                embed = await this.getTestRecentKabilaListingEmbed(interaction.guildId);
+                embed = await this.getTestRecentKabilaListingEmbed(interaction.guildId, specificCollection);
             } else {
                 // Default: tracked-sale
                 console.log('Testing latest sale from tracked collections...');
@@ -1805,7 +1823,7 @@ class NFTSalesBot {
 
 
 
-    async getTestRecentSentXSaleEmbed(guildId) {
+    async getTestRecentSentXSaleEmbed(guildId, specificCollection = null) {
         try {
             console.log('Creating test SentX sale embed...');
             
@@ -1824,9 +1842,23 @@ class NFTSalesBot {
             const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
             
             // Filter sales to only show those from tracked collections
-            const trackedSales = recentSales.filter(sale => 
+            let trackedSales = recentSales.filter(sale => 
                 trackedTokenIds.includes(sale.token_id || sale.tokenId)
             );
+            
+            // If specific collection requested, filter further
+            if (specificCollection) {
+                trackedSales = trackedSales.filter(sale => 
+                    (sale.token_id || sale.tokenId) === specificCollection
+                );
+                
+                if (trackedSales.length === 0) {
+                    return this.embedUtils.createErrorEmbed(
+                        'No SentX Sales Found',
+                        `No recent SentX sales found for collection ${specificCollection}.\n\nTry testing without specifying a collection.`
+                    );
+                }
+            }
             
             if (trackedSales.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1835,10 +1867,9 @@ class NFTSalesBot {
                 );
             }
             
-            // Get a random sale from tracked collections to show variety
-            const randomIndex = Math.floor(Math.random() * Math.min(5, trackedSales.length));
-            const testSale = trackedSales[randomIndex];
-            console.log(`🎲 Selected sale ${randomIndex + 1} of ${trackedSales.length} tracked sales for variety`);
+            // Get sale - specific collection gets first result, random for general test
+            const testSale = specificCollection ? trackedSales[0] : trackedSales[Math.floor(Math.random() * Math.min(5, trackedSales.length))];
+            console.log(`🎯 Selected ${specificCollection ? 'specific' : 'random'} sale: ${testSale.nft_name}`);
             console.log(`Using SentX sale: ${testSale.nft_name} for ${testSale.price_hbar} HBAR`);
             
             // Get HBAR rate
@@ -1857,7 +1888,7 @@ class NFTSalesBot {
         }
     }
 
-    async getTestRecentSentXListingEmbed(guildId) {
+    async getTestRecentSentXListingEmbed(guildId, specificCollection = null) {
         try {
             console.log('Creating test SentX listing embed...');
             
@@ -1876,9 +1907,23 @@ class NFTSalesBot {
             const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
             
             // Filter listings to only show those from tracked collections
-            const trackedListings = recentListings.filter(listing => 
+            let trackedListings = recentListings.filter(listing => 
                 trackedTokenIds.includes(listing.token_id || listing.tokenId)
             );
+            
+            // If specific collection requested, filter further
+            if (specificCollection) {
+                trackedListings = trackedListings.filter(listing => 
+                    (listing.token_id || listing.tokenId) === specificCollection
+                );
+                
+                if (trackedListings.length === 0) {
+                    return this.embedUtils.createErrorEmbed(
+                        'No SentX Listings Found',
+                        `No recent SentX listings found for collection ${specificCollection}.\n\nTry testing without specifying a collection.`
+                    );
+                }
+            }
             
             if (trackedListings.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1887,10 +1932,9 @@ class NFTSalesBot {
                 );
             }
             
-            // Get a random listing from tracked collections to show variety
-            const randomIndex = Math.floor(Math.random() * Math.min(5, trackedListings.length));
-            const testListing = trackedListings[randomIndex];
-            console.log(`🎲 Selected listing ${randomIndex + 1} of ${trackedListings.length} tracked listings for variety`);
+            // Get listing - specific collection gets first result, random for general test
+            const testListing = specificCollection ? trackedListings[0] : trackedListings[Math.floor(Math.random() * Math.min(5, trackedListings.length))];
+            console.log(`🎯 Selected ${specificCollection ? 'specific' : 'random'} listing: ${testListing.nft_name}`);
             console.log(`Using SentX listing: ${testListing.nft_name} for ${testListing.price_hbar} HBAR`);
             
             // Get HBAR rate
@@ -1909,7 +1953,7 @@ class NFTSalesBot {
         }
     }
 
-    async getTestRecentKabilaSaleEmbed(guildId) {
+    async getTestRecentKabilaSaleEmbed(guildId, specificCollection = null) {
         try {
             console.log('🔍 Creating test Kabila sale embed...');
             console.log('🔍 Calling this.kabilaService.getRecentSales(50)...');
@@ -1931,9 +1975,23 @@ class NFTSalesBot {
             const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
             
             // Filter sales to only show those from tracked collections
-            const trackedSales = recentSales.filter(sale => 
+            let trackedSales = recentSales.filter(sale => 
                 trackedTokenIds.includes(sale.token_id || sale.tokenId)
             );
+            
+            // If specific collection requested, filter further
+            if (specificCollection) {
+                trackedSales = trackedSales.filter(sale => 
+                    (sale.token_id || sale.tokenId) === specificCollection
+                );
+                
+                if (trackedSales.length === 0) {
+                    return this.embedUtils.createErrorEmbed(
+                        'No Kabila Sales Found',
+                        `No recent Kabila sales found for collection ${specificCollection}.\n\nTry testing without specifying a collection.`
+                    );
+                }
+            }
             
             if (trackedSales.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1942,10 +2000,9 @@ class NFTSalesBot {
                 );
             }
             
-            // Get a random sale from tracked collections to show variety
-            const randomIndex = Math.floor(Math.random() * Math.min(5, trackedSales.length));
-            let testSale = trackedSales[randomIndex];
-            console.log(`🎲 Selected sale ${randomIndex + 1} of ${trackedSales.length} tracked sales for variety`);
+            // Get sale - specific collection gets first result, random for general test
+            let testSale = specificCollection ? trackedSales[0] : trackedSales[Math.floor(Math.random() * Math.min(5, trackedSales.length))];
+            console.log(`🎯 Selected ${specificCollection ? 'specific' : 'random'} sale: ${testSale.nft_name}`);
             console.log(`🔍 Using Kabila sale data:`, {
                 nft_name: testSale.nft_name,
                 price_hbar: testSale.price_hbar,
@@ -1987,7 +2044,7 @@ class NFTSalesBot {
         }
     }
 
-    async getTestRecentKabilaListingEmbed(guildId) {
+    async getTestRecentKabilaListingEmbed(guildId, specificCollection = null) {
         try {
             console.log('🔍 Creating test Kabila listing embed...');
             console.log('🔍 Calling this.kabilaService.getRecentListings(50, true)...');
@@ -2009,9 +2066,23 @@ class NFTSalesBot {
             const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
             
             // Filter listings to only show those from tracked collections
-            const trackedListings = recentListings.filter(listing => 
+            let trackedListings = recentListings.filter(listing => 
                 trackedTokenIds.includes(listing.token_id || listing.tokenId)
             );
+            
+            // If specific collection requested, filter further
+            if (specificCollection) {
+                trackedListings = trackedListings.filter(listing => 
+                    (listing.token_id || listing.tokenId) === specificCollection
+                );
+                
+                if (trackedListings.length === 0) {
+                    return this.embedUtils.createErrorEmbed(
+                        'No Kabila Listings Found',
+                        `No recent Kabila listings found for collection ${specificCollection}.\n\nTry testing without specifying a collection.`
+                    );
+                }
+            }
             
             if (trackedListings.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -2020,10 +2091,9 @@ class NFTSalesBot {
                 );
             }
             
-            // Get a random listing from tracked collections to show variety
-            const randomIndex = Math.floor(Math.random() * Math.min(5, trackedListings.length));
-            let testListing = trackedListings[randomIndex];
-            console.log(`🎲 Selected listing ${randomIndex + 1} of ${trackedListings.length} tracked listings for variety`);
+            // Get listing - specific collection gets first result, random for general test
+            let testListing = specificCollection ? trackedListings[0] : trackedListings[Math.floor(Math.random() * Math.min(5, trackedListings.length))];
+            console.log(`🎯 Selected ${specificCollection ? 'specific' : 'random'} listing: ${testListing.nft_name}`);
             console.log(`🔍 Using Kabila listing data:`, {
                 nft_name: testListing.nft_name,
                 price_hbar: testListing.price_hbar,
