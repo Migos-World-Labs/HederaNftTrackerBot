@@ -131,7 +131,7 @@ class NFTSalesBot {
                     try {
                         await interaction.reply({
                             content: 'This bot is no longer available in this server.',
-                            ephemeral: true
+                            flags: 64 // MessageFlags.Ephemeral
                         });
                     } catch (error) {
                         console.log('Could not respond to interaction from departed server');
