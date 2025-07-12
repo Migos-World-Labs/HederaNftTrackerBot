@@ -237,9 +237,15 @@ class EmbedUtils {
         }
 
         // Add rarity and rank information for Kabila sales
-        if (sale.marketplace === 'Kabila' && sale.rank && sale.rank > 0) {
-            const rarityTier = this.getRankRarityTier(sale.rank);
-            saleInfo.push(`🏆 **Rank:** ${rarityTier.emoji} #${sale.rank} (${rarityTier.name})`);
+        if (sale.marketplace === 'Kabila' && sale.rank !== null && sale.rank !== undefined && sale.rank >= 0) {
+            console.log(`🔍 Kabila sale rank debug: ${sale.rank} for ${sale.nft_name}`);
+            if (sale.rank > 0) {
+                const rarityTier = this.getRankRarityTier(sale.rank);
+                saleInfo.push(`🏆 **Rank:** ${rarityTier.emoji} #${sale.rank} (${rarityTier.name})`);
+            } else if (sale.rank === 0) {
+                // Handle rank 0 - might be unranked or special case
+                saleInfo.push(`🏆 **Rank:** ⚪ Unranked`);
+            }
         }
 
         if (saleInfo.length > 0) {
@@ -531,9 +537,15 @@ class EmbedUtils {
         }
 
         // Add rarity and rank information for Kabila listings
-        if (listing.marketplace === 'Kabila' && listing.rank && listing.rank > 0) {
-            const rarityTier = this.getRankRarityTier(listing.rank);
-            listingInfo.push(`🏆 **Rank:** ${rarityTier.emoji} #${listing.rank} (${rarityTier.name})`);
+        if (listing.marketplace === 'Kabila' && listing.rank !== null && listing.rank !== undefined && listing.rank >= 0) {
+            console.log(`🔍 Kabila listing rank debug: ${listing.rank} for ${listing.nft_name}`);
+            if (listing.rank > 0) {
+                const rarityTier = this.getRankRarityTier(listing.rank);
+                listingInfo.push(`🏆 **Rank:** ${rarityTier.emoji} #${listing.rank} (${rarityTier.name})`);
+            } else if (listing.rank === 0) {
+                // Handle rank 0 - might be unranked or special case
+                listingInfo.push(`🏆 **Rank:** ⚪ Unranked`);
+            }
         }
 
         if (listingInfo.length > 0 && listingInfo.join('\n').trim()) {

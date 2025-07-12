@@ -114,6 +114,11 @@ class KabilaService {
                 return [];
             }
             
+            // Debug: Log first activity to see available fields (commented out to reduce spam)
+            // if (activities.length > 0) {
+            //     console.log('🔍 Kabila listing raw data sample:', JSON.stringify(activities[0], null, 2));
+            // }
+            
             // Filter only active listings (no buyer, has price)
             const listingsOnly = activities.filter(activity => {
                 const isActiveListing = (!activity.buyerId || activity.buyerId === '') && 
