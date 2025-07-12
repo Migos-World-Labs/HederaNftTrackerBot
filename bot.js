@@ -838,10 +838,13 @@ class NFTSalesBot {
                         title: '🤖 NFT Sales Bot Added!',
                         description: `Thank you for adding the NFT Sales Bot to **${guild.name}**!`,
                         color: 0x00ff00,
+                        thumbnail: {
+                            url: 'attachment://migos-logo.png'
+                        },
                         fields: [
                             {
                                 name: '📈 What I Do',
-                                value: 'I track real-time NFT sales from SentX marketplace on Hedera and post detailed notifications here.',
+                                value: 'I track real-time NFT sales from SentX and Kabila marketplaces on Hedera and post detailed notifications here.',
                                 inline: false
                             },
                             {
@@ -853,12 +856,25 @@ class NFTSalesBot {
                                 name: '💰 Features',
                                 value: '• Real-time sale notifications\n• HBAR to USD conversion\n• NFT images and details\n• Buyer/seller information\n• Collection filtering',
                                 inline: false
+                            },
+                            {
+                                name: '🛟 Need Help?',
+                                value: '[Join our Discord support server](https://discord.gg/fkKEgckbYH)\n\nContact **Mauii** or **Wise Whale** for setup help and questions!',
+                                inline: false
                             }
                         ],
                         timestamp: new Date().toISOString(),
-                        footer: { text: 'Built for Hedera by Mauii - Migos World Labs Inc' }
+                        footer: { 
+                            text: 'Built for the Hedera NFT community by Migos World Labs',
+                            icon_url: 'https://sentient-bherbhd8e3cyg4dn.z01.azurefd.net/media/web/hedera-logo-128.png'
+                        }
                     };
-                    await firstChannel.send({ embeds: [welcomeEmbed] });
+                    
+                    const attachment = new AttachmentBuilder('./migos-logo.png', { name: 'migos-logo.png' });
+                    await firstChannel.send({ 
+                        embeds: [welcomeEmbed],
+                        files: [attachment]
+                    });
                 }
                 
                 console.log(`Configured server ${guild.name} with channel #${firstChannel.name}`);
