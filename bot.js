@@ -850,12 +850,12 @@ class NFTSalesBot {
             }
             
             // Register fresh commands globally
-            await rest.put(
+            const result = await rest.put(
                 Routes.applicationCommands(this.client.user.id),
                 { body: commands }
             );
             
-            console.log('Successfully registered slash commands globally');
+            console.log(`Successfully registered ${result.length} slash commands globally:`, result.map(cmd => cmd.name).join(', '));
         } catch (error) {
             console.error('Error registering slash commands:', error);
         }
