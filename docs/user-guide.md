@@ -108,7 +108,7 @@ https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissio
 **Purpose**: Get help with the bot and access community support
 
 **Information provided**:
-- **Migos World Labs Discord**: Direct link to Discord support server (https://discord.gg/6KAR52JXzn)
+- **Migos World Labs Discord**: Direct link to Discord support server (https://discord.gg/fkKEgckbYH)
 - **Contact Information**: Specific contacts Mauii and Wise Whale for setup help
 - **Help Topics**: Bot setup, configuration, troubleshooting, feature requests
 - **Quick Commands**: Reference for essential commands

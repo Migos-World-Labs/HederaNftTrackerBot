@@ -484,7 +484,7 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added main project README.md with quick access to all documentation resources
 - July 12, 2025: Added support command with Discord server integration
   - Implemented `/support` slash command for user assistance and community support
-  - Created rich Discord embed with support server link (https://discord.gg/6KAR52JXzn)
+  - Created rich Discord embed with support server link (https://discord.gg/fkKEgckbYH)
   - Added comprehensive support information including quick commands, marketplace details, and help offerings
   - Updated slash command registration from 7 to 8 total commands including new support functionality
   - Enhanced user experience with direct access to community support and troubleshooting assistance

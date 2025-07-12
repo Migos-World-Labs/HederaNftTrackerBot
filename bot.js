@@ -1495,7 +1495,7 @@ class NFTSalesBot {
                 fields: [
                     {
                         name: '🎮 Join Migos World Labs Discord',
-                        value: '[Click here to join our Discord support server](https://discord.gg/6KAR52JXzn)\n\nContact **Mauii** or **Wise Whale** for set up help\n\nGet help with:\n• Bot setup and configuration\n• Adding NFT collections\n• Troubleshooting issues\n• Feature requests and feedback',
+                        value: '[Click here to join our Discord support server](https://discord.gg/fkKEgckbYH)\n\nContact **Mauii** or **Wise Whale** for set up help\n\nGet help with:\n• Bot setup and configuration\n• Adding NFT collections\n• Troubleshooting issues\n• Feature requests and feedback',
                         inline: false
                     },
                     {
@@ -1531,7 +1531,7 @@ class NFTSalesBot {
             console.error('Error handling support command:', error);
             try {
                 await interaction.reply({
-                    content: '❌ Error showing support information. Please join our support server directly: https://discord.gg/6KAR52JXzn',
+                    content: '❌ Error showing support information. Please join our support server directly: https://discord.gg/fkKEgckbYH',
                     ephemeral: true
                 });
             } catch (replyError) {
