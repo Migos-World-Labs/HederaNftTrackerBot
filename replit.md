@@ -447,6 +447,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced error handling throughout monitoring pipeline with graceful failure recovery
   - Streamlined test command options by removing tracked collection tests, keeping only marketplace-specific tests
   - All performance improvements maintain functionality while reducing system resource usage
+- July 12, 2025: Enhanced server data cleanup and orphaned data management
+  - Enhanced GuildDelete event handler with detailed logging and cache clearing for server removals
+  - Implemented automatic orphaned data cleanup on bot startup to remove data from servers bot is no longer in
+  - Added comprehensive logging for cleanup operations showing configs and collections removed
+  - Enhanced cleanup functionality clears collection cache after data removal for immediate consistency
+  - Bot now automatically maintains clean database by removing leftover data from departed servers
 - July 12, 2025: Implemented universal server-specific filtering and enhanced SentX rarity coverage
   - Added server-specific filtering to all 4 marketplace test commands (SentX sales, SentX listings, Kabila sales, Kabila listings)
   - Enhanced SentX rarity enrichment to search up to 10 pages (1,000 activities) for comprehensive NFT data coverage

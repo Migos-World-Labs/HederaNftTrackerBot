@@ -69,6 +69,9 @@ class NFTSalesBot {
                 console.log('Checking existing servers for configuration...');
                 await this.configureExistingServers();
                 
+                console.log('Cleaning up orphaned server data...');
+                await this.cleanupOrphanedData();
+                
                 await this.registerSlashCommands();
                 await this.startMonitoring();
                 
@@ -93,16 +96,26 @@ class NFTSalesBot {
         this.client.on(Events.GuildDelete, async (guild) => {
             console.log(`❌ Bot removed from server: ${guild.name} (${guild.id})`);
             try {
+                // Clear collection cache since we're removing server data
+                this.cachedCollections = [];
+                this.lastCollectionFetch = 0;
+                
                 // Remove server configuration
-                await this.storage.removeServerConfig(guild.id);
+                const configRemoved = await this.storage.removeServerConfig(guild.id);
                 
                 // Remove all collections tracked by this server
                 const serverCollections = await this.storage.getCollections(guild.id);
+                let collectionsRemoved = 0;
+                
                 for (const collection of serverCollections) {
-                    await this.storage.removeCollection(guild.id, collection.token_id || collection.tokenId);
+                    const removed = await this.storage.removeCollection(guild.id, collection.token_id || collection.tokenId);
+                    if (removed) collectionsRemoved++;
                 }
                 
-                console.log(`🧹 Cleaned up all data for server: ${guild.name}`);
+                console.log(`🧹 Cleanup completed for server: ${guild.name}`);
+                console.log(`   - Server config: ${configRemoved ? 'removed' : 'not found'}`);
+                console.log(`   - Collections removed: ${collectionsRemoved}/${serverCollections.length}`);
+                
             } catch (error) {
                 console.error(`Error cleaning up server data for ${guild.name}:`, error);
             }
@@ -1569,6 +1582,58 @@ class NFTSalesBot {
 
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /**
+     * Clean up data for servers the bot is no longer in
+     */
+    async cleanupOrphanedData() {
+        try {
+            // Get all server configs from database
+            const allServerConfigs = await this.storage.getAllServerConfigs();
+            
+            // Get current guild IDs the bot is actually in
+            const currentGuildIds = Array.from(this.client.guilds.cache.keys());
+            
+            let orphanedConfigs = 0;
+            let orphanedCollections = 0;
+            
+            for (const config of allServerConfigs) {
+                // If bot is no longer in this server, clean up its data
+                if (!currentGuildIds.includes(config.guild_id || config.guildId)) {
+                    const guildId = config.guild_id || config.guildId;
+                    const guildName = config.guild_name || config.guildName || 'Unknown Server';
+                    
+                    console.log(`🧹 Cleaning orphaned data for: ${guildName} (${guildId})`);
+                    
+                    // Remove server configuration
+                    const configRemoved = await this.storage.removeServerConfig(guildId);
+                    if (configRemoved) orphanedConfigs++;
+                    
+                    // Remove all collections for this server
+                    const serverCollections = await this.storage.getCollections(guildId);
+                    for (const collection of serverCollections) {
+                        const removed = await this.storage.removeCollection(guildId, collection.token_id || collection.tokenId);
+                        if (removed) orphanedCollections++;
+                    }
+                }
+            }
+            
+            if (orphanedConfigs > 0 || orphanedCollections > 0) {
+                console.log(`🧹 Orphaned data cleanup completed:`);
+                console.log(`   - Server configs removed: ${orphanedConfigs}`);
+                console.log(`   - Collections removed: ${orphanedCollections}`);
+                
+                // Clear collection cache after cleanup
+                this.cachedCollections = [];
+                this.lastCollectionFetch = 0;
+            } else {
+                console.log(`✅ No orphaned data found - all database entries match current servers`);
+            }
+            
+        } catch (error) {
+            console.error('Error during orphaned data cleanup:', error);
+        }
     }
 
     /**
