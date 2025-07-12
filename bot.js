@@ -1410,8 +1410,10 @@ class NFTSalesBot {
 
     async handleImageEffectsCommand(interaction, options) {
         try {
-            // Check if interaction has expired
-            if (!interaction.isRepliable()) {
+            // Immediately defer the reply to prevent timeout
+            if (interaction.isRepliable()) {
+                await interaction.deferReply({ ephemeral: false });
+            } else {
                 console.log('Interaction expired before handling image effects command');
                 return;
             }
@@ -1426,13 +1428,14 @@ class NFTSalesBot {
             const statusText = enabled ? 'enabled' : 'disabled';
             const emoji = enabled ? '🎨' : '🚫';
             
-            // Double-check interaction is still valid before replying
-            if (interaction.isRepliable()) {
-                await interaction.reply({
-                    content: `${emoji} **Image effects ${statusText}** for this server!\n\n${enabled ? 
-                        '✨ NFT images will now include:\n• Special borders and frames\n• Rarity-based effects\n• Price milestone animations\n• Collection-specific themes\n• Whale tier indicators' : 
-                        '📸 NFT images will now display as original images without special effects.'}`,
-                    ephemeral: false
+            const responseContent = `${emoji} **Image effects ${statusText}** for this server!\n\n${enabled ? 
+                '✨ NFT images will now include:\n• Special borders and frames\n• Rarity-based effects\n• Price milestone animations\n• Collection-specific themes\n• Whale tier indicators' : 
+                '📸 NFT images will now display as original images without special effects.'}`;
+            
+            // Edit the deferred reply
+            if (interaction.deferred && !interaction.replied) {
+                await interaction.editReply({
+                    content: responseContent
                 });
             }
             
@@ -1441,7 +1444,11 @@ class NFTSalesBot {
         } catch (error) {
             console.error('Error handling image effects command:', error);
             try {
-                if (interaction.isRepliable()) {
+                if (interaction.deferred && !interaction.replied) {
+                    await interaction.editReply({
+                        content: '❌ An error occurred while updating image effects settings. Please try again.'
+                    });
+                } else if (interaction.isRepliable()) {
                     await interaction.reply({
                         content: '❌ An error occurred while updating image effects settings. Please try again.',
                         ephemeral: true
