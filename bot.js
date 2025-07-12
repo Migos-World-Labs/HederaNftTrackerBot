@@ -263,11 +263,32 @@ class NFTSalesBot {
             // Remove duplicates based on token_id, serial_number, and timestamp
             const uniqueSales = this.removeDuplicateSales(newSales);
 
+            // Enrich Kabila sales with SentX rarity data
+            const kabilaSales = uniqueSales.filter(sale => sale.marketplace === 'Kabila');
+            const sentxSales = uniqueSales.filter(sale => sale.marketplace === 'SentX');
+            
+            let enrichedKabilaSales = kabilaSales;
+            if (kabilaSales.length > 0) {
+                try {
+                    console.log(`🔄 Enriching ${kabilaSales.length} Kabila sales with SentX rarity data...`);
+                    enrichedKabilaSales = await this.kabilaService.enrichWithSentXRarity(kabilaSales);
+                    const enrichedCount = enrichedKabilaSales.filter(sale => sale.rarity || sale.sentx_rank).length;
+                    if (enrichedCount > 0) {
+                        console.log(`✅ Successfully enriched ${enrichedCount}/${kabilaSales.length} Kabila sales with SentX rarity`);
+                    }
+                } catch (error) {
+                    console.log(`❌ Failed to enrich Kabila sales with SentX rarity: ${error.message}`);
+                    enrichedKabilaSales = kabilaSales; // Use original data if enrichment fails
+                }
+            }
+            
+            const allEnrichedSales = [...sentxSales, ...enrichedKabilaSales];
+            
             // Sort by timestamp to process oldest first
-            uniqueSales.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            allEnrichedSales.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
             // Process each new sale
-            for (const sale of uniqueSales) {
+            for (const sale of allEnrichedSales) {
                 // Create more specific unique sale ID to prevent duplicates
                 const tokenId = sale.tokenId || sale.token_id || 'unknown';
                 const serialNumber = sale.serialNumber || sale.serial_number || 'unknown';
@@ -331,11 +352,32 @@ class NFTSalesBot {
             // Remove duplicates based on token_id, serial_number, and timestamp
             const uniqueListings = this.removeDuplicateListings(newListings);
 
+            // Enrich Kabila listings with SentX rarity data
+            const kabilaListings = uniqueListings.filter(listing => listing.marketplace === 'Kabila');
+            const sentxListings = uniqueListings.filter(listing => listing.marketplace === 'SentX');
+            
+            let enrichedKabilaListings = kabilaListings;
+            if (kabilaListings.length > 0) {
+                try {
+                    console.log(`🔄 Enriching ${kabilaListings.length} Kabila listings with SentX rarity data...`);
+                    enrichedKabilaListings = await this.kabilaService.enrichWithSentXRarity(kabilaListings);
+                    const enrichedCount = enrichedKabilaListings.filter(listing => listing.rarity || listing.sentx_rank).length;
+                    if (enrichedCount > 0) {
+                        console.log(`✅ Successfully enriched ${enrichedCount}/${kabilaListings.length} Kabila listings with SentX rarity`);
+                    }
+                } catch (error) {
+                    console.log(`❌ Failed to enrich Kabila listings with SentX rarity: ${error.message}`);
+                    enrichedKabilaListings = kabilaListings; // Use original data if enrichment fails
+                }
+            }
+            
+            const allEnrichedListings = [...sentxListings, ...enrichedKabilaListings];
+            
             // Sort by timestamp to process oldest first
-            uniqueListings.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            allEnrichedListings.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
             // Process each new listing
-            for (const listing of uniqueListings) {
+            for (const listing of allEnrichedListings) {
                 // Create more specific unique listing ID to prevent duplicates
                 const tokenId = listing.tokenId || listing.token_id || 'unknown';
                 const serialNumber = listing.serialNumber || listing.serial_number || 'unknown';

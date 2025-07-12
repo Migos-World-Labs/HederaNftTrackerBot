@@ -250,7 +250,11 @@ class KabilaService {
                 // Additional Kabila-specific data
                 rank: listing.rank || null,
                 currency: listing.currency || '0.0.1062664', // Default to HBAR
-                activityType: listing.activityType
+                activityType: listing.activityType,
+                
+                // SentX rarity data will be enriched later
+                rarity: null,
+                sentx_rank: null
             };
         });
     }
@@ -290,7 +294,11 @@ class KabilaService {
                 rank: sale.rank || null,
                 currency: sale.currency || '0.0.1062664', // Default to HBAR
                 activityType: sale.activityType,
-                subactivityType: sale.subactivityType
+                subactivityType: sale.subactivityType,
+                
+                // SentX rarity data will be enriched later
+                rarity: null,
+                sentx_rank: null
             };
         });
     }
@@ -388,6 +396,44 @@ class KabilaService {
         // Extract just the number part from token ID (remove 0.0. prefix)
         const tokenNumber = tokenId.replace('0.0.', '');
         return collectionMapping[tokenId] || `https://market.kabila.app/en/collections/${tokenNumber}/items`;
+    }
+
+    /**
+     * Enrich Kabila NFT data with SentX rarity information
+     * @param {Array} kabilaNFTs - Array of Kabila NFT objects
+     * @returns {Array} Enriched NFT array with SentX rarity data
+     */
+    async enrichWithSentXRarity(kabilaNFTs) {
+        if (!kabilaNFTs || kabilaNFTs.length === 0) return kabilaNFTs;
+        
+        const sentxService = require('./sentx.js');
+        
+        const enrichedNFTs = await Promise.all(kabilaNFTs.map(async (nft) => {
+            try {
+                // Only enrich if we have token and serial data
+                if (!nft.token_id || !nft.serial_id) return nft;
+                
+                // Get SentX rarity data for this specific NFT
+                const sentxDetails = await sentxService.getNFTDetails(nft.token_id, nft.serial_id);
+                
+                if (sentxDetails) {
+                    return {
+                        ...nft,
+                        rarity: sentxDetails.rarityPct || null,
+                        sentx_rank: sentxDetails.rarityRank || null,
+                        // Keep Kabila rank separate for debugging if needed
+                        kabila_rank: nft.rank
+                    };
+                }
+                
+                return nft;
+            } catch (error) {
+                console.log(`Failed to enrich ${nft.nft_name} with SentX rarity: ${error.message}`);
+                return nft;
+            }
+        }));
+        
+        return enrichedNFTs;
     }
 
     /**
