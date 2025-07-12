@@ -263,32 +263,17 @@ class NFTSalesBot {
             // Remove duplicates based on token_id, serial_number, and timestamp
             const uniqueSales = this.removeDuplicateSales(newSales);
 
-            // Enrich Kabila sales with SentX rarity data
+            // Keep Kabila sales clean without SentX rarity data
             const kabilaSales = uniqueSales.filter(sale => sale.marketplace === 'Kabila');
             const sentxSales = uniqueSales.filter(sale => sale.marketplace === 'SentX');
             
-            let enrichedKabilaSales = kabilaSales;
-            if (kabilaSales.length > 0) {
-                try {
-                    console.log(`🔄 Enriching ${kabilaSales.length} Kabila sales with SentX rarity data...`);
-                    enrichedKabilaSales = await this.kabilaService.enrichWithSentXRarity(kabilaSales);
-                    const enrichedCount = enrichedKabilaSales.filter(sale => sale.rarity || sale.sentx_rank).length;
-                    if (enrichedCount > 0) {
-                        console.log(`✅ Successfully enriched ${enrichedCount}/${kabilaSales.length} Kabila sales with SentX rarity`);
-                    }
-                } catch (error) {
-                    console.log(`❌ Failed to enrich Kabila sales with SentX rarity: ${error.message}`);
-                    enrichedKabilaSales = kabilaSales; // Use original data if enrichment fails
-                }
-            }
-            
-            const allEnrichedSales = [...sentxSales, ...enrichedKabilaSales];
+            const allSalesData = [...sentxSales, ...kabilaSales];
             
             // Sort by timestamp to process oldest first
-            allEnrichedSales.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            allSalesData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
             // Process each new sale
-            for (const sale of allEnrichedSales) {
+            for (const sale of allSalesData) {
                 // Create more specific unique sale ID to prevent duplicates
                 const tokenId = sale.tokenId || sale.token_id || 'unknown';
                 const serialNumber = sale.serialNumber || sale.serial_number || 'unknown';
@@ -352,32 +337,17 @@ class NFTSalesBot {
             // Remove duplicates based on token_id, serial_number, and timestamp
             const uniqueListings = this.removeDuplicateListings(newListings);
 
-            // Enrich Kabila listings with SentX rarity data
+            // Keep Kabila listings clean without SentX rarity data
             const kabilaListings = uniqueListings.filter(listing => listing.marketplace === 'Kabila');
             const sentxListings = uniqueListings.filter(listing => listing.marketplace === 'SentX');
             
-            let enrichedKabilaListings = kabilaListings;
-            if (kabilaListings.length > 0) {
-                try {
-                    console.log(`🔄 Enriching ${kabilaListings.length} Kabila listings with SentX rarity data...`);
-                    enrichedKabilaListings = await this.kabilaService.enrichWithSentXRarity(kabilaListings);
-                    const enrichedCount = enrichedKabilaListings.filter(listing => listing.rarity || listing.sentx_rank).length;
-                    if (enrichedCount > 0) {
-                        console.log(`✅ Successfully enriched ${enrichedCount}/${kabilaListings.length} Kabila listings with SentX rarity`);
-                    }
-                } catch (error) {
-                    console.log(`❌ Failed to enrich Kabila listings with SentX rarity: ${error.message}`);
-                    enrichedKabilaListings = kabilaListings; // Use original data if enrichment fails
-                }
-            }
-            
-            const allEnrichedListings = [...sentxListings, ...enrichedKabilaListings];
+            const allListingsData = [...sentxListings, ...kabilaListings];
             
             // Sort by timestamp to process oldest first
-            allEnrichedListings.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            allListingsData.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
             // Process each new listing
-            for (const listing of allEnrichedListings) {
+            for (const listing of allListingsData) {
                 // Create more specific unique listing ID to prevent duplicates
                 const tokenId = listing.tokenId || listing.token_id || 'unknown';
                 const serialNumber = listing.serialNumber || listing.serial_number || 'unknown';
@@ -505,14 +475,19 @@ class NFTSalesBot {
                     
                     const channel = this.client.channels.cache.get(serverConfig.channelId);
                     if (channel) {
-                        // Add collection URL for SentX marketplace
+                        // Add collection URL based on marketplace
                         if (sale.token_id) {
-                            const collectionFriendlyUrl = sale.collectionFriendlyurl || sale.collection_friendly_url;
-                            
-                            if (collectionFriendlyUrl) {
-                                sale.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
+                            if (sale.marketplace === 'Kabila') {
+                                sale.collection_url = this.kabilaService.getCollectionUrl(sale.token_id);
                             } else {
-                                sale.collection_url = `https://sentx.io/nft-marketplace/collection/${sale.token_id}`;
+                                // SentX marketplace
+                                const collectionFriendlyUrl = sale.collectionFriendlyurl || sale.collection_friendly_url;
+                                
+                                if (collectionFriendlyUrl) {
+                                    sale.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
+                                } else {
+                                    sale.collection_url = `https://sentx.io/nft-marketplace/collection/${sale.token_id}`;
+                                }
                             }
                         }
                         
@@ -594,14 +569,19 @@ class NFTSalesBot {
                     const channelType = serverConfig.listingsChannelId ? 'listings' : 'main';
                     
                     if (channel) {
-                        // Add collection URL for SentX marketplace (collection page, not specific NFT)
+                        // Add collection URL based on marketplace
                         if (listing.token_id) {
-                            const collectionFriendlyUrl = listing.collectionFriendlyurl || listing.collection_friendly_url;
-                            
-                            if (collectionFriendlyUrl) {
-                                listing.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
+                            if (listing.marketplace === 'Kabila') {
+                                listing.collection_url = this.kabilaService.getCollectionUrl(listing.token_id);
                             } else {
-                                listing.collection_url = `https://sentx.io/nft-marketplace/collection/${listing.token_id}`;
+                                // SentX marketplace
+                                const collectionFriendlyUrl = listing.collectionFriendlyurl || listing.collection_friendly_url;
+                                
+                                if (collectionFriendlyUrl) {
+                                    listing.collection_url = `https://sentx.io/nft-marketplace/${collectionFriendlyUrl}`;
+                                } else {
+                                    listing.collection_url = `https://sentx.io/nft-marketplace/collection/${listing.token_id}`;
+                                }
                             }
                         }
                         

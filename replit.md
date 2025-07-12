@@ -427,6 +427,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added source indicator "Rarity data from SentX" for enriched Kabila notifications
   - Both marketplaces now provide consistent rarity information using SentX as the authoritative source
   - Fixed all bugs and verified comprehensive functionality across both SentX and Kabila marketplaces
+- July 12, 2025: Removed SentX rarity enrichment from Kabila notifications per user request
+  - Completely disabled SentX rarity data enrichment for Kabila NFTs to keep notifications clean
+  - Removed all rank and rarity information from Kabila sales and listings notifications
+  - Fixed collection URLs to use proper marketplace-specific links (market.kabila.app for Kabila, sentx.io for SentX)
+  - Kabila notifications now show only essential sale/listing information without any rarity data overlay
+  - Fixed variable naming conflicts and resolved bot initialization errors for stable operation
+  - Bot now provides clean, marketplace-specific notifications respecting each platform's unique characteristics
 
 ## User Preferences
 
