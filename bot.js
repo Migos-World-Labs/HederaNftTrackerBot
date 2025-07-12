@@ -525,9 +525,11 @@ class NFTSalesBot {
                         const embed = await embedUtils.createListingEmbed(listing, hbarRate);
                         const message = await channel.send({ embeds: [embed] });
                         
-                        // Add listing emoji reaction
+                        // Add appropriate emoji reaction based on listing type
                         try {
-                            await message.react('📝');
+                            const isAuction = listing.sale_type === 'Auction';
+                            const emoji = isAuction ? '🏆' : '📝';
+                            await message.react(emoji);
                         } catch (error) {
                             console.log('Could not add reaction:', error.message);
                         }

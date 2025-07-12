@@ -351,10 +351,16 @@ class EmbedUtils {
             ? listing.collection_name 
             : 'NFT Collection';
         
+        // Determine if this is an auction or regular listing
+        const isAuction = listing.sale_type === 'Auction';
+        const listingType = isAuction ? 'Auction Listing' : 'Listing';
+        const emoji = isAuction ? '🏆' : '📝';
+        const action = isAuction ? 'auction started' : 'listed for sale';
+        
         const embed = new EmbedBuilder()
-            .setTitle(`📝 ${nftName} listed for sale!`)
-            .setDescription(`A new listing appeared on ${marketplace} for **$${usdValue.toFixed(2)} USD** (${listing.price_hbar} HBAR)`)
-            .setColor('#00ff41')
+            .setTitle(`${emoji} ${nftName} ${action}!`)
+            .setDescription(`A new ${listingType.toLowerCase()} appeared on ${marketplace} for **$${usdValue.toFixed(2)} USD** (${listing.price_hbar} HBAR)`)
+            .setColor(isAuction ? '#ff6b35' : '#00ff41')
             .setTimestamp(new Date(listing.timestamp));
 
         // Add collection info prominently with floor price

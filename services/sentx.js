@@ -224,8 +224,9 @@ class SentXService {
                     activity.sellerAddress !== null &&
                     !activity.buyerAddress; // No buyer means it's still listed, not sold
                 
-                // Accept various listing-related sale types
-                const isListingType = activity.saletype && activity.saletype === 'Listed';
+                // Accept various listing-related sale types including auctions
+                const isListingType = activity.saletype && 
+                    (activity.saletype === 'Listed' || activity.saletype === 'Auction');
                 
                 const isValidListing = hasListingData && isListingType;
                 
@@ -364,7 +365,7 @@ class SentXService {
                 rank: listing.rarityRank || null,
                 marketplace: 'SentX',
                 listing_id: listing.listingId || listing.id || null,
-                sale_type: 'Listing',
+                sale_type: listing.saletype || 'Listing',
                 attributes: listing.attributes || [],
                 payment_token: listing.paymentToken || { symbol: 'HBAR' },
                 listing_url: listing.listingUrl ? `https://sentx.io${listing.listingUrl}` : 
