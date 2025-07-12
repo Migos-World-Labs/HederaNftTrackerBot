@@ -1,94 +1,53 @@
-# Discord NFT Sales Bot for Hedera
+# Discord NFT Sales Bot for Hedera Blockchain
 
-> Real-time NFT marketplace notifications for Discord servers
+A sophisticated Discord bot delivering real-time NFT marketplace analytics across multiple platforms on the Hedera blockchain, with advanced data integration and intelligent market insights.
 
-## What is this?
+## 🚀 Quick Start
 
-A Discord bot that monitors Hedera NFT marketplaces and sends instant notifications when:
-- NFTs are sold from your tracked collections
-- New NFTs are listed for sale
+1. **[Invite the Bot](https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissions=19520&scope=bot%20applications.commands)** to your Discord server
+2. **Add a collection**: `/add 0.0.6024491 Wild Tigers`
+3. **Test it works**: `/test`
 
-## Quick Start
+## 📚 Documentation
 
-1. **[Add to Discord](https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissions=19520&scope=bot%20applications.commands)**
-2. **Track a collection:** `/add token_id:0.0.6024491 name:Wild Tigers`
-3. **Test it:** `/test type:Latest Listing`
+All comprehensive documentation is available in the `/docs` folder:
 
-## Features
+- **[Quick Start Guide](docs/quick-start.md)** - Get up and running in 3 steps
+- **[User Guide](docs/user-guide.md)** - Complete command reference and features
+- **[Setup Guide](docs/setup-guide.md)** - Installation and deployment instructions
+- **[Bot Description](docs/bot-description.md)** - Comprehensive feature overview
+- **[Guía Rápida](docs/guia-rapida.md)** - Spanish quick start guide
 
-- 🔥 **Real-time sales alerts** with price and buyer info
-- 📝 **Listing notifications** when NFTs go up for sale
-- 💰 **USD conversion** from HBAR pricing
-- 🎯 **Multi-collection tracking** for all your favorite projects
-- 🏆 **Rarity information** and collection stats
-- 📱 **Separate channels** for sales vs listings
-- 🌐 **Multi-server support** across Discord communities
+## ✨ Key Features
 
-## Popular Collections
+- **Multi-Marketplace Monitoring**: SentX and Kabila integration
+- **Real-time Notifications**: 3-second monitoring intervals
+- **Advanced Rarity Data**: SentX enrichment across all platforms
+- **Rich Discord Embeds**: Professional notifications with images
+- **Server-specific Configuration**: Independent tracking per server
+- **Comprehensive Image Support**: Hashinals, IPFS, multiple CDNs
 
-Track these trending Hedera NFT collections:
+## 🏪 Supported Marketplaces
 
-```bash
-# Wild Tigers
-/add token_id:0.0.6024491 name:Wild Tigers
+- **[SentX](https://sentx.io)** - Primary marketplace with authoritative rarity data
+- **[Kabila](https://market.kabila.app)** - Secondary marketplace for expanded coverage
 
-# Rooster Collections
-/add token_id:0.0.855050 name:Gen0
-/add token_id:0.0.1363572 name:Super Roosters
-/add token_id:0.0.993985 name:Rooster Pfp
-/add token_id:0.0.1110608 name:Rooster Hens
-
-# Other Collections
-/add token_id:0.0.2124637 name:Salsa Picante
-```
-
-## Commands
+## 🔧 Commands
 
 | Command | Description |
 |---------|-------------|
-| `/add` | Track new NFT collection |
-| `/remove` | Stop tracking collection |
-| `/list` | Show all tracked collections |
-| `/test` | Test bot notifications |
-| `/status` | Check bot status |
-| `/set-listings-channel` | Set separate channel for listings |
-| `/broadcast-test` | Send test to all servers |
+| `/add` | Add NFT collection to track |
+| `/list` | Show tracked collections |
+| `/test` | Test bot functionality |
+| `/status` | Bot status and health |
 
-## Documentation
+## 🌟 Popular Collections
 
-- **[User Guide](USER_GUIDE.md)** - Complete feature documentation
-- **[Setup Guide](SETUP_GUIDE.md)** - Quick 5-minute setup
-- **[replit.md](replit.md)** - Technical architecture details
-
-## Supported Marketplaces
-
-- ✅ **SentX** - Primary marketplace integration
-- 🔄 **More coming soon**
-
-## Requirements
-
-- Discord server with admin permissions
-- Text channel for notifications
-- Basic slash command permissions
-
-## Bot Permissions
-
-- View Channel
-- Send Messages
-- Embed Links
-- Add Reactions
-- Use Slash Commands
-
-## Community
-
-Built for the Hedera NFT community by Migos World Labs Inc.
-
-Perfect for:
-- NFT collectors tracking their favorite projects
-- Discord communities wanting marketplace updates
-- Traders monitoring floor prices and sales
-- Artists promoting their collections
+- **Wild Tigers** (`0.0.6024491`)
+- **The Ape Anthology** (`0.0.8308459`)
+- **Hashinals** (`0.0.5552189`)
+- **Hedera Monkeys** (`0.0.2173899`)
 
 ---
 
-**[Add to your Discord server now!](https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissions=19520&scope=bot%20applications.commands)**
+*Built for the Hedera NFT community with comprehensive marketplace coverage and accurate rarity data.*

@@ -473,6 +473,34 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added comprehensive search through collection-specific marketplace activity and listings endpoints for maximum NFT coverage
   - Enhanced cross-marketplace notifications to display only verified SentX rank and rarity data with proper source attribution
   - Eliminated display of inaccurate Kabila rank data (e.g., #95) in favor of maintaining authoritative SentX rarity standards
+- July 12, 2025: Complete documentation reorganization and comprehensive updates
+  - Created new `/docs` folder structure for organized project documentation
+  - Updated all 6 markdown files with latest bot capabilities including multi-marketplace support
+  - Enhanced documentation with comprehensive coverage: Bot Description, README, Quick Start, User Guide, Setup Guide, Spanish Guide
+  - Added technical architecture details, API integration information, and deployment instructions
+  - Included complete command reference with examples and troubleshooting sections
+  - Updated documentation to reflect SentX/Kabila integration, rarity enrichment, and image support features
+  - Organized original documentation files as backups while providing fresh, comprehensive guides
+  - Added main project README.md with quick access to all documentation resources
+
+## Documentation Structure
+
+All project documentation has been organized into the `/docs` folder for better project structure:
+
+### Core Documentation
+- **[Bot Description](docs/bot-description.md)** - Comprehensive overview of bot features and capabilities
+- **[README](docs/readme.md)** - Main project documentation with technical architecture
+- **[Quick Start Guide](docs/quick-start.md)** - Get up and running in 3 simple steps
+- **[User Guide](docs/user-guide.md)** - Complete command reference and usage instructions
+- **[Setup Guide](docs/setup-guide.md)** - Detailed installation and deployment instructions
+- **[Guía Rápida](docs/guia-rapida.md)** - Spanish language quick start guide
+
+### Documentation Features
+- **Updated Content**: All documentation reflects latest bot capabilities including multi-marketplace support
+- **Comprehensive Coverage**: From basic setup to advanced configuration and troubleshooting
+- **Multiple Languages**: English and Spanish documentation available
+- **Technical Details**: Complete API integration, deployment options, and architecture information
+- **User-Focused**: Clear instructions for both technical and non-technical users
 
 ## User Preferences
 
