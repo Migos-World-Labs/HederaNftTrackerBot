@@ -513,6 +513,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced feature descriptions to include separate channels, Hashinal support, whale tiers, and cross-marketplace enrichment
   - Updated marketplace descriptions to clarify full sales & listings tracking for both SentX and Kabila
   - Both messages now provide complete overview of bot capabilities for new users and existing servers
+- July 12, 2025: Fixed Discord "Add App" integration issues with comprehensive detection system
+  - Added periodic guild refresh (every 30 seconds) to detect servers added via Discord's "Add App" feature
+  - Enhanced interaction error handling to provide clear instructions when bot access issues occur
+  - Implemented automatic welcome message delivery for servers detected through periodic refresh
+  - Added helpful error messages directing users to proper invite link when "Add App" method fails
+  - System now properly handles both OAuth invite links and Discord's built-in app addition methods
 
 ## Documentation Structure
 
