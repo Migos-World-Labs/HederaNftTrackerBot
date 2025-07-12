@@ -10,7 +10,7 @@ const sentxService = require('./services/sentx');
 const currencyService = require('./services/currency');
 const embedUtils = require('./utils/embed');
 const DatabaseStorage = require('./database-storage');
-const ImageEffectsService = require('./services/image-effects');
+
 
 class NFTSalesBot {
     constructor(sentxService, embedUtils, currencyService, storage) {
@@ -19,7 +19,7 @@ class NFTSalesBot {
         this.embedUtils = embedUtils; 
         this.currencyService = currencyService;
         this.storage = storage || new DatabaseStorage();
-        this.imageEffectsService = new ImageEffectsService();
+
         
         this.client = new Client({
             intents: [
@@ -857,18 +857,6 @@ class NFTSalesBot {
                         autocomplete: true
                     }
                 ]
-            },
-            {
-                name: 'image-effects',
-                description: 'Toggle image effects on/off for this server',
-                options: [
-                    {
-                        name: 'enabled',
-                        type: 5, // BOOLEAN
-                        description: 'Enable or disable image effects',
-                        required: true
-                    }
-                ]
             }
         ];
 
@@ -918,9 +906,6 @@ class NFTSalesBot {
                     break;
                 case 'set-listings-channel':
                     await this.handleSetListingsChannelCommand(interaction, options);
-                    break;
-                case 'image-effects':
-                    await this.handleImageEffectsCommand(interaction, options);
                     break;
                 default:
                     await interaction.reply('Unknown command');
@@ -1410,47 +1395,7 @@ class NFTSalesBot {
         }
     }
 
-    async handleImageEffectsCommand(interaction, options) {
-        try {
-            const enabled = options.getBoolean('enabled');
-            const guildId = interaction.guildId;
-            
-            // Store the setting in the bot state
-            const settingKey = `image_effects_${guildId}`;
-            await this.storage.setBotState(settingKey, enabled);
-            
-            const statusText = enabled ? 'enabled' : 'disabled';
-            const emoji = enabled ? '🎨' : '🚫';
-            
-            const responseContent = `${emoji} **Image effects ${statusText}** for this server!\n\n${enabled ? 
-                '✨ NFT images will now include:\n• Special borders and frames\n• Rarity-based effects\n• Price milestone animations\n• Collection-specific themes\n• Whale tier indicators' : 
-                '📸 NFT images will now display as original images without special effects.'}`;
-            
-            // Reply immediately without deferring
-            await interaction.reply({
-                content: responseContent,
-                flags: 0 // Use flags instead of ephemeral property
-            });
-            
-            console.log(`🎨 [IMAGE FX] Image effects ${statusText} for server ${interaction.guild.name} (${guildId})`);
-            
-        } catch (error) {
-            console.error('Error handling image effects command:', error);
-            // Only attempt error response if we haven't responded yet
-            if (error.code !== 10062 && error.code !== 40060) {
-                try {
-                    if (!interaction.replied && !interaction.deferred) {
-                        await interaction.reply({
-                            content: '❌ An error occurred while updating image effects settings. Please try again.',
-                            flags: 64 // EPHEMERAL flag
-                        });
-                    }
-                } catch (replyError) {
-                    console.log('Could not send error response - interaction may have expired');
-                }
-            }
-        }
-    }
+
 
     async initializeDatabase() {
         try {
@@ -1461,19 +1406,7 @@ class NFTSalesBot {
             console.log('Cleaning up old processed sales...');
             await this.storage.cleanupOldProcessedSales();
             
-            // Clean up old temporary image files
-            console.log('🎨 [IMAGE FX] Cleaning up old temporary files...');
-            await this.imageEffectsService.cleanupTempFiles();
-            
-            // Schedule periodic cleanup every hour
-            cron.schedule('0 * * * *', async () => {
-                try {
-                    console.log('🧹 [SCHEDULED] Running hourly cleanup...');
-                    await this.imageEffectsService.cleanupTempFiles();
-                } catch (error) {
-                    console.error('Error during scheduled cleanup:', error);
-                }
-            });
+
             
             console.log('Database storage ready');
         } catch (error) {

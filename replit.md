@@ -371,6 +371,14 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - System actively being used by Discord users across 9 connected servers
   - Database cleanup working properly (97 old sales records cleaned on startup)
   - NFT monitoring system operational with 3-second check intervals
+- July 12, 2025: Removed image effects system per user request - reverted to original deployed version
+  - Completely removed ImageEffectsService and all visual enhancement features
+  - Deleted /image-effects slash command and related handler functions
+  - Uninstalled image processing dependencies (jimp, canvas, sharp)
+  - Removed all image effects logic from embed creation (sales and listings)
+  - Bot now displays original NFT images without special borders or effects
+  - Reduced from 8 to 7 slash commands: add, remove, remove-all, list, status, set-listings-channel, test
+  - Code reverted to clean, original deployed state focused on core NFT tracking functionality
 
 ## User Preferences
 
