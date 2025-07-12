@@ -507,6 +507,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced user experience with direct access to community support and troubleshooting assistance
   - Updated support command with Migos World Labs branding and specific contact information (Mauii and Wise Whale)
   - Enhanced footer attribution to include "Built for the Hedera NFT community by Migos World Labs"
+- July 12, 2025: Enhanced welcome and support messages with complete feature overview
+  - Updated welcome message to include Discord support link and Migos World Labs branding
+  - Added comprehensive command list to both welcome and support messages (all 8 slash commands)
+  - Enhanced feature descriptions to include separate channels, Hashinal support, whale tiers, and cross-marketplace enrichment
+  - Updated marketplace descriptions to clarify full sales & listings tracking for both SentX and Kabila
+  - Both messages now provide complete overview of bot capabilities for new users and existing servers
 
 ## Documentation Structure
 

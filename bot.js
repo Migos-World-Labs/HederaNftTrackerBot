@@ -848,13 +848,23 @@ class NFTSalesBot {
                                 inline: false
                             },
                             {
-                                name: '⚙️ Setup Instructions',
-                                value: '1. Use `/add` to add NFT collections to track\n2. Use `/list` to see tracked collections\n3. Use `/remove` to stop tracking collections\n4. Use `/status` to check bot status',
+                                name: '📚 Available Commands',
+                                value: '• `/add` - Add NFT collection to track\n• `/remove` - Remove collection from tracking\n• `/remove-all` - Remove ALL collections (with confirmation)\n• `/list` - Show all tracked collections\n• `/status` - Check bot health and statistics\n• `/set-listings-channel` - Set separate channel for listings\n• `/test` - Test bot functionality\n• `/support` - Get help and support info',
                                 inline: false
                             },
                             {
-                                name: '💰 Features',
-                                value: '• Real-time sale notifications\n• HBAR to USD conversion\n• NFT images and details\n• Buyer/seller information\n• Collection filtering',
+                                name: '⚙️ Quick Setup',
+                                value: '1. Use `/add` to add NFT collections to track\n2. Use `/list` to see your tracked collections\n3. Optional: Use `/set-listings-channel` for separate listing notifications\n4. Use `/test` to verify everything works!',
+                                inline: false
+                            },
+                            {
+                                name: '🏪 Supported Marketplaces',
+                                value: '• **SentX** - Full sales & listings tracking\n• **Kabila** - Full sales & listings tracking\n• Cross-marketplace rarity enrichment\n• Real-time price conversion (HBAR to USD)',
+                                inline: false
+                            },
+                            {
+                                name: '✨ Key Features',
+                                value: '• Real-time sales & listing notifications\n• Separate channels for sales vs listings\n• NFT images with Hashinal support\n• Buyer/seller whale tier indicators\n• Collection-specific tracking\n• Cross-marketplace data enrichment',
                                 inline: false
                             },
                             {
@@ -1555,14 +1565,19 @@ class NFTSalesBot {
                         inline: false
                     },
                     {
-                        name: '📚 Quick Commands',
-                        value: '• `/add` - Add NFT collection to track\n• `/list` - Show tracked collections\n• `/test` - Test bot functionality\n• `/status` - Check bot health',
-                        inline: true
+                        name: '📚 Available Commands',
+                        value: '• `/add` - Add NFT collection to track\n• `/remove` - Remove collection from tracking\n• `/remove-all` - Remove ALL collections (with confirmation)\n• `/list` - Show all tracked collections\n• `/status` - Check bot health and statistics\n• `/set-listings-channel` - Set separate channel for listings\n• `/test` - Test bot functionality\n• `/support` - Get help and support info',
+                        inline: false
                     },
                     {
                         name: '🏪 Supported Marketplaces',
-                        value: '• **SentX**\n• **Kabila**',
-                        inline: true
+                        value: '• **SentX** - Full sales & listings tracking\n• **Kabila** - Full sales & listings tracking\n• Cross-marketplace rarity enrichment\n• Real-time price conversion (HBAR to USD)',
+                        inline: false
+                    },
+                    {
+                        name: '✨ Key Features',
+                        value: '• Real-time sales & listing notifications\n• Separate channels for sales vs listings\n• NFT images with Hashinal support\n• Buyer/seller whale tier indicators\n• Collection-specific tracking\n• Cross-marketplace data enrichment',
+                        inline: false
                     },
                     {
                         name: '🔧 Need Help?',
