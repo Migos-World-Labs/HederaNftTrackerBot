@@ -137,6 +137,16 @@ class NFTSalesBot {
                 console.log(`⚠️ Ignoring command from server bot is not in: ${interaction.guildId}`);
                 console.log(`🔍 Current servers: ${Array.from(this.client.guilds.cache.keys()).join(', ')}`);
                 
+                // Try to fetch the guild manually to see if it exists
+                try {
+                    const guild = await this.client.guilds.fetch(interaction.guildId);
+                    console.log(`🔍 Found guild manually: ${guild.name} (${guild.id}) - forcing cache update`);
+                    // This should add it to the cache
+                    await this.handleNewGuild(guild);
+                } catch (fetchError) {
+                    console.log(`❌ Cannot fetch guild ${interaction.guildId}: ${fetchError.message}`);
+                }
+                
                 if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
                     try {
                         await interaction.reply({
