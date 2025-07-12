@@ -1835,8 +1835,10 @@ class NFTSalesBot {
                 );
             }
             
-            // Get the most recent sale from tracked collections
-            const testSale = trackedSales[0];
+            // Get a random sale from tracked collections to show variety
+            const randomIndex = Math.floor(Math.random() * Math.min(5, trackedSales.length));
+            const testSale = trackedSales[randomIndex];
+            console.log(`🎲 Selected sale ${randomIndex + 1} of ${trackedSales.length} tracked sales for variety`);
             console.log(`Using SentX sale: ${testSale.nft_name} for ${testSale.price_hbar} HBAR`);
             
             // Get HBAR rate
@@ -1885,8 +1887,10 @@ class NFTSalesBot {
                 );
             }
             
-            // Get the most recent listing from tracked collections
-            const testListing = trackedListings[0];
+            // Get a random listing from tracked collections to show variety
+            const randomIndex = Math.floor(Math.random() * Math.min(5, trackedListings.length));
+            const testListing = trackedListings[randomIndex];
+            console.log(`🎲 Selected listing ${randomIndex + 1} of ${trackedListings.length} tracked listings for variety`);
             console.log(`Using SentX listing: ${testListing.nft_name} for ${testListing.price_hbar} HBAR`);
             
             // Get HBAR rate
@@ -1938,8 +1942,10 @@ class NFTSalesBot {
                 );
             }
             
-            // Get the most recent sale from tracked collections
-            let testSale = trackedSales[0];
+            // Get a random sale from tracked collections to show variety
+            const randomIndex = Math.floor(Math.random() * Math.min(5, trackedSales.length));
+            let testSale = trackedSales[randomIndex];
+            console.log(`🎲 Selected sale ${randomIndex + 1} of ${trackedSales.length} tracked sales for variety`);
             console.log(`🔍 Using Kabila sale data:`, {
                 nft_name: testSale.nft_name,
                 price_hbar: testSale.price_hbar,
@@ -2014,8 +2020,10 @@ class NFTSalesBot {
                 );
             }
             
-            // Get the most recent listing from tracked collections
-            let testListing = trackedListings[0];
+            // Get a random listing from tracked collections to show variety
+            const randomIndex = Math.floor(Math.random() * Math.min(5, trackedListings.length));
+            let testListing = trackedListings[randomIndex];
+            console.log(`🎲 Selected listing ${randomIndex + 1} of ${trackedListings.length} tracked listings for variety`);
             console.log(`🔍 Using Kabila listing data:`, {
                 nft_name: testListing.nft_name,
                 price_hbar: testListing.price_hbar,

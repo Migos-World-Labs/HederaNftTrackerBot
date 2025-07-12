@@ -445,6 +445,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Fixed test commands to only show NFTs from collections tracked in each specific Discord server
   - Universal rarity enrichment now works for all tracked collections and future collections, not just Wild Tigers #3108
   - Test commands provide helpful error messages listing tracked collections when no recent activity is found
+- July 12, 2025: Fixed test command system with comprehensive 3-strategy SentX rarity enrichment
+  - Implemented comprehensive 3-strategy SentX search: 15 pages (1,500 activities), different filters, collection validation
+  - Added random selection to test commands for variety instead of always showing the same NFT
+  - Successfully verified Wild Tigers #3108 enrichment: found on page 2 with correct rank 1634 and rarity 0.4913
+  - Fixed multiple command execution issues and improved test result diversity
+  - Universal rarity enrichment now working across all tracked collections with comprehensive marketplace coverage
 
 ## User Preferences
 
