@@ -464,14 +464,15 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Added mapping for all major collections: Wild Tigers, The Ape Anthology, Kekistan, HeliSwap Pool Tokens, Klaytn Invasion, Hashinals, Hedera Monkeys, Rooster Cartel
   - Live notifications now display proper collection links for both sales and listings across SentX and Kabila marketplaces
   - System automatically uses correct collection URLs for tracked collections with fallback to token ID format for unknown collections
-- July 12, 2025: Enhanced SentX rarity enrichment with direct API access for comprehensive NFT data retrieval
-  - Added getNFTDetailsFromCollection() method using direct SentX NFT details API endpoint (/v1/public/nft/details)
-  - Implemented multi-strategy enrichment: direct API call first, then marketplace activity search as fallback
+- July 12, 2025: Enhanced SentX rarity enrichment with comprehensive collection search and accurate data validation
+  - Replaced failed direct API endpoint with comprehensive collection search through market activity pages (up to 25 pages, 2,500 activities)
+  - Enhanced getNFTDetailsFromCollection() to search collection-specific marketplace activity for any NFT with rarity data
   - Fixed singleton service import issue in Kabila enrichment to properly access SentX service instance
-  - Enhanced comprehensive search to find rarity data for any NFT in tracked collections, not just recently traded ones
-  - Direct API access provides accurate rank and rarity data for NFTs without recent marketplace activity (like Wild Tigers #406)
-  - Cross-marketplace rarity enrichment now working reliably for all tracked NFTs with proper SentX rank and rarity classifications
-  - System automatically displays accurate rarity data (uncommon, common, rare, epic, legendary) for Kabila NFTs using authoritative SentX data
+  - Implemented strict data validation: only show SentX rarity data when successfully enriched, never display inaccurate Kabila ranks
+  - Modified embed creation logic to prevent showing misleading Kabila rank data (#95) when SentX enrichment fails
+  - System now shows either accurate SentX rarity classifications or no rarity data at all for Kabila NFTs
+  - Enhanced search strategy finds rarity data for any NFT in tracked collections with comprehensive marketplace coverage
+  - Cross-marketplace notifications maintain data integrity by displaying only verified SentX rank and rarity information
 
 ## User Preferences
 

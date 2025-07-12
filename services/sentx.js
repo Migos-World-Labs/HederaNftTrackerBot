@@ -992,7 +992,7 @@ class SentXService {
     }
 
     /**
-     * Get NFT details directly from collection endpoint
+     * Get NFT details using comprehensive collection search
      * @param {string} tokenId - Token ID of the collection
      * @param {string} serialId - Serial ID of the NFT
      * @returns {Object} NFT details with rarity data
@@ -1001,40 +1001,66 @@ class SentXService {
         try {
             const apiKey = process.env.SENTX_API_KEY;
             
-            const params = {
-                apikey: apiKey,
-                token: tokenId,
-                serial: serialId
-            };
+            console.log(`🔍 Comprehensive collection search for ${tokenId}/${serialId} rarity data...`);
             
-            console.log(`🔍 Fetching NFT details directly from SentX collection API for ${tokenId}/${serialId}...`);
+            // Strategy: Search through collection listings for the specific NFT
+            const maxPages = 25; // Search more pages for comprehensive coverage
+            let found = false;
             
-            const response = await this.axiosInstance.get('/v1/public/nft/details', {
-                params: params
-            });
-            
-            if (response.data && response.data.success && response.data.nft) {
-                const nft = response.data.nft;
-                console.log(`✅ Found direct NFT details: Rank ${nft.rarityRank}, Rarity ${nft.rarityPct}`);
-                return {
-                    success: true,
-                    nft: {
-                        name: nft.name,
-                        rarityRank: nft.rarityRank,
-                        rarityPct: nft.rarityPct,
-                        tokenId: nft.tokenId,
-                        serialNumber: nft.serialNumber,
-                        image: nft.image,
-                        metadata: nft.metadata
+            for (let page = 1; page <= maxPages && !found; page++) {
+                try {
+                    const response = await this.axiosInstance.get('/v1/public/market/activity', {
+                        params: {
+                            apikey: apiKey,
+                            activityFilter: 'All',
+                            amount: 100,
+                            page: page,
+                            tokenAddress: tokenId // Filter by specific token
+                        }
+                    });
+                    
+                    if (response.data && response.data.success && response.data.marketActivity) {
+                        const activities = response.data.marketActivity;
+                        
+                        // Look for the specific NFT in this page
+                        const targetNFT = activities.find(activity => 
+                            activity.nftTokenAddress === tokenId && 
+                            (activity.nftSerialId == serialId || activity.serialNumber == serialId) &&
+                            activity.rarityRank !== null && activity.rarityRank !== undefined
+                        );
+                        
+                        if (targetNFT) {
+                            console.log(`✅ Found ${targetNFT.nftName} on page ${page}: Rank ${targetNFT.rarityRank}, Rarity ${targetNFT.rarityPct}`);
+                            return {
+                                success: true,
+                                nft: {
+                                    name: targetNFT.nftName,
+                                    rarityRank: targetNFT.rarityRank,
+                                    rarityPct: targetNFT.rarityPct,
+                                    tokenId: targetNFT.nftTokenAddress,
+                                    serialNumber: targetNFT.nftSerialId,
+                                    image: targetNFT.nftImage,
+                                    metadata: targetNFT.nftMetadata
+                                }
+                            };
+                        }
                     }
-                };
+                    
+                    // Log progress every 5 pages
+                    if (page % 5 === 0) {
+                        console.log(`🔍 Searched ${page} pages for ${tokenId}/${serialId}...`);
+                    }
+                    
+                } catch (pageError) {
+                    console.log(`⚠️ Error searching page ${page}: ${pageError.message}`);
+                }
             }
             
-            console.log(`⚠️ Direct API call unsuccessful for ${tokenId}/${serialId}`);
+            console.log(`⚠️ NFT ${tokenId}/${serialId} not found in ${maxPages} pages of collection activity`);
             return { success: false, nft: null };
             
         } catch (error) {
-            console.log(`❌ Error fetching direct NFT details: ${error.message}`);
+            console.log(`❌ Error in comprehensive collection search: ${error.message}`);
             return { success: false, nft: null };
         }
     }

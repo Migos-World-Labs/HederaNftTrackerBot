@@ -260,14 +260,13 @@ class EmbedUtils {
             }
         }
 
-        // Rarity information (if available) - support both SentX native and Kabila enriched data
-        if (sale.rarity || sale.rank || sale.sentx_rank) {
+        // Rarity information (only show accurate SentX data - never show inaccurate Kabila ranks)
+        if (sale.marketplace === 'SentX' && (sale.rarity || sale.rank)) {
+            // SentX native data - always accurate
             let rarityInfo = [];
             
-            // Use SentX rank if available (either native or enriched from Kabila)
-            const rankToUse = sale.sentx_rank || sale.rank;
-            if (rankToUse) {
-                rarityInfo.push(`🏆 **Rank:** #${rankToUse} in collection`);
+            if (sale.rank) {
+                rarityInfo.push(`🏆 **Rank:** #${sale.rank} in collection`);
             }
             
             if (sale.rarity) {
@@ -276,22 +275,37 @@ class EmbedUtils {
                 rarityInfo.push(`✨ **Rarity:** ${rarityTier} (${rarityPercentage}%)`);
             }
             
-            // Add data source indicator for Kabila enriched NFTs
-            if (sale.marketplace === 'Kabila' && (sale.rarity || sale.sentx_rank)) {
-                rarityInfo.push(`ℹ️ *Rarity data from SentX*`);
+            if (rarityInfo.length > 0) {
+                embed.addFields({
+                    name: '🌟 Rarity Info',
+                    value: rarityInfo.join('\n'),
+                    inline: false
+                });
+            }
+        } else if (sale.marketplace === 'Kabila' && sale.sentx_enriched && (sale.rarity || sale.sentx_rank)) {
+            // Kabila enriched with accurate SentX data - only show when successfully enriched
+            let rarityInfo = [];
+            
+            if (sale.sentx_rank) {
+                rarityInfo.push(`🏆 **Rank:** #${sale.sentx_rank} in collection`);
+            }
+            
+            if (sale.rarity) {
+                const rarityPercentage = parseFloat((sale.rarity * 100).toFixed(1));
+                const rarityTier = this.getRarityTier(sale.rarity);
+                rarityInfo.push(`✨ **Rarity:** ${rarityTier} (${rarityPercentage}%)`);
             }
             
             if (rarityInfo.length > 0) {
-                const rarityInfoText = rarityInfo.filter(info => info && info.trim()).join('\n').trim();
-                if (rarityInfoText && rarityInfoText.length > 0) {
-                    embed.addFields({
-                        name: '🌟 Rarity Info',
-                        value: rarityInfoText,
-                        inline: false
-                    });
-                }
+                rarityInfo.push(`ℹ️ *Rarity data from SentX*`);
+                embed.addFields({
+                    name: '🌟 Rarity Info',
+                    value: rarityInfo.join('\n'),
+                    inline: false
+                });
             }
         }
+        // Note: If Kabila NFT has no SentX enrichment, we show no rarity data rather than inaccurate Kabila ranks
 
         // Buyer and seller information in a more friendly format
         const traderInfo = [];
@@ -567,14 +581,13 @@ class EmbedUtils {
             });
         }
 
-        // Rarity information (if available) - support both SentX native and Kabila enriched data
-        if (listing.rarity || listing.rank || listing.sentx_rank) {
+        // Rarity information (only show accurate SentX data - never show inaccurate Kabila ranks)
+        if (listing.marketplace === 'SentX' && (listing.rarity || listing.rank)) {
+            // SentX native data - always accurate
             let rarityInfo = [];
             
-            // Use SentX rank if available (either native or enriched from Kabila)
-            const rankToUse = listing.sentx_rank || listing.rank;
-            if (rankToUse) {
-                rarityInfo.push(`🏆 **Rank:** #${rankToUse} in collection`);
+            if (listing.rank) {
+                rarityInfo.push(`🏆 **Rank:** #${listing.rank} in collection`);
             }
             
             if (listing.rarity) {
@@ -583,12 +596,29 @@ class EmbedUtils {
                 rarityInfo.push(`✨ **Rarity:** ${rarityTier} (${rarityPercentage}%)`);
             }
             
-            // Add data source indicator for Kabila enriched NFTs
-            if (listing.marketplace === 'Kabila' && (listing.rarity || listing.sentx_rank)) {
-                rarityInfo.push(`ℹ️ *Rarity data from SentX*`);
+            if (rarityInfo.length > 0) {
+                embed.addFields({
+                    name: '🌟 Rarity Info',
+                    value: rarityInfo.join('\n'),
+                    inline: false
+                });
+            }
+        } else if (listing.marketplace === 'Kabila' && listing.sentx_enriched && (listing.rarity || listing.sentx_rank)) {
+            // Kabila enriched with accurate SentX data - only show when successfully enriched
+            let rarityInfo = [];
+            
+            if (listing.sentx_rank) {
+                rarityInfo.push(`🏆 **Rank:** #${listing.sentx_rank} in collection`);
             }
             
-            if (rarityInfo.length > 0 && rarityInfo.join('\n').trim()) {
+            if (listing.rarity) {
+                const rarityPercentage = parseFloat((listing.rarity * 100).toFixed(1));
+                const rarityTier = this.getRarityTier(listing.rarity);
+                rarityInfo.push(`✨ **Rarity:** ${rarityTier} (${rarityPercentage}%)`);
+            }
+            
+            if (rarityInfo.length > 0) {
+                rarityInfo.push(`ℹ️ *Rarity data from SentX*`);
                 embed.addFields({
                     name: '🌟 Rarity Info',
                     value: rarityInfo.join('\n'),
@@ -596,6 +626,7 @@ class EmbedUtils {
                 });
             }
         }
+        // Note: If Kabila NFT has no SentX enrichment, we show no rarity data rather than inaccurate Kabila ranks
 
         // Add seller whale tier information
         if (listing.seller) {
