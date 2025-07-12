@@ -28,6 +28,7 @@ Use `/test` and select "Latest Sale from Tracked Collections"
 | `/list` | See all tracked collections | `/list` |
 | `/test` | Test bot functionality | `/test` |
 | `/status` | Check bot health | `/status` |
+| `/support` | Get help and support | `/support` |
 
 ---
 

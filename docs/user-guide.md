@@ -104,6 +104,27 @@ https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissio
 - Better organization for active trading communities
 - Customizable notification flow per server
 
+#### `/support` - Get Support and Help
+**Purpose**: Get help with the bot and access community support
+
+**Information provided**:
+- **Support Server Link**: Direct link to Discord support server (https://discord.gg/6KAR52JXzn)
+- **Help Topics**: Bot setup, configuration, troubleshooting, feature requests
+- **Quick Commands**: Reference for essential commands
+- **Marketplace Info**: Supported marketplaces and coverage
+- **Community Access**: Connect with support team and other users
+
+**Example**:
+```
+/support
+```
+
+**Benefits**:
+- Get immediate help from support team
+- Connect with community of bot users
+- Access troubleshooting assistance
+- Request new features or report issues
+
 #### `/status` - Bot Status Information
 **Purpose**: Display comprehensive bot status and server information
 

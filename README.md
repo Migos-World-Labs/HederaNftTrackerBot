@@ -40,6 +40,7 @@ All comprehensive documentation is available in the `/docs` folder:
 | `/list` | Show tracked collections |
 | `/test` | Test bot functionality |
 | `/status` | Bot status and health |
+| `/support` | Get help and join support server |
 
 ## 🌟 Popular Collections
 

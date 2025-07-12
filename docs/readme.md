@@ -44,6 +44,7 @@ https://discord.com/api/oauth2/authorize?client_id=1018256324519264265&permissio
 | `/list` | Show tracked collections |
 | `/set-listings-channel` | Configure separate listings channel |
 | `/status` | Bot status and server info |
+| `/support` | Get help and join support server |
 | `/test` | Test bot functionality |
 
 ## 🏗️ Technical Architecture

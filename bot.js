@@ -884,6 +884,10 @@ class NFTSalesBot {
                 ]
             },
             {
+                name: 'support',
+                description: 'Get support and help with the bot'
+            },
+            {
                 name: 'test',
                 description: 'Test the bot functionality',
                 options: [
@@ -976,6 +980,9 @@ class NFTSalesBot {
                     break;
                 case 'set-listings-channel':
                     await this.handleSetListingsChannelCommand(interaction, options);
+                    break;
+                case 'support':
+                    await this.handleSupportCommand(interaction);
                     break;
                 default:
                     await interaction.reply('Unknown command');
@@ -1468,6 +1475,58 @@ class NFTSalesBot {
                 content: '❌ An error occurred while setting the listings channel. Please try again.',
                 ephemeral: true
             });
+        }
+    }
+
+    async handleSupportCommand(interaction) {
+        try {
+            const supportEmbed = {
+                title: '🛟 Get Support & Help',
+                description: 'Need help with the NFT Sales Bot? Join our support server!',
+                color: 0x00d4ff,
+                fields: [
+                    {
+                        name: '🎮 Join Support Server',
+                        value: '[Click here to join our Discord support server](https://discord.gg/6KAR52JXzn)\n\nGet help with:\n• Bot setup and configuration\n• Adding NFT collections\n• Troubleshooting issues\n• Feature requests and feedback',
+                        inline: false
+                    },
+                    {
+                        name: '📚 Quick Commands',
+                        value: '• `/add` - Add NFT collection to track\n• `/list` - Show tracked collections\n• `/test` - Test bot functionality\n• `/status` - Check bot health',
+                        inline: true
+                    },
+                    {
+                        name: '🏪 Supported Marketplaces',
+                        value: '• **SentX** - Primary marketplace\n• **Kabila** - Secondary coverage\n• Both marketplaces monitored simultaneously',
+                        inline: true
+                    },
+                    {
+                        name: '🔧 Need Help?',
+                        value: 'Our support team is ready to help you:\n• Set up the bot for your server\n• Configure collections and channels\n• Answer questions about features\n• Resolve any technical issues',
+                        inline: false
+                    }
+                ],
+                footer: {
+                    text: 'Built for the Hedera NFT community',
+                    icon_url: 'https://sentient-bherbhd8e3cyg4dn.z01.azurefd.net/media/web/hedera-logo-128.png'
+                },
+                timestamp: new Date().toISOString()
+            };
+
+            await interaction.reply({
+                embeds: [supportEmbed],
+                ephemeral: false
+            });
+        } catch (error) {
+            console.error('Error handling support command:', error);
+            try {
+                await interaction.reply({
+                    content: '❌ Error showing support information. Please join our support server directly: https://discord.gg/6KAR52JXzn',
+                    ephemeral: true
+                });
+            } catch (replyError) {
+                console.error('Error replying to support command:', replyError);
+            }
         }
     }
 
