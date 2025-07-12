@@ -1833,10 +1833,13 @@ class NFTSalesBot {
 
     async getTestRecentKabilaSaleEmbed() {
         try {
-            console.log('Creating test Kabila sale embed...');
+            console.log('🔍 Creating test Kabila sale embed...');
+            console.log('🔍 Calling this.kabilaService.getRecentSales(50)...');
             
             // Get recent sales from Kabila only
             const recentSales = await this.kabilaService.getRecentSales(50);
+            
+            console.log(`🔍 Kabila API returned ${recentSales ? recentSales.length : 0} sales`);
             
             if (!recentSales || recentSales.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1847,10 +1850,16 @@ class NFTSalesBot {
             
             // Get the most recent sale
             const testSale = recentSales[0];
-            console.log(`Using Kabila sale: ${testSale.nft_name} for ${testSale.price_hbar} HBAR`);
+            console.log(`🔍 Using Kabila sale data:`, {
+                nft_name: testSale.nft_name,
+                price_hbar: testSale.price_hbar,
+                marketplace: testSale.marketplace || 'Unknown',
+                token_id: testSale.token_id,
+                collection_name: testSale.collection_name
+            });
             
             // Get HBAR rate
-            const hbarRate = await currencyService.getHbarToUsdRate();
+            const hbarRate = await this.currencyService.getHbarToUsdRate();
             
             // Create and return the embed
             return await this.embedUtils.createSaleEmbed(testSale, hbarRate);
@@ -1867,10 +1876,13 @@ class NFTSalesBot {
 
     async getTestRecentKabilaListingEmbed() {
         try {
-            console.log('Creating test Kabila listing embed...');
+            console.log('🔍 Creating test Kabila listing embed...');
+            console.log('🔍 Calling this.kabilaService.getRecentListings(50, true)...');
             
             // Get recent listings from Kabila only
             const recentListings = await this.kabilaService.getRecentListings(50, true);
+            
+            console.log(`🔍 Kabila API returned ${recentListings ? recentListings.length : 0} listings`);
             
             if (!recentListings || recentListings.length === 0) {
                 return this.embedUtils.createErrorEmbed(
@@ -1881,10 +1893,16 @@ class NFTSalesBot {
             
             // Get the most recent listing
             const testListing = recentListings[0];
-            console.log(`Using Kabila listing: ${testListing.nft_name} for ${testListing.price_hbar} HBAR`);
+            console.log(`🔍 Using Kabila listing data:`, {
+                nft_name: testListing.nft_name,
+                price_hbar: testListing.price_hbar,
+                marketplace: testListing.marketplace || 'Unknown',
+                token_id: testListing.token_id,
+                collection_name: testListing.collection_name
+            });
             
             // Get HBAR rate
-            const hbarRate = await currencyService.getHbarToUsdRate();
+            const hbarRate = await this.currencyService.getHbarToUsdRate();
             
             // Create and return the embed
             return await this.embedUtils.createListingEmbed(testListing, hbarRate);

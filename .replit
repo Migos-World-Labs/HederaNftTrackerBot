@@ -22,8 +22,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node --inspect index.js"
-waitForPort = 9229
+args = "node index.js"
 
 [deployment]
 run = ["sh", "-c", "npm install discord.js axios node-cron dotenv && node index.js"]

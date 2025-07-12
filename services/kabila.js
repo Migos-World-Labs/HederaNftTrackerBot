@@ -44,8 +44,8 @@ class KabilaService {
                 return [];
             }
 
-            // Kabila API returns a regular JSON array, not JSONEachRow format
-            const activities = Array.isArray(response.data) ? response.data : [];
+            // Kabila API returns ClickHouse format with meta and data fields
+            const activities = response.data.data || [];
 
             if (activities.length === 0) {
                 return [];
@@ -93,7 +93,7 @@ class KabilaService {
     async getRecentListings(limit = 50, allTimeListings = false) {
         try {
             const params = {
-                timeRange: allTimeListings ? '365d' : '7d',
+                timeRange: allTimeListings ? '30d' : '1h', // Use longer timeframe for testing
                 skip: 0,
                 limit: limit,
                 fields: 'tokenId,serialNumber,name,imageCid,imageType,activityType,subactivityType,price,currency,buyerId,sellerId,createdAt,rank'
@@ -107,54 +107,37 @@ class KabilaService {
                 return [];
             }
 
-            // Kabila API returns a regular JSON array, not JSONEachRow format
-            const activities = Array.isArray(response.data) ? response.data : [];
+            // Kabila API returns ClickHouse format with meta and data fields
+            const activities = response.data.data || [];
 
             if (activities.length === 0) {
                 return [];
             }
             
-            // Filter only actual listings (must have seller and price, but no buyer)
+            // Filter only active listings (no buyer, has price)
             const listingsOnly = activities.filter(activity => {
-                const hasListingData = activity.sellerId && 
-                    activity.sellerId !== null &&
-                    activity.sellerId !== '' &&
+                const isActiveListing = (!activity.buyerId || activity.buyerId === '') && 
                     activity.price && 
                     activity.price > 0 &&
-                    (!activity.buyerId || activity.buyerId === '') && // No buyer means it's still listed
                     activity.activityType === 'LISTING';
                 
-                return hasListingData;
+                return isActiveListing;
             });
             
-            const formattedListings = this.formatListingsData(listingsOnly);
-            
-            // Filter for recent listings only if not fetching all time listings
-            if (allTimeListings) {
-                return formattedListings;
-            } else {
-                // Filter for recent listings (within last 15 minutes for live monitoring)
-                const fifteenMinutesAgo = Date.now() - (15 * 60 * 1000);
-                const recentListings = formattedListings.filter(listing => {
-                    const listingTimestamp = new Date(listing.timestamp).getTime();
-                    return listingTimestamp > fifteenMinutesAgo;
-                });
-
-                return recentListings;
-            }
+            return this.formatListingsData(listingsOnly);
 
         } catch (error) {
             if (error.response) {
-                console.error('Kabila API error for listings:', {
+                console.error('Kabila API error:', {
                     status: error.response.status,
                     statusText: error.response.statusText,
                     url: error.config?.url,
                     data: typeof error.response.data === 'string' ? error.response.data.substring(0, 200) : error.response.data
                 });
             } else if (error.request) {
-                console.error('Kabila API listings request failed - no response received');
+                console.error('Kabila API request failed - no response received');
             } else {
-                console.error('Kabila API listings request setup error:', error.message);
+                console.error('Kabila API request setup error:', error.message);
             }
             
             // Return empty array on error to prevent bot from crashing
@@ -168,73 +151,65 @@ class KabilaService {
      * @returns {Object} Floor price information
      */
     async getCollectionFloorPrice(tokenId) {
-        try {
-            // Check cache first
-            const cacheKey = `floor_${tokenId}`;
+        const cacheKey = `floor_${tokenId}`;
+        
+        // Check cache first
+        if (this.floorPriceCache.has(cacheKey)) {
             const cached = this.floorPriceCache.get(cacheKey);
-            if (cached && (Date.now() - cached.timestamp) < this.cacheTimeout) {
-                console.log(`Using cached floor price for ${tokenId}: ${cached.data.price_hbar} HBAR`);
+            if (Date.now() - cached.timestamp < this.cacheTimeout) {
                 return cached.data;
             }
-            
-            console.log(`Fetching fresh floor price for collection ${tokenId}...`);
-            
-            // Get recent sales for this collection to determine floor price
+        }
+
+        try {
             const params = {
                 tokenId: tokenId,
-                timeRange: '30d',
+                timeRange: '1d',
                 skip: 0,
                 limit: 100,
-                fields: 'tokenId,serialNumber,name,imageCid,imageType,activityType,subactivityType,price,currency,buyerId,sellerId,createdAt,rank'
+                fields: 'tokenId,serialNumber,name,price,currency,activityType'
             };
             
             const response = await this.axiosInstance.get('/activity', {
                 params: params
             });
 
-            if (!response.data) {
-                console.log('No floor price data returned from Kabila API');
-                return null;
+            if (!response.data || !response.data.data || response.data.data.length === 0) {
+                return { floor_price: null, currency: 'HBAR' };
             }
 
-            // Kabila API returns a regular JSON array, not JSONEachRow format
-            const activities = Array.isArray(response.data) ? response.data : [];
-
-            // Filter for active listings only
+            const activities = response.data.data;
+            
+            // Find active listings for this token
             const listings = activities.filter(activity => 
                 activity.activityType === 'LISTING' && 
-                (!activity.buyerId || activity.buyerId === '') && 
+                activity.price && 
                 activity.price > 0
             );
 
             if (listings.length === 0) {
-                console.log('No valid listings found for floor price calculation');
-                return null;
+                return { floor_price: null, currency: 'HBAR' };
             }
 
-            // Find the lowest price
-            const prices = listings.map(listing => this.parseHbarAmount(listing.price));
-            const floorPriceHbar = Math.min(...prices);
-            
-            console.log(`Floor price for ${tokenId}: ${floorPriceHbar} HBAR`);
+            // Find minimum price
+            const floorPrice = Math.min(...listings.map(listing => this.parseHbarAmount(listing.price)));
             
             const result = {
-                price_hbar: floorPriceHbar,
-                listing_count: listings.length,
-                last_updated: new Date()
+                floor_price: floorPrice,
+                currency: 'HBAR'
             };
-            
+
             // Cache the result
             this.floorPriceCache.set(cacheKey, {
                 data: result,
                 timestamp: Date.now()
             });
-            
+
             return result;
 
         } catch (error) {
-            console.error(`Error fetching floor price for ${tokenId}:`, error.message);
-            return null;
+            console.error('Error fetching Kabila floor price:', error.message);
+            return { floor_price: null, currency: 'HBAR' };
         }
     }
 
@@ -245,38 +220,31 @@ class KabilaService {
      */
     formatListingsData(rawListings) {
         return rawListings.map(listing => {
-            const imageUrl = listing.imageCid ? `https://ipfs.io/ipfs/${listing.imageCid}` : null;
-            
             return {
-                id: `${listing.tokenId}-${listing.serialNumber}-${listing.createdAt}`,
-                nft_name: listing.name || 'Unknown NFT',
-                collection_name: listing.name || 'Unknown Collection',
+                // Use consistent field names with SentX service
                 token_id: listing.tokenId,
                 serial_id: listing.serialNumber,
-                serial_number: listing.serialNumber,
+                nft_name: listing.name || `NFT #${listing.serialNumber}`,
+                collection_name: listing.name || 'Unknown Collection',
                 price_hbar: this.parseHbarAmount(listing.price),
                 seller: this.formatAddress(listing.sellerId),
-                timestamp: listing.createdAt,
-                image_url: imageUrl,
-                imageCDN: imageUrl,
-                nftImage: imageUrl,
-                imageFile: imageUrl,
-                image: imageUrl,
-                imageUrl: imageUrl,
-                metadata: null,
-                data: null,
-                collection_image_url: null,
-                rarity: null,
-                rank: listing.rank || null,
+                listing_id: `kabila_${listing.tokenId}_${listing.serialNumber}_${listing.createdAt}`,
+                created_at: listing.createdAt,
                 marketplace: 'Kabila',
-                listing_id: `${listing.tokenId}-${listing.serialNumber}`,
-                sale_type: 'Listing',
-                attributes: [],
-                payment_token: { symbol: 'HBAR' },
-                listing_url: `https://kabila.app/marketplace/nft/${listing.tokenId}/${listing.serialNumber}`,
-                collection_url: `https://kabila.app/marketplace/collection/${listing.tokenId}`,
-                floor_price: null,
-                days_since_mint: null
+                
+                // Image handling
+                imageUrl: this.formatImageUrl(listing),
+                image: this.formatImageUrl(listing),
+                nftImage: this.formatImageUrl(listing),
+                imageCDN: this.formatImageUrl(listing),
+                
+                // Collection URL for Kabila marketplace
+                collection_url: `https://kabila.app/collection/${listing.tokenId}`,
+                
+                // Additional Kabila-specific data
+                rank: listing.rank || null,
+                currency: listing.currency || '0.0.1062664', // Default to HBAR
+                activityType: listing.activityType
             };
         });
     }
@@ -288,42 +256,63 @@ class KabilaService {
      */
     formatSalesData(rawSales) {
         return rawSales.map(sale => {
-            const imageUrl = sale.imageCid ? `https://ipfs.io/ipfs/${sale.imageCid}` : null;
-            
             return {
-                id: `${sale.tokenId}-${sale.serialNumber}-${sale.createdAt}`,
-                nft_name: sale.name || 'Unknown NFT',
-                collection_name: sale.name || 'Unknown Collection',
+                // Use consistent field names with SentX service
                 token_id: sale.tokenId,
                 serial_id: sale.serialNumber,
-                serial_number: sale.serialNumber,
+                nft_name: sale.name || `NFT #${sale.serialNumber}`,
+                collection_name: sale.name || 'Unknown Collection',
                 price_hbar: this.parseHbarAmount(sale.price),
                 buyer: this.formatAddress(sale.buyerId),
                 seller: this.formatAddress(sale.sellerId),
-                timestamp: sale.createdAt,
-                image_url: imageUrl,
-                imageCDN: imageUrl,
-                nftImage: imageUrl,
-                imageFile: imageUrl,
-                image: imageUrl,
-                imageUrl: imageUrl,
-                metadata: null,
-                data: null,
-                collection_image_url: null,
-                rarity: null,
-                rank: sale.rank || null,
+                sale_id: `kabila_${sale.tokenId}_${sale.serialNumber}_${sale.createdAt}`,
+                transaction_id: `kabila_${sale.tokenId}_${sale.serialNumber}_${sale.createdAt}`,
+                created_at: sale.createdAt,
                 marketplace: 'Kabila',
-                transaction_hash: null,
-                saleTransactionId: null,
-                transaction_id: null,
-                sale_type: 'Sale',
-                attributes: [],
-                payment_token: { symbol: 'HBAR' },
-                listing_url: `https://kabila.app/marketplace/nft/${sale.tokenId}/${sale.serialNumber}`,
-                collection_url: `https://kabila.app/marketplace/collection/${sale.tokenId}`,
-                previous_price: null
+                
+                // Image handling
+                imageUrl: this.formatImageUrl(sale),
+                image: this.formatImageUrl(sale),
+                nftImage: this.formatImageUrl(sale),
+                imageCDN: this.formatImageUrl(sale),
+                
+                // Collection URL for Kabila marketplace
+                collection_url: `https://kabila.app/collection/${sale.tokenId}`,
+                
+                // Additional Kabila-specific data
+                rank: sale.rank || null,
+                currency: sale.currency || '0.0.1062664', // Default to HBAR
+                activityType: sale.activityType,
+                subactivityType: sale.subactivityType
             };
         });
+    }
+
+    /**
+     * Format image URL from various possible sources
+     * @param {Object} nft - NFT object with image data
+     * @returns {string|null} Formatted image URL
+     */
+    formatImageUrl(nft) {
+        if (!nft) return null;
+        
+        // Handle IPFS CIDs
+        if (nft.imageCid) {
+            if (nft.imageCid.startsWith('ipfs://')) {
+                // Convert IPFS URL to HTTP gateway
+                const cid = nft.imageCid.replace('ipfs://', '');
+                return `https://ipfs.io/ipfs/${cid}`;
+            } else if (nft.imageCid.startsWith('hcs://')) {
+                // Handle HCS (Hedera Consensus Service) URLs
+                const topicId = nft.imageCid.replace('hcs://1/', '');
+                return `https://hashinals.sentx.io/${topicId}?optimizer=image&width=640`;
+            } else {
+                // Assume it's a bare CID
+                return `https://ipfs.io/ipfs/${nft.imageCid}`;
+            }
+        }
+        
+        return null;
     }
 
     /**
@@ -334,15 +323,14 @@ class KabilaService {
     parseHbarAmount(amount) {
         if (!amount) return 0;
         
-        // If amount is in tinybars (smallest unit), convert to HBAR
-        if (typeof amount === 'string' && amount.includes('tinybar')) {
-            const tinybars = parseInt(amount.replace(/[^\d]/g, ''));
-            return tinybars / 100000000; // 1 HBAR = 100,000,000 tinybars
+        // If it's already a number, return as-is
+        if (typeof amount === 'number') {
+            return amount;
         }
         
-        // If it's already in HBAR
-        const hbarAmount = parseFloat(amount);
-        return isNaN(hbarAmount) ? 0 : hbarAmount;
+        // Convert string to number
+        const parsed = parseFloat(amount);
+        return isNaN(parsed) ? 0 : parsed;
     }
 
     /**
@@ -353,16 +341,12 @@ class KabilaService {
     formatAddress(address) {
         if (!address) return 'Unknown';
         
-        // If it's a Hedera account ID (0.0.xxxxx format)
-        if (address.includes('.')) {
+        // If it's already in 0.0.X format, return as-is
+        if (address.startsWith('0.0.')) {
             return address;
         }
         
-        // If it's a long hex address, truncate it
-        if (address.length > 42) {
-            return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-        }
-        
+        // Otherwise return as-is (might be account ID format)
         return address;
     }
 
@@ -374,15 +358,17 @@ class KabilaService {
         try {
             const response = await this.axiosInstance.get('/activity', {
                 params: {
-                    timeRange: '1d',
+                    timeRange: '1h',
                     skip: 0,
                     limit: 1,
                     fields: 'tokenId'
-                }
+                },
+                timeout: 5000
             });
-            return response.status === 200;
+            
+            return response.status === 200 && response.data;
         } catch (error) {
-            console.error('Kabila health check failed:', error.message);
+            console.error('Kabila API health check failed:', error.message);
             return false;
         }
     }
