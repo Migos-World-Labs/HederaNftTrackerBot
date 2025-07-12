@@ -5,7 +5,7 @@
 
 const Canvas = require('canvas');
 const sharp = require('sharp');
-const Jimp = require('jimp');
+const { Jimp } = require('jimp');
 const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
