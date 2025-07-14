@@ -226,23 +226,33 @@ class NFTSalesBot {
         if (this.isMonitoring) return;
         
         this.isMonitoring = true;
+        this.monitoringInProgress = false; // Add flag to prevent overlapping monitoring cycles
         console.log('Starting NFT sales monitoring...');
         
         // Set initial timestamp to now to avoid posting old sales
         await this.initializeLastProcessedTimestamp();
         
-        // Monitor every 3 seconds for new sales with error handling
-        this.monitoringTask = cron.schedule('*/3 * * * * *', async () => {
+        // Monitor every 5 seconds for new sales with error handling and overlap prevention
+        this.monitoringTask = cron.schedule('*/5 * * * * *', async () => {
+            // Skip if previous monitoring cycle is still running
+            if (this.monitoringInProgress) {
+                console.log('⏸️ Skipping monitoring cycle - previous cycle still in progress');
+                return;
+            }
+            
             try {
+                this.monitoringInProgress = true;
                 await this.checkForNewSales();
             } catch (error) {
                 console.error('Error in monitoring task:', error.message);
                 // Continue monitoring even if one check fails
+            } finally {
+                this.monitoringInProgress = false;
             }
         });
 
         // Don't do initial check to avoid spam - wait for first interval
-        console.log('Monitoring initialized - will check for new sales every 3 seconds');
+        console.log('Monitoring initialized - will check for new sales every 5 seconds');
     }
 
     async initializeLastProcessedTimestamp() {
@@ -393,12 +403,20 @@ class NFTSalesBot {
 
             // Process each new sale
             for (const sale of allEnrichedSales) {
-                // Create more specific unique sale ID to prevent duplicates
+                // Create more robust unique sale ID to prevent duplicates
                 const tokenId = sale.tokenId || sale.token_id || 'unknown';
                 const serialNumber = sale.serialNumber || sale.serial_number || 'unknown';
                 const saleTsMs = new Date(sale.timestamp).getTime();
-                const transactionId = sale.saleTransactionId || sale.transaction_id || '';
-                const saleId = `${tokenId}_${serialNumber}_${saleTsMs}_${transactionId}`;
+                const transactionId = sale.saleTransactionId || sale.transaction_id || sale.transactionHash || '';
+                
+                // Create primary sale ID with transaction ID if available
+                let saleId;
+                if (transactionId) {
+                    saleId = `${tokenId}_${serialNumber}_${transactionId}`;
+                } else {
+                    // Fallback to timestamp-based ID if no transaction ID
+                    saleId = `${tokenId}_${serialNumber}_${saleTsMs}`;
+                }
                 
                 // Skip processing if essential data is missing
                 if (!sale.tokenId && !sale.token_id) {
@@ -409,23 +427,28 @@ class NFTSalesBot {
                 // Check if we've already processed this sale
                 const alreadyProcessed = await this.storage.isSaleProcessed(saleId);
                 if (alreadyProcessed) {
+                    console.log(`Skipping already processed sale: ${sale.nftName || sale.nft_name} (${saleId})`);
                     continue;
                 }
                 
                 console.log(`🔥 NEW SALE: ${sale.collection_name || sale.nft_name} - ${sale.price_hbar} HBAR`);
                 
-                await this.processSale(sale, hbarRate);
-                
-                // Mark sale as processed to prevent duplicates - use the actual token_id from sale
+                // Mark sale as processed BEFORE posting to prevent race conditions
                 const actualTokenId = sale.tokenId || sale.token_id;
-                await this.storage.markSaleProcessed(saleId, actualTokenId);
+                const marked = await this.storage.markSaleProcessed(saleId, actualTokenId);
                 
-                // Update last processed timestamp
-                const processedTsMs = new Date(sale.timestamp).getTime();
-                await this.storage.setLastProcessedSale(processedTsMs);
-                
-                // Small delay between messages to avoid rate limiting
-                await this.delay(1000);
+                if (marked) {
+                    await this.processSale(sale, hbarRate);
+                    
+                    // Update last processed timestamp
+                    const processedTsMs = new Date(sale.timestamp).getTime();
+                    await this.storage.setLastProcessedSale(processedTsMs);
+                    
+                    // Small delay between messages to avoid rate limiting
+                    await this.delay(1000);
+                } else {
+                    console.log(`Failed to mark sale as processed, skipping: ${sale.nftName || sale.nft_name}`);
+                }
             }
         } catch (error) {
             console.error('Error processing new sales:', error);
@@ -484,11 +507,20 @@ class NFTSalesBot {
 
             // Process each new listing
             for (const listing of allEnrichedListings) {
-                // Create more specific unique listing ID to prevent duplicates
+                // Create more robust unique listing ID to prevent duplicates
                 const tokenId = listing.tokenId || listing.token_id || 'unknown';
                 const serialNumber = listing.serialNumber || listing.serial_number || 'unknown';
                 const listingTsMs = new Date(listing.timestamp).getTime();
-                const listingId = listing.listing_id || `${tokenId}_${serialNumber}_${listingTsMs}`;
+                const listingUniqueId = listing.listing_id || listing.id || '';
+                
+                // Create primary listing ID with unique listing ID if available
+                let listingId;
+                if (listingUniqueId) {
+                    listingId = `${tokenId}_${serialNumber}_${listingUniqueId}`;
+                } else {
+                    // Fallback to timestamp-based ID if no unique listing ID
+                    listingId = `${tokenId}_${serialNumber}_${listingTsMs}`;
+                }
                 
                 // Skip processing if essential data is missing
                 if (!listing.tokenId && !listing.token_id) {
@@ -499,23 +531,28 @@ class NFTSalesBot {
                 // Check if we've already processed this listing
                 const alreadyProcessed = await this.storage.isListingProcessed(listingId);
                 if (alreadyProcessed) {
+                    console.log(`Skipping already processed listing: ${listing.nftName || listing.nft_name} (${listingId})`);
                     continue;
                 }
                 
                 console.log(`📋 NEW LISTING: ${listing.collection_name || listing.nft_name} - ${listing.price_hbar} HBAR`);
                 
-                await this.processListing(listing, hbarRate);
-                
-                // Mark listing as processed to prevent duplicates - use the actual token_id from listing
+                // Mark listing as processed BEFORE posting to prevent race conditions
                 const actualTokenId = listing.tokenId || listing.token_id;
-                await this.storage.markListingProcessed(listingId, actualTokenId);
+                const marked = await this.storage.markListingProcessed(listingId, actualTokenId);
                 
-                // Update last processed timestamp
-                const processedTsMs = new Date(listing.timestamp).getTime();
-                await this.storage.setLastProcessedListing(processedTsMs);
-                
-                // Small delay between messages to avoid rate limiting
-                await this.delay(1000);
+                if (marked) {
+                    await this.processListing(listing, hbarRate);
+                    
+                    // Update last processed timestamp
+                    const processedTsMs = new Date(listing.timestamp).getTime();
+                    await this.storage.setLastProcessedListing(processedTsMs);
+                    
+                    // Small delay between messages to avoid rate limiting
+                    await this.delay(1000);
+                } else {
+                    console.log(`Failed to mark listing as processed, skipping: ${listing.nftName || listing.nft_name}`);
+                }
             }
         } catch (error) {
             console.error('Error processing new listings:', error);
@@ -529,22 +566,34 @@ class NFTSalesBot {
      */
     removeDuplicateSales(sales) {
         const seen = new Set();
+        const seenTransactions = new Set();
+        
         return sales.filter(sale => {
             // Create a unique key based on token, serial, and timestamp
             const tokenId = sale.tokenId || sale.token_id;
             const serialNumber = sale.serialNumber || sale.serial_number;
             const timestamp = new Date(sale.timestamp).getTime();
             
-            // Round timestamp to nearest minute to catch sales that might have slightly different timestamps
-            const roundedTimestamp = Math.floor(timestamp / 60000) * 60000;
+            // Round timestamp to nearest 30 seconds to catch sales with slightly different timestamps
+            const roundedTimestamp = Math.floor(timestamp / 30000) * 30000;
             const key = `${tokenId}_${serialNumber}_${roundedTimestamp}`;
             
+            // Also check for transaction ID duplicates (more precise detection)
+            const transactionId = sale.saleTransactionId || sale.transaction_id || sale.transactionHash;
+            if (transactionId && seenTransactions.has(transactionId)) {
+                console.log(`Removing duplicate sale by transaction ID: ${sale.nftName || sale.nft_name} from ${sale.marketplace}`);
+                return false;
+            }
+            
             if (seen.has(key)) {
-                console.log(`Removing duplicate sale: ${sale.nftName || sale.nft_name} from ${sale.marketplace}`);
+                console.log(`Removing duplicate sale by key: ${sale.nftName || sale.nft_name} from ${sale.marketplace}`);
                 return false;
             }
             
             seen.add(key);
+            if (transactionId) {
+                seenTransactions.add(transactionId);
+            }
             return true;
         });
     }

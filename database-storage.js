@@ -329,13 +329,17 @@ class DatabaseStorage {
                 return false;
             }
             
-            await db.insert(processedSales)
+            // Use INSERT with onConflictDoNothing for atomic operation
+            const result = await db.insert(processedSales)
                 .values({
                     saleId,
                     tokenId
                 })
-                .onConflictDoNothing();
-            return true;
+                .onConflictDoNothing()
+                .returning();
+            
+            // Return true if a new record was inserted, false if it already existed
+            return result.length > 0;
         } catch (error) {
             console.error('Error marking sale as processed:', error);
             return false;
@@ -384,13 +388,17 @@ class DatabaseStorage {
                 return false;
             }
             
-            await db.insert(processedSales)
+            // Use INSERT with onConflictDoNothing for atomic operation
+            const result = await db.insert(processedSales)
                 .values({
                     saleId: `listing_${listingId}`,
                     tokenId
                 })
-                .onConflictDoNothing();
-            return true;
+                .onConflictDoNothing()
+                .returning();
+            
+            // Return true if a new record was inserted, false if it already existed
+            return result.length > 0;
         } catch (error) {
             console.error('Error marking listing as processed:', error);
             return false;

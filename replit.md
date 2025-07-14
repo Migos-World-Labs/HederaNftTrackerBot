@@ -519,6 +519,15 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Implemented automatic welcome message delivery for servers detected through periodic refresh
   - Added helpful error messages directing users to proper invite link when "Add App" method fails
   - System now properly handles both OAuth invite links and Discord's built-in app addition methods
+- July 14, 2025: Fixed double notification issues with comprehensive duplicate prevention system
+  - Increased monitoring interval from 3 to 5 seconds to reduce system load and prevent overlapping cycles
+  - Added monitoring overlap protection flag to prevent race conditions between monitoring cycles
+  - Enhanced duplicate detection with transaction ID checking for cross-marketplace duplicate prevention
+  - Improved sale ID generation using transaction IDs when available for more robust uniqueness
+  - Added atomic database operations with onConflictDoNothing for race condition prevention
+  - Enhanced timestamp-based duplicate detection with 30-second rounding for better accuracy
+  - Implemented pre-processing duplicate marking to prevent double notifications during processing
+  - Added comprehensive logging for duplicate detection and skipped notifications for better debugging
 
 ## Documentation Structure
 
