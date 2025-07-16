@@ -47,7 +47,7 @@ class SentXService {
             
             const params = {
                 apikey: apiKey,
-                activityFilter: 'All', // Get all activity types to capture order fills
+                activityFilter: 'Sales', // Focus on completed sales to reduce noise from listings/offers
                 amount: limit,
                 page: 1,
                 hbarMarketOnly: 1 // Focus on HBAR market

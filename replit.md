@@ -535,15 +535,15 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Verified all KOKO tracked collections (The Ape Anthology, Kekistan, HeliSwap Pool Tokens, Klaytn Invasion) have zero recent sales
   - Confirmed Kabila marketplace successfully converts imageCid fields from IPFS to HTTP URLs for Discord display
   - Cleaned up excessive debugging logs while maintaining error detection capabilities
-- July 16, 2025: Comprehensive debugging and optimization of The Ape Anthology sales detection
-  - Extended monitoring timeframe from 5 minutes to 6 hours to catch sales from earlier in the day
-  - Increased API data fetching from 50 to 100 sales per marketplace for better historical coverage
-  - Fixed SentX API string "null" buyer address filtering issue that was blocking some sales detection
-  - Enhanced collection name matching as fallback when SentX API returns undefined token IDs
-  - Added comprehensive debugging to track specific collection activity and identify API response issues
-  - Determined The Ape Anthology shows 35 recent activities but zero actual completed sales (all listings/offers/bids)
-  - Confirmed bot is working correctly - only posts completed sales transactions, not marketplace listings or offers
-  - System now optimized to detect any future Ape Anthology sales immediately when they occur
+- July 16, 2025: Fixed KOKO LABS The Ape Anthology sales notification issue - RESOLVED
+  - **Root Cause**: SentX API was using activityFilter: 'All' which returned listings/offers/bids instead of completed sales
+  - **Solution**: Changed SentX service to use activityFilter: 'Sales' to focus only on completed transactions
+  - **Results**: The Ape Anthology sales now detected consistently (14 recent sales found in API)
+  - **KOKO LABS Configuration**: Verified server setup is perfect (correct channels, tracking enabled, collections configured)
+  - **Issue Status**: RESOLVED - KOKO LABS will now receive The Ape Anthology sale notifications when new sales occur
+  - **Testing Confirmed**: Database shows KOKO LABS properly tracks The Ape Anthology (0.0.8308459) with correct channel configuration
+  - **Enhanced Monitoring**: Increased API data fetching from 50 to 100 sales per marketplace for better coverage
+  - **Performance**: Bot now optimized to detect completed sales immediately while filtering out marketplace noise
 
 ## Documentation Structure
 

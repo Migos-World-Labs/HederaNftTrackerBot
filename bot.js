@@ -753,6 +753,8 @@ class NFTSalesBot {
                     // Check if this server tracks the collection
                     const isTracked = await this.storage.isCollectionTracked(sale.token_id || sale.tokenId, serverConfig.guildId);
                     
+
+                    
                     if (!isTracked) {
                         console.log(`  ⏭️ ${serverConfig.guildName || serverConfig.guildId}: collection not tracked`);
                         continue; // Skip this server if collection not tracked
