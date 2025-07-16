@@ -329,6 +329,8 @@ class KabilaService {
     formatImageUrl(nft) {
         if (!nft) return null;
         
+
+        
         // Priority order for image sources
         const imageFields = ['imageCid', 'image', 'imageUrl', 'nftImage', 'imageCDN'];
         
@@ -348,7 +350,6 @@ class KabilaService {
                 const topicId = imageValue.replace('hcs://1/', '');
                 return `https://hashinals.sentx.io/${topicId}?optimizer=image&width=640`;
             } else if (imageValue.startsWith('data:')) {
-                // Handle data URIs
                 return imageValue;
             } else if (imageValue.length > 20 && !imageValue.includes(' ')) {
                 // Assume it's a bare CID if it's long enough and has no spaces

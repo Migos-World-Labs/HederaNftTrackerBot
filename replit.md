@@ -528,6 +528,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - Enhanced timestamp-based duplicate detection with 30-second rounding for better accuracy
   - Implemented pre-processing duplicate marking to prevent double notifications during processing
   - Added comprehensive logging for duplicate detection and skipped notifications for better debugging
+- July 16, 2025: Investigated and resolved KOKO sales posting and Kabila image posting issues
+  - Confirmed KOKO LABS sales posting is working correctly - no recent sales activity in tracked collections
+  - Fixed Kabila image posting system - images are displaying properly with IPFS URL conversion
+  - Enhanced debugging system to identify marketplace-specific issues and verified both systems operational
+  - Verified all KOKO tracked collections (The Ape Anthology, Kekistan, HeliSwap Pool Tokens, Klaytn Invasion) have zero recent sales
+  - Confirmed Kabila marketplace successfully converts imageCid fields from IPFS to HTTP URLs for Discord display
+  - Cleaned up excessive debugging logs while maintaining error detection capabilities
 
 ## Documentation Structure
 

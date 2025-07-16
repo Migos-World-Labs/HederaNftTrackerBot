@@ -431,7 +431,8 @@ class NFTSalesBot {
                     continue;
                 }
                 
-                console.log(`🔥 NEW SALE: ${sale.collection_name || sale.nft_name} - ${sale.price_hbar} HBAR`);
+                console.log(`🔥 NEW SALE: ${sale.collection_name || sale.nft_name} - ${sale.price_hbar} HBAR (${sale.marketplace})`);
+                console.log(`   Token ID: ${sale.token_id || sale.tokenId}, Serial: ${sale.serial_id || sale.serialNumber}`);
                 
                 // Mark sale as processed BEFORE posting to prevent race conditions
                 const actualTokenId = sale.tokenId || sale.token_id;
@@ -660,6 +661,8 @@ class NFTSalesBot {
                     
                     const channel = this.client.channels.cache.get(serverConfig.channelId);
                     if (channel) {
+                        console.log(`     📍 Found channel #${channel.name} (${serverConfig.channelId}) in ${serverConfig.guildName}`);
+                        
                         // Add marketplace-specific collection URLs
                         if (sale.marketplace === 'Kabila') {
                             // Kabila URL format
