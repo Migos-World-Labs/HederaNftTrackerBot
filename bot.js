@@ -310,12 +310,12 @@ class NFTSalesBot {
                 return;
             }
 
-            // Get recent sales from both marketplaces
-            const sentxSales = await sentxService.getRecentSales();
-            const kabilaSales = await kabilaService.getRecentSales();
+            // Get recent sales from both marketplaces - increase limit to catch more historical data
+            const sentxSales = await sentxService.getRecentSales(100);
+            const kabilaSales = await kabilaService.getRecentSales(100);
             // Get recent listings from both marketplaces  
-            const sentxListings = await sentxService.getRecentListings();
-            const kabilaListings = await kabilaService.getRecentListings();
+            const sentxListings = await sentxService.getRecentListings(50);
+            const kabilaListings = await kabilaService.getRecentListings(50);
             
             // Debug: Log API response counts for monitoring
             if (sentxSales.length > 0 || kabilaSales.length > 0) {
@@ -326,21 +326,92 @@ class NFTSalesBot {
             const allSales = [...sentxSales, ...kabilaSales];
             const allListings = [...sentxListings, ...kabilaListings];
 
-            // Filter for only tracked collections
-            const trackedSales = allSales.filter(sale => 
-                trackedTokenIds.includes(sale.token_id || sale.tokenId)
-            );
-            const trackedListings = allListings.filter(listing => 
-                trackedTokenIds.includes(listing.token_id || listing.tokenId)
-            );
+            // Create a map of collection names to token IDs for fallback matching
+            const collectionNameMap = {};
+            allTrackedCollections.forEach(collection => {
+                const tokenId = collection.token_id || collection.tokenId;
+                const name = collection.name || collection.collection_name;
+                if (name && tokenId) {
+                    collectionNameMap[name.toLowerCase()] = tokenId;
+                }
+            });
             
-            // Debug: Check specifically for The Ape Anthology (KOKO's concern)
-            const apeAnthologySales = allSales.filter(sale => 
-                (sale.token_id || sale.tokenId) === '0.0.8308459'
-            );
-            const apeAnthologyListings = allListings.filter(listing => 
-                (listing.token_id || listing.tokenId) === '0.0.8308459'
-            );
+            // Filter for only tracked collections (with fallback to collection name)
+            const trackedSales = allSales.filter(sale => {
+                const tokenId = sale.token_id || sale.tokenId;
+                const collectionName = sale.collection_name || sale.collectionName;
+                
+                // First try token ID matching
+                if (tokenId && tokenId !== 'undefined' && trackedTokenIds.includes(tokenId)) {
+                    return true;
+                }
+                
+                // Fallback: match by collection name when token ID is undefined
+                if (collectionName && collectionNameMap[collectionName.toLowerCase()]) {
+                    // Set the correct token ID for processing
+                    sale.token_id = collectionNameMap[collectionName.toLowerCase()];
+                    sale.tokenId = collectionNameMap[collectionName.toLowerCase()];
+                    return true;
+                }
+                
+                return false;
+            });
+            
+            const trackedListings = allListings.filter(listing => {
+                const tokenId = listing.token_id || listing.tokenId;
+                const collectionName = listing.collection_name || listing.collectionName;
+                
+                // First try token ID matching
+                if (tokenId && tokenId !== 'undefined' && trackedTokenIds.includes(tokenId)) {
+                    return true;
+                }
+                
+                // Fallback: match by collection name when token ID is undefined
+                if (collectionName && collectionNameMap[collectionName.toLowerCase()]) {
+                    // Set the correct token ID for processing
+                    listing.token_id = collectionNameMap[collectionName.toLowerCase()];
+                    listing.tokenId = collectionNameMap[collectionName.toLowerCase()];
+                    return true;
+                }
+                
+                return false;
+            });
+            
+            // Debug: Check specifically for The Ape Anthology (KOKO's concern) - include name matching
+            const apeAnthologySales = allSales.filter(sale => {
+                const tokenMatch = (sale.token_id || sale.tokenId) === '0.0.8308459';
+                const nameMatch = (sale.collection_name || sale.collectionName || '').toLowerCase().includes('ape anthology');
+                return tokenMatch || nameMatch;
+            });
+            const apeAnthologyListings = allListings.filter(listing => {
+                const tokenMatch = (listing.token_id || listing.tokenId) === '0.0.8308459';
+                const nameMatch = (listing.collection_name || listing.collectionName || '').toLowerCase().includes('ape anthology');
+                return tokenMatch || nameMatch;
+            });
+            
+            // Enhanced debugging for collection name matching
+            if (allSales.length > 0) {
+                console.log(`🔍 Collection Name Debug:`, allSales.slice(0, 3).map(s => ({
+                    tokenId: s.token_id || s.tokenId,
+                    collection: s.collection_name || s.collectionName,
+                    marketplace: s.marketplace
+                })));
+                
+                // Check if any sales have "The Ape Anthology" collection name
+                const apeNamedSales = allSales.filter(s => {
+                    const collectionName = (s.collection_name || s.collectionName || '').toLowerCase();
+                    return collectionName.includes('ape') || collectionName.includes('anthology');
+                });
+                if (apeNamedSales.length > 0) {
+                    console.log(`🎯 Found ${apeNamedSales.length} sales with "Ape" or "Anthology" in name:`, 
+                        apeNamedSales.slice(0, 2).map(s => ({
+                            name: s.nft_name || s.nftName,
+                            collection: s.collection_name || s.collectionName,
+                            tokenId: s.token_id || s.tokenId
+                        }))
+                    );
+                }
+            }
             
             // Always log Ape Anthology check results for debugging
             if (allSales.length > 0 || allListings.length > 0) {
@@ -392,9 +463,9 @@ class NFTSalesBot {
                 const saleTimestamp = new Date(sale.timestamp).getTime();
                 const isNewer = saleTimestamp > lastProcessedTimestamp;
                 
-                // Additional check: sale must be within last 5 minutes to be considered "live"
-                const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-                const isRecent = saleTimestamp > fiveMinutesAgo;
+                // Extended check: sale must be within last 6 hours to catch earlier today's sales
+                const sixHoursAgo = Date.now() - (6 * 60 * 60 * 1000);
+                const isRecent = saleTimestamp > sixHoursAgo;
                 
                 return isNewer && isRecent;
             });

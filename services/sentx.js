@@ -69,6 +69,8 @@ class SentXService {
             const salesOnly = response.data.marketActivity.filter(activity => {
                 const hasCompletedSale = activity.buyerAddress && 
                     activity.buyerAddress !== null && 
+                    activity.buyerAddress !== 'null' && // SentX API returns string "null" instead of null
+                    activity.buyerAddress !== '' &&
                     activity.salePrice && 
                     activity.salePrice > 0 &&
                     // Order fills may not have transaction ID but are still valid completed sales
