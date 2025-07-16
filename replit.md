@@ -551,6 +551,12 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - **Implementation**: Added collectionNameMap fallback that sets correct token ID when API returns undefined
   - **Result**: Test command now works with same reliability as monitoring system for collections with undefined token IDs
   - **Testing**: Verified test command can now properly detect The Ape Anthology sales using name-based matching with token ID correction
+- July 16, 2025: Updated collection URL generation to use collection names instead of token IDs
+  - **Enhancement**: Modified getSentXCollectionUrl() method to accept collection name as primary parameter with token ID fallback
+  - **Implementation**: Updated URL generation to convert collection names to URL-friendly format (e.g., "The Ape Anthology" → "the-ape-anthology")
+  - **Coverage**: Applied to both live notifications (sales and listings) and all test commands
+  - **Benefits**: Collection URLs now use proper SentX marketplace format based on actual collection names rather than hardcoded token ID mappings
+  - **Result**: More dynamic and accurate collection links that adapt to new collections automatically without manual mapping updates
 
 ## Documentation Structure
 

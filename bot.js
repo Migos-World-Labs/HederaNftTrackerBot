@@ -775,10 +775,10 @@ class NFTSalesBot {
                                 sale.collection_url = `https://market.kabila.app/en/collections/${tokenNumber}/items`;
                             }
                         } else {
-                            // SentX URL format - use proper collection name mapping
-                            if (sale.token_id || sale.tokenId) {
-                                sale.collection_url = this.getSentXCollectionUrl(sale.token_id || sale.tokenId);
-                            }
+                            // SentX URL format - use collection name (preferred) or token ID fallback
+                            const collectionName = sale.collection_name || sale.collectionName;
+                            const tokenId = sale.token_id || sale.tokenId;
+                            sale.collection_url = this.getSentXCollectionUrl(collectionName, tokenId);
                         }
                         
                         // Create Discord embed for the sale with image effects based on server setting
@@ -867,10 +867,10 @@ class NFTSalesBot {
                                 listing.collection_url = `https://market.kabila.app/en/collections/${tokenNumber}/items`;
                             }
                         } else {
-                            // SentX URL format - use proper collection name mapping
-                            if (listing.token_id || listing.tokenId) {
-                                listing.collection_url = this.getSentXCollectionUrl(listing.token_id || listing.tokenId);
-                            }
+                            // SentX URL format - use collection name (preferred) or token ID fallback
+                            const collectionName = listing.collection_name || listing.collectionName;
+                            const tokenId = listing.token_id || listing.tokenId;
+                            listing.collection_url = this.getSentXCollectionUrl(collectionName, tokenId);
                         }
                         
                         // Create Discord embed for the listing with image effects based on server setting
@@ -1934,28 +1934,45 @@ class NFTSalesBot {
     }
 
     /**
-     * Get proper SentX collection URL based on token ID
-     * @param {string} tokenId - Token ID of the collection
+     * Get proper SentX collection URL based on collection name (preferred) or token ID fallback
+     * @param {string} collectionName - Collection name from API
+     * @param {string} tokenId - Token ID fallback if name conversion fails
      * @returns {string} Proper SentX collection URL
      */
-    getSentXCollectionUrl(tokenId) {
-        // Map token IDs to their proper SentX collection URLs
-        const collectionMapping = {
-            '0.0.6024491': 'https://sentx.io/nft-marketplace/wild-tigers',
-            '0.0.8308459': 'https://sentx.io/nft-marketplace/the-ape-anthology',
-            '0.0.8233324': 'https://sentx.io/nft-marketplace/kekistan',
-            '0.0.8233316': 'https://sentx.io/nft-marketplace/heliswap-pool-tokens',
-            '0.0.8233302': 'https://sentx.io/nft-marketplace/klaytn-invasion',
-            '0.0.5552189': 'https://sentx.io/nft-marketplace/hashinals',
-            '0.0.2173899': 'https://sentx.io/nft-marketplace/hashinals',
-            '0.0.789064': 'https://sentx.io/nft-marketplace/hashinals',
-            '0.0.1097228': 'https://sentx.io/nft-marketplace/hashinals',
-            '0.0.8293984': 'https://sentx.io/nft-marketplace/hashinals',
-            '0.0.1006183': 'https://sentx.io/nft-marketplace/hedera-monkeys',
-            '0.0.878200': 'https://sentx.io/nft-marketplace/rooster-cartel'
-        };
+    getSentXCollectionUrl(collectionName, tokenId = null) {
+        // If we have a collection name, convert it to SentX URL format
+        if (collectionName && collectionName !== 'Unknown Collection') {
+            // Convert collection name to URL-friendly format
+            const urlFriendlyName = collectionName.toLowerCase()
+                .replace(/\s+/g, '-')           // Replace spaces with hyphens
+                .replace(/[^a-z0-9\-]/g, '')    // Remove special characters except hyphens
+                .replace(/--+/g, '-')           // Replace multiple hyphens with single
+                .replace(/^-|-$/g, '');         // Remove leading/trailing hyphens
+            
+            return `https://sentx.io/nft-marketplace/${urlFriendlyName}`;
+        }
         
-        return collectionMapping[tokenId] || `https://sentx.io/nft-marketplace/collection/${tokenId}`;
+        // Fallback: Use token ID mapping for specific known collections
+        if (tokenId) {
+            const collectionMapping = {
+                '0.0.6024491': 'https://sentx.io/nft-marketplace/wild-tigers',
+                '0.0.8308459': 'https://sentx.io/nft-marketplace/the-ape-anthology',
+                '0.0.8233324': 'https://sentx.io/nft-marketplace/kekistan',
+                '0.0.8233316': 'https://sentx.io/nft-marketplace/heliswap-pool-tokens',
+                '0.0.8233302': 'https://sentx.io/nft-marketplace/klaytn-invasion',
+                '0.0.5552189': 'https://sentx.io/nft-marketplace/hashinals',
+                '0.0.2173899': 'https://sentx.io/nft-marketplace/hashinals',
+                '0.0.789064': 'https://sentx.io/nft-marketplace/hashinals',
+                '0.0.1097228': 'https://sentx.io/nft-marketplace/hashinals',
+                '0.0.8293984': 'https://sentx.io/nft-marketplace/hashinals',
+                '0.0.1006183': 'https://sentx.io/nft-marketplace/hedera-monkeys',
+                '0.0.878200': 'https://sentx.io/nft-marketplace/rooster-cartel'
+            };
+            
+            return collectionMapping[tokenId] || `https://sentx.io/nft-marketplace/collection/${tokenId}`;
+        }
+        
+        return null;
     }
 
     async getTestListingEmbed(guildId, specificTokenId = null) {
@@ -2024,12 +2041,9 @@ class NFTSalesBot {
             // Get HBAR rate
             const hbarRate = await currencyService.getHbarToUsdRate();
             
-            // Ensure collection URL points to collection, not specific NFT
-            if (!testListing.collection_url || testListing.collection_url.includes('undefined')) {
-                testListing.collection_url = testListing.collectionFriendlyurl 
-                    ? `https://sentx.io/nft-marketplace/${testListing.collectionFriendlyurl}`
-                    : `https://sentx.io/nft-marketplace/collection/${testListing.token_id}`;
-            }
+            // Ensure collection URL using collection name
+            const collectionNameForUrl = testListing.collection_name || collectionName;
+            testListing.collection_url = this.getSentXCollectionUrl(collectionNameForUrl, testListing.token_id);
             
             // Create a listing embed to test the formatting
             return await embedUtils.createListingEmbed(testListing, hbarRate);
@@ -2100,12 +2114,9 @@ class NFTSalesBot {
                 (c.token_id || c.tokenId) === testSale.token_id
             )?.name || testSale.collection_name;
             
-            // Ensure collection URL is set
-            if (!testSale.collection_url) {
-                testSale.collection_url = testSale.collectionFriendlyurl 
-                    ? `https://sentx.io/nft-marketplace/${testSale.collectionFriendlyurl}`
-                    : `https://sentx.io/nft-marketplace/collection/${testSale.token_id}`;
-            }
+            // Ensure collection URL using collection name
+            const collectionNameForUrl = testSale.collection_name || collectionName;
+            testSale.collection_url = this.getSentXCollectionUrl(collectionNameForUrl, testSale.token_id);
             
             console.log(`Using sale for testing: ${testSale.nft_name} from ${collectionName}`);
             
@@ -2142,12 +2153,9 @@ class NFTSalesBot {
             // Use the most recent sale
             const testSale = recentSales[0];
             
-            // Ensure collection URL is set
-            if (!testSale.collection_url) {
-                testSale.collection_url = testSale.collectionFriendlyurl 
-                    ? `https://sentx.io/nft-marketplace/${testSale.collectionFriendlyurl}`
-                    : `https://sentx.io/nft-marketplace/collection/${testSale.token_id}`;
-            }
+            // Ensure collection URL using collection name
+            const collectionNameForUrl = testSale.collection_name;
+            testSale.collection_url = this.getSentXCollectionUrl(collectionNameForUrl, testSale.token_id);
             
             console.log(`Using most recent sale for testing: ${testSale.nft_name} from ${testSale.collection_name}`);
             
