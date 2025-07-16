@@ -544,6 +544,13 @@ This is a Discord bot application that provides real-time NFT marketplace analyt
   - **Testing Confirmed**: Database shows KOKO LABS properly tracks The Ape Anthology (0.0.8308459) with correct channel configuration
   - **Enhanced Monitoring**: Increased API data fetching from 50 to 100 sales per marketplace for better coverage
   - **Performance**: Bot now optimized to detect completed sales immediately while filtering out marketplace noise
+- July 16, 2025: Fixed test command for SentX API token ID inconsistencies
+  - **Issue**: Test command couldn't find The Ape Anthology sales despite monitoring system detecting 14 sales successfully
+  - **Root Cause**: SentX API returning undefined for tokenId fields, test command using different matching logic than monitoring
+  - **Solution**: Updated test command to use identical collection name mapping logic as monitoring system
+  - **Implementation**: Added collectionNameMap fallback that sets correct token ID when API returns undefined
+  - **Result**: Test command now works with same reliability as monitoring system for collections with undefined token IDs
+  - **Testing**: Verified test command can now properly detect The Ape Anthology sales using name-based matching with token ID correction
 
 ## Documentation Structure
 

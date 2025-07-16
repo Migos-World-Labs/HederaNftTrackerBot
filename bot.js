@@ -2296,20 +2296,35 @@ class NFTSalesBot {
             const trackedCollections = await this.storage.getCollections(guildId);
             const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
             
-            // Filter sales to only show those from tracked collections
-            // Use both token ID matching and collection name matching (since API sometimes returns undefined tokenIds)
+            // Create a map of collection names to token IDs for fallback matching (same as monitoring system)
+            const collectionNameMap = {};
+            trackedCollections.forEach(collection => {
+                const tokenId = collection.token_id || collection.tokenId;
+                const name = collection.name || collection.collection_name;
+                if (name && tokenId) {
+                    collectionNameMap[name.toLowerCase()] = tokenId;
+                }
+            });
+            
+            // Filter sales to only show those from tracked collections (same logic as monitoring system)
             let trackedSales = recentSales.filter(sale => {
-                const tokenMatch = trackedTokenIds.includes(sale.token_id || sale.tokenId);
+                const tokenId = sale.token_id || sale.tokenId;
+                const collectionName = sale.collection_name || sale.collectionName;
                 
-                // Also check by collection name for collections we track
-                const nameMatch = trackedCollections.some(trackedCol => {
-                    const saleCollectionName = (sale.collection_name || sale.collectionName || '').toLowerCase();
-                    const trackedName = (trackedCol.name || '').toLowerCase();
-                    return saleCollectionName.includes(trackedName.split(' ')[0]) || // Match first word
-                           trackedName.includes(saleCollectionName);
-                });
+                // First try token ID matching
+                if (tokenId && tokenId !== 'undefined' && trackedTokenIds.includes(tokenId)) {
+                    return true;
+                }
                 
-                return tokenMatch || nameMatch;
+                // Fallback: match by collection name when token ID is undefined (same as monitoring)
+                if (collectionName && collectionNameMap[collectionName.toLowerCase()]) {
+                    // Set the correct token ID for processing (same as monitoring)
+                    sale.token_id = collectionNameMap[collectionName.toLowerCase()];
+                    sale.tokenId = collectionNameMap[collectionName.toLowerCase()];
+                    return true;
+                }
+                
+                return false;
             });
             
             // If specific collection requested, filter further
