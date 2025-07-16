@@ -2297,20 +2297,40 @@ class NFTSalesBot {
             const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
             
             // Filter sales to only show those from tracked collections
-            let trackedSales = recentSales.filter(sale => 
-                trackedTokenIds.includes(sale.token_id || sale.tokenId)
-            );
+            // Use both token ID matching and collection name matching (since API sometimes returns undefined tokenIds)
+            let trackedSales = recentSales.filter(sale => {
+                const tokenMatch = trackedTokenIds.includes(sale.token_id || sale.tokenId);
+                
+                // Also check by collection name for collections we track
+                const nameMatch = trackedCollections.some(trackedCol => {
+                    const saleCollectionName = (sale.collection_name || sale.collectionName || '').toLowerCase();
+                    const trackedName = (trackedCol.name || '').toLowerCase();
+                    return saleCollectionName.includes(trackedName.split(' ')[0]) || // Match first word
+                           trackedName.includes(saleCollectionName);
+                });
+                
+                return tokenMatch || nameMatch;
+            });
             
             // If specific collection requested, filter further
             if (specificCollection) {
-                trackedSales = trackedSales.filter(sale => 
-                    (sale.token_id || sale.tokenId) === specificCollection
-                );
+                trackedSales = trackedSales.filter(sale => {
+                    const tokenMatch = (sale.token_id || sale.tokenId) === specificCollection;
+                    
+                    // Also check by collection name if token ID match fails
+                    const specificTrackedCol = trackedCollections.find(col => (col.token_id || col.tokenId) === specificCollection);
+                    const nameMatch = specificTrackedCol && 
+                        (sale.collection_name || sale.collectionName || '').toLowerCase()
+                            .includes((specificTrackedCol.name || '').toLowerCase().split(' ')[0]);
+                    
+                    return tokenMatch || nameMatch;
+                });
                 
                 if (trackedSales.length === 0) {
+                    const collectionName = trackedCollections.find(c => (c.token_id || c.tokenId) === specificCollection)?.name || specificCollection;
                     return this.embedUtils.createErrorEmbed(
                         'No SentX Sales Found',
-                        `No recent SentX sales found for collection ${specificCollection}.\n\nTry testing without specifying a collection.`
+                        `No recent SentX sales found for ${collectionName} (${specificCollection}).\n\nNote: SentX API currently has some token ID fields returning undefined.\nTry testing without specifying a collection to see general marketplace activity.`
                     );
                 }
             }
