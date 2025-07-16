@@ -316,6 +316,11 @@ class NFTSalesBot {
             // Get recent listings from both marketplaces  
             const sentxListings = await sentxService.getRecentListings();
             const kabilaListings = await kabilaService.getRecentListings();
+            
+            // Debug: Log API response counts for monitoring
+            if (sentxSales.length > 0 || kabilaSales.length > 0) {
+                console.log(`📊 API Response Summary: SentX ${sentxSales.length} sales, Kabila ${kabilaSales.length} sales`);
+            }
 
             // Combine sales and listings from both marketplaces
             const allSales = [...sentxSales, ...kabilaSales];
@@ -328,6 +333,32 @@ class NFTSalesBot {
             const trackedListings = allListings.filter(listing => 
                 trackedTokenIds.includes(listing.token_id || listing.tokenId)
             );
+            
+            // Debug: Check specifically for The Ape Anthology (KOKO's concern)
+            const apeAnthologySales = allSales.filter(sale => 
+                (sale.token_id || sale.tokenId) === '0.0.8308459'
+            );
+            const apeAnthologyListings = allListings.filter(listing => 
+                (listing.token_id || listing.tokenId) === '0.0.8308459'
+            );
+            
+            // Always log Ape Anthology check results for debugging
+            if (allSales.length > 0 || allListings.length > 0) {
+                console.log(`🔍 The Ape Anthology (0.0.8308459) Check: ${apeAnthologySales.length} sales, ${apeAnthologyListings.length} listings`);
+                
+                if (apeAnthologySales.length > 0) {
+                    console.log(`   📈 Ape sales found:`, apeAnthologySales.map(s => 
+                        `${s.nft_name || s.nftName} - ${s.price_hbar}H from ${s.marketplace} at ${s.timestamp}`
+                    ));
+                }
+                
+                // Show a sample of other sales to compare
+                if (allSales.length > 0 && apeAnthologySales.length === 0) {
+                    console.log(`   📊 Other sales detected:`, allSales.slice(0, 3).map(s => 
+                        `${s.token_id || s.tokenId} - ${s.nft_name || s.nftName} from ${s.marketplace}`
+                    ));
+                }
+            }
             
             // Only log when we actually have new data to process
             const hasNewSales = trackedSales && trackedSales.length > 0;
