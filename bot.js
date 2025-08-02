@@ -1209,6 +1209,10 @@ class NFTSalesBot {
                             {
                                 name: 'Recent Kabila Listing',
                                 value: 'recent-kabila-listing'
+                            },
+                            {
+                                name: 'Recent HTS Payment Sale',
+                                value: 'recent-hts-sale'
                             }
                         ]
                     },
