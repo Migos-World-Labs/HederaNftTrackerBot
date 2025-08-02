@@ -2766,14 +2766,31 @@ class NFTSalesBot {
             
             // If specific collection requested, filter further
             if (specificCollection) {
-                filteredSales = filteredSales.filter(sale => 
-                    (sale.token_id || sale.tokenId) === specificCollection
-                );
+                console.log(`🔍 Filtering ${filteredSales.length} HTS sales for collection: ${specificCollection}`);
+                
+                // Debug: Show token_id fields of all HTS sales
+                filteredSales.forEach((sale, index) => {
+                    const tokenId = sale.token_id || sale.tokenId;
+                    const collectionName = sale.collection_name || sale.collectionName || 'Unknown';
+                    console.log(`   [${index}] ${sale.nft_name || 'Unknown NFT'}: token_id="${tokenId}", collection="${collectionName}", payment="${sale.payment_symbol}"`);
+                });
+                
+                const beforeCount = filteredSales.length;
+                filteredSales = filteredSales.filter(sale => {
+                    const saleTokenId = sale.token_id || sale.tokenId;
+                    const matches = saleTokenId === specificCollection;
+                    if (matches) {
+                        console.log(`✅ Found matching HTS sale: ${sale.nft_name} (${saleTokenId}) paid with ${sale.payment_symbol}`);
+                    }
+                    return matches;
+                });
+                
+                console.log(`🎯 Collection filter result: ${beforeCount} → ${filteredSales.length} HTS sales for ${specificCollection}`);
                 
                 if (filteredSales.length === 0) {
                     return this.embedUtils.createErrorEmbed(
                         'No HTS Payment Sales Found',
-                        `No recent HTS token payment sales found for collection ${specificCollection}.\n\nTry testing without specifying a collection.`
+                        `No recent HTS token payment sales found for collection ${specificCollection}.\n\nTry testing without specifying a collection to see all available HTS sales.`
                     );
                 }
             }
