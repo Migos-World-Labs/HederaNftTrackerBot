@@ -1669,6 +1669,9 @@ class NFTSalesBot {
             } else if (testType === 'recent-kabila-listing') {
                 console.log('Testing most recent Kabila listing...');
                 embed = await this.getTestRecentKabilaListingEmbed(interaction.guildId, specificCollection);
+            } else if (testType === 'recent-hts-sale') {
+                console.log('Testing most recent HTS payment sale...');
+                embed = await this.getTestRecentHTSSaleEmbed(interaction.guildId, specificCollection);
             } else {
                 // Default: recent-sentx-sale
                 console.log('Testing most recent SentX sale...');
@@ -2691,6 +2694,91 @@ class NFTSalesBot {
             
         } catch (error) {
             console.error('Error testing last sale:', error);
+        }
+    }
+
+    async getTestRecentHTSSaleEmbed(guildId, specificCollection = null) {
+        try {
+            console.log('🪙 Creating test HTS payment sale embed...');
+            
+            // Get recent sales from SentX with HTS token payments (includeHTS = true)
+            const recentSales = await this.sentxService.getRecentSales(100, true);
+            
+            if (!recentSales || recentSales.length === 0) {
+                return this.embedUtils.createErrorEmbed(
+                    'No Recent Sales Found',
+                    'No recent sales found from SentX marketplace.\n\nTry again in a few minutes as new sales happen frequently.'
+                );
+            }
+            
+            console.log(`🔍 Found ${recentSales.length} total sales, filtering for HTS token payments...`);
+            
+            // Filter for sales paid with HTS tokens (not HBAR)
+            const htsSales = recentSales.filter(sale => {
+                const paymentSymbol = sale.payment_symbol || 'HBAR';
+                return paymentSymbol !== 'HBAR' && sale.nft_name; // Ensure it's an NFT sale with HTS payment
+            });
+            
+            console.log(`🪙 Found ${htsSales.length} HTS token payment sales`);
+            
+            if (htsSales.length === 0) {
+                return this.embedUtils.createErrorEmbed(
+                    'No HTS Payment Sales Found',
+                    'No recent NFT sales paid with HTS tokens found.\n\nMost sales are currently paid in HBAR. HTS token payments like PAWS are less common but do happen.'
+                );
+            }
+            
+            // Get tracked collections for this guild
+            const trackedCollections = await this.storage.getCollections(guildId);
+            const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+            
+            // Filter sales to show those from tracked collections, or any if none tracked
+            let filteredSales = htsSales;
+            if (trackedTokenIds.length > 0) {
+                const trackedHtsSales = htsSales.filter(sale => 
+                    trackedTokenIds.includes(sale.token_id || sale.tokenId)
+                );
+                
+                if (trackedHtsSales.length > 0) {
+                    filteredSales = trackedHtsSales;
+                    console.log(`🎯 Using ${trackedHtsSales.length} HTS payment sales from tracked collections`);
+                } else {
+                    console.log(`📝 No HTS payment sales from tracked collections, showing any HTS payment sale`);
+                }
+            }
+            
+            // If specific collection requested, filter further
+            if (specificCollection) {
+                filteredSales = filteredSales.filter(sale => 
+                    (sale.token_id || sale.tokenId) === specificCollection
+                );
+                
+                if (filteredSales.length === 0) {
+                    return this.embedUtils.createErrorEmbed(
+                        'No HTS Payment Sales Found',
+                        `No recent HTS token payment sales found for collection ${specificCollection}.\n\nTry testing without specifying a collection.`
+                    );
+                }
+            }
+            
+            // Get the most recent HTS payment sale
+            const testSale = filteredSales[0];
+            
+            console.log(`🪙 Testing HTS payment sale: ${testSale.nft_name} paid with ${testSale.payment_symbol}`);
+            
+            // Get HBAR rate (even though we won't use it for HTS token prices)
+            const hbarRate = await this.currencyService.getHbarToUsdRate();
+            
+            // Create and return the embed
+            return await this.embedUtils.createSaleEmbed(testSale, hbarRate);
+            
+        } catch (error) {
+            console.error('Error creating test HTS payment sale embed:', error);
+            return this.embedUtils.createErrorEmbed(
+                'Test Failed',
+                'Failed to create test HTS payment sale embed',
+                error.message
+            );
         }
     }
 }
