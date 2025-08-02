@@ -313,18 +313,23 @@ class NFTSalesBot {
             // Get recent sales from both marketplaces - increase limit to catch more historical data
             const sentxSales = await sentxService.getRecentSales(100);
             const kabilaSales = await kabilaService.getRecentSales(100);
+            // Get recent HTS token sales from SentX (Kabila doesn't support HTS tokens yet)
+            const sentxHTSSales = await sentxService.getRecentHTSSales(50);
+            
             // Get recent listings from both marketplaces  
             const sentxListings = await sentxService.getRecentListings(50);
             const kabilaListings = await kabilaService.getRecentListings(50);
+            // Get recent HTS token listings from SentX
+            const sentxHTSListings = await sentxService.getRecentHTSListings(25);
             
             // Debug: Log API response counts for monitoring
-            if (sentxSales.length > 0 || kabilaSales.length > 0) {
-                console.log(`📊 API Response Summary: SentX ${sentxSales.length} sales, Kabila ${kabilaSales.length} sales`);
+            if (sentxSales.length > 0 || kabilaSales.length > 0 || sentxHTSSales.length > 0) {
+                console.log(`📊 API Response Summary: SentX ${sentxSales.length} NFT sales, ${sentxHTSSales.length} HTS sales, Kabila ${kabilaSales.length} sales`);
             }
 
-            // Combine sales and listings from both marketplaces
-            const allSales = [...sentxSales, ...kabilaSales];
-            const allListings = [...sentxListings, ...kabilaListings];
+            // Combine sales and listings from both marketplaces, including HTS tokens
+            const allSales = [...sentxSales, ...kabilaSales, ...sentxHTSSales];
+            const allListings = [...sentxListings, ...kabilaListings, ...sentxHTSListings];
 
             // Create a map of collection names to token IDs for fallback matching
             const collectionNameMap = {};
@@ -336,14 +341,26 @@ class NFTSalesBot {
                 }
             });
             
-            // Filter for only tracked collections (with fallback to collection name)
+            // Filter for only tracked collections and HTS tokens (with fallback to collection name)
             const trackedSales = allSales.filter(sale => {
                 const tokenId = sale.token_id || sale.tokenId;
                 const collectionName = sale.collection_name || sale.collectionName;
+                const tokenType = sale.token_type || 'NFT'; // Default to NFT if not specified
                 
-                // First try token ID matching
+                // First try token ID matching for both NFTs and HTS tokens
                 if (tokenId && tokenId !== 'undefined' && trackedTokenIds.includes(tokenId)) {
                     return true;
+                }
+                
+                // For HTS tokens, also check if this specific token is being tracked
+                if (tokenType === 'HTS' && tokenId) {
+                    const isHTSTracked = allTrackedCollections.some(collection => 
+                        (collection.token_type === 'HTS' || collection.tokenType === 'HTS') && 
+                        (collection.token_id === tokenId || collection.tokenId === tokenId)
+                    );
+                    if (isHTSTracked) {
+                        return true;
+                    }
                 }
                 
                 // Fallback: match by collection name when token ID is undefined

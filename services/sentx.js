@@ -34,10 +34,10 @@ class SentXService {
      * @param {number} limit - Number of sales to fetch
      * @returns {Array} Array of sale objects
      */
-    async getRecentSales(limit = 50) {
+    async getRecentSales(limit = 50, includeHTS = false) {
         try {
             // Check cache first
-            const cacheKey = `sales_${limit}`;
+            const cacheKey = `sales_${limit}_${includeHTS ? 'hts' : 'nft'}`;
             const cached = this.getCachedResponse(cacheKey);
             if (cached) {
                 return cached;
@@ -49,9 +49,13 @@ class SentXService {
                 apikey: apiKey,
                 activityFilter: 'Sales', // Focus on completed sales to reduce noise from listings/offers
                 amount: limit,
-                page: 1,
-                hbarMarketOnly: 1 // Focus on HBAR market
+                page: 1
             };
+            
+            // Include HTS tokens by not restricting to HBAR market only
+            if (!includeHTS) {
+                params.hbarMarketOnly = 1; // Focus on HBAR market for NFTs only
+            }
             
             const response = await this.axiosInstance.get('/v1/public/market/activity', {
                 params: params
@@ -79,7 +83,20 @@ class SentXService {
                 return hasCompletedSale;
             });
             
-            const formattedData = this.formatSalesData(salesOnly);
+            // If including HTS tokens, separate NFT and HTS sales
+            let formattedData;
+            if (includeHTS) {
+                const nftSales = salesOnly.filter(sale => sale.nftSerialId !== null && sale.nftSerialId !== undefined);
+                const htsSales = salesOnly.filter(sale => !sale.nftSerialId && sale.salePrice && sale.tokenSymbol);
+                
+                const formattedNFT = this.formatSalesData(nftSales);
+                const formattedHTS = this.formatHTSSalesData(htsSales);
+                
+                formattedData = [...formattedNFT, ...formattedHTS];
+            } else {
+                formattedData = this.formatSalesData(salesOnly);
+            }
+            
             
             // Cache the result for 30 seconds to reduce API calls
             this.setCachedResponse(cacheKey, formattedData, 30000);
@@ -381,7 +398,7 @@ class SentXService {
      * @param {boolean} allTimeListings - If true, fetch all listings without time filter (for testing)
      * @returns {Array} Array of listing objects
      */
-    async getRecentListings(limit = 50, allTimeListings = false) {
+    async getRecentListings(limit = 50, allTimeListings = false, includeHTS = false) {
         try {
             const apiKey = process.env.SENTX_API_KEY;
             
@@ -389,9 +406,13 @@ class SentXService {
                 apikey: apiKey,
                 activityFilter: 'All', // Get all activities to debug what's available
                 amount: limit,
-                page: 1,
-                hbarMarketOnly: 1 // Focus on HBAR market
+                page: 1
             };
+            
+            // Include HTS tokens by not restricting to HBAR market only
+            if (!includeHTS) {
+                params.hbarMarketOnly = 1; // Focus on HBAR market for NFTs only
+            }
             
             const response = await this.axiosInstance.get('/v1/public/market/activity', {
                 params: params
@@ -422,7 +443,19 @@ class SentXService {
                 return isValidListing;
             });
             
-            const formattedListings = this.formatListingsData(listingsOnly);
+            // If including HTS tokens, separate NFT and HTS listings
+            let formattedListings;
+            if (includeHTS) {
+                const nftListings = listingsOnly.filter(listing => listing.nftSerialId !== null && listing.nftSerialId !== undefined);
+                const htsListings = listingsOnly.filter(listing => !listing.nftSerialId && listing.salePrice && listing.tokenSymbol);
+                
+                const formattedNFT = this.formatListingsData(nftListings);
+                const formattedHTS = this.formatHTSListingsData(htsListings);
+                
+                formattedListings = [...formattedNFT, ...formattedHTS];
+            } else {
+                formattedListings = this.formatListingsData(listingsOnly);
+            }
             
             // Filter for recent listings only if not fetching all time listings
             if (allTimeListings) {
@@ -621,6 +654,59 @@ class SentXService {
     }
 
     /**
+     * Format raw HTS sales data from API into standardized format
+     * @param {Array} rawHTSSales - Raw HTS sales data from API
+     * @returns {Array} Formatted HTS sales data
+     */
+    formatHTSSalesData(rawHTSSales) {
+        return rawHTSSales.map(sale => {
+            return {
+                id: `hts-${sale.tokenAddress || sale.nftTokenAddress}-${sale.saleDate}`,
+                token_name: sale.tokenName || sale.nftName || 'Unknown Token',
+                token_symbol: sale.tokenSymbol || 'Unknown',
+                token_id: sale.tokenAddress || sale.nftTokenAddress,
+                amount: sale.tokenAmount || sale.amount || 0,
+                price_hbar: this.parseHbarAmount(sale.salePrice),
+                buyer: this.formatAddress(sale.buyerAddress),
+                seller: this.formatAddress(sale.sellerAddress),
+                timestamp: sale.saleDate,
+                marketplace: 'SentX',
+                transaction_id: sale.saleTransactionId,
+                sale_type: sale.saletype || 'HTS Sale',
+                payment_token: sale.paymentToken || { symbol: 'HBAR' },
+                token_type: 'HTS',
+                sale_url: `https://sentx.io/token/${sale.tokenAddress || sale.nftTokenAddress}`
+            };
+        });
+    }
+
+    /**
+     * Format raw HTS listings data from API into standardized format
+     * @param {Array} rawHTSListings - Raw HTS listings data from API
+     * @returns {Array} Formatted HTS listings data
+     */
+    formatHTSListingsData(rawHTSListings) {
+        return rawHTSListings.map(listing => {
+            return {
+                id: `hts-listing-${listing.tokenAddress || listing.nftTokenAddress}-${listing.saleDate}`,
+                token_name: listing.tokenName || listing.nftName || 'Unknown Token',
+                token_symbol: listing.tokenSymbol || 'Unknown',
+                token_id: listing.tokenAddress || listing.nftTokenAddress,
+                amount: listing.tokenAmount || listing.amount || 0,
+                price_hbar: this.parseHbarAmount(listing.salePrice),
+                seller: this.formatAddress(listing.sellerAddress),
+                timestamp: listing.saleDate,
+                marketplace: 'SentX',
+                listing_id: listing.listingId || listing.id || null,
+                sale_type: listing.saletype || 'HTS Listing',
+                payment_token: listing.paymentToken || { symbol: 'HBAR' },
+                token_type: 'HTS',
+                listing_url: `https://sentx.io/token/${listing.tokenAddress || listing.nftTokenAddress}`
+            };
+        });
+    }
+
+    /**
      * Parse HBAR amount from various possible formats
      * @param {string|number} amount - Amount in various formats
      * @returns {number} Amount in HBAR
@@ -637,6 +723,25 @@ class SentXService {
         // If it's already in HBAR
         const hbarAmount = parseFloat(amount);
         return isNaN(hbarAmount) ? 0 : hbarAmount;
+    }
+
+    /**
+     * Get recent HTS token sales specifically
+     * @param {number} limit - Number of results to fetch
+     * @returns {Array} Array of HTS token sales
+     */
+    async getRecentHTSSales(limit = 50) {
+        return this.getRecentSales(limit, true);
+    }
+
+    /**
+     * Get recent HTS token listings specifically
+     * @param {number} limit - Number of results to fetch
+     * @param {boolean} allTimeListings - Whether to fetch all time listings
+     * @returns {Array} Array of HTS token listings
+     */
+    async getRecentHTSListings(limit = 50, allTimeListings = false) {
+        return this.getRecentListings(limit, allTimeListings, true);
     }
 
     /**

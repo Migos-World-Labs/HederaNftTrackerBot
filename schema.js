@@ -1,11 +1,12 @@
 const { pgTable, text, boolean, timestamp, integer, jsonb } = require('drizzle-orm/pg-core');
 
-// Collections table - now per server
+// Collections table - now per server, supports both NFT collections and HTS tokens
 const collections = pgTable('collections', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   guildId: text('guild_id').notNull(),
   tokenId: text('token_id').notNull(),
   name: text('name').notNull(),
+  token_type: text('token_type').notNull().default('NFT'), // 'NFT' or 'HTS'
   enabled: boolean('enabled').notNull().default(true),
   addedDate: timestamp('added_date').defaultNow().notNull(),
   lastUpdated: timestamp('last_updated').defaultNow().notNull()
