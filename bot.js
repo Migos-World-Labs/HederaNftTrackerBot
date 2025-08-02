@@ -2717,10 +2717,23 @@ class NFTSalesBot {
             
             console.log(`🔍 Found ${recentSales.length} total sales, filtering for HTS token payments...`);
             
+            // Debug the first few sales to see their payment symbols
+            console.log('🔍 Debugging first 5 sales payment symbols:');
+            recentSales.slice(0, 5).forEach((sale, index) => {
+                console.log(`  ${index + 1}. ${sale.nft_name || sale.token_name} - payment_symbol: "${sale.payment_symbol}" - nft_name exists: ${!!sale.nft_name}`);
+            });
+            
             // Filter for sales paid with HTS tokens (not HBAR)
             const htsSales = recentSales.filter(sale => {
                 const paymentSymbol = sale.payment_symbol || 'HBAR';
-                return paymentSymbol !== 'HBAR' && sale.nft_name; // Ensure it's an NFT sale with HTS payment
+                const isHtsPayment = paymentSymbol !== 'HBAR';
+                const isNftSale = !!sale.nft_name;
+                
+                if (isHtsPayment && isNftSale) {
+                    console.log(`✅ Found HTS NFT sale: ${sale.nft_name} paid with ${paymentSymbol}`);
+                }
+                
+                return isHtsPayment && isNftSale; // Ensure it's an NFT sale with HTS payment
             });
             
             console.log(`🪙 Found ${htsSales.length} HTS token payment sales`);
