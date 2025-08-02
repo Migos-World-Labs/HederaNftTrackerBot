@@ -1674,7 +1674,8 @@ class NFTSalesBot {
                 console.log('Testing most recent Kabila listing...');
                 embed = await this.getTestRecentKabilaListingEmbed(interaction.guildId, specificCollection);
             } else if (testType === 'recent-hts-sale') {
-                console.log('Testing most recent HTS payment sale...');
+                console.log('🪙 Testing most recent HTS payment sale...');
+                console.log(`🔍 Test type confirmed: ${testType}, specific collection: ${specificCollection || 'none'}`);
                 embed = await this.getTestRecentHTSSaleEmbed(interaction.guildId, specificCollection);
             } else {
                 // Default: recent-sentx-sale
@@ -2717,10 +2718,22 @@ class NFTSalesBot {
             
             console.log(`🔍 Found ${recentSales.length} total sales, filtering for HTS token payments...`);
             
+            // Debug: Show payment symbols of first few sales
+            console.log('🔍 First 3 sales payment symbols:', 
+                recentSales.slice(0, 3).map(sale => `${sale.nft_name || sale.token_name}: ${sale.payment_symbol || 'HBAR'}`)
+            );
+            
             // Filter for sales paid with HTS tokens (not HBAR)
             const htsSales = recentSales.filter(sale => {
                 const paymentSymbol = sale.payment_symbol || 'HBAR';
-                return paymentSymbol !== 'HBAR' && sale.nft_name; // Ensure it's an NFT sale with HTS payment
+                const isHTS = paymentSymbol !== 'HBAR';
+                const hasNFT = !!sale.nft_name;
+                
+                if (isHTS && hasNFT) {
+                    console.log(`✅ Found HTS sale: ${sale.nft_name} (${sale.token_id}) paid with ${paymentSymbol}`);
+                }
+                
+                return isHTS && hasNFT; // Ensure it's an NFT sale with HTS payment
             });
             
             console.log(`🪙 Found ${htsSales.length} HTS token payment sales`);
