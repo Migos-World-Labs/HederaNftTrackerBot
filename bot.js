@@ -310,26 +310,22 @@ class NFTSalesBot {
                 return;
             }
 
-            // Get recent sales from both marketplaces - increase limit to catch more historical data
-            const sentxSales = await sentxService.getRecentSales(100);
+            // Get recent sales from both marketplaces - include all payment types (HBAR and HTS tokens)
+            const sentxSales = await sentxService.getRecentSales(100, true); // Include HTS token payments
             const kabilaSales = await kabilaService.getRecentSales(100);
-            // Get recent HTS token sales from SentX (Kabila doesn't support HTS tokens yet)
-            const sentxHTSSales = await sentxService.getRecentHTSSales(50);
             
             // Get recent listings from both marketplaces  
-            const sentxListings = await sentxService.getRecentListings(50);
+            const sentxListings = await sentxService.getRecentListings(50, false, true); // Include HTS token payments
             const kabilaListings = await kabilaService.getRecentListings(50);
-            // Get recent HTS token listings from SentX
-            const sentxHTSListings = await sentxService.getRecentHTSListings(25);
             
             // Debug: Log API response counts for monitoring
-            if (sentxSales.length > 0 || kabilaSales.length > 0 || sentxHTSSales.length > 0) {
-                console.log(`📊 API Response Summary: SentX ${sentxSales.length} NFT sales, ${sentxHTSSales.length} HTS sales, Kabila ${kabilaSales.length} sales`);
+            if (sentxSales.length > 0 || kabilaSales.length > 0) {
+                console.log(`📊 API Response Summary: SentX ${sentxSales.length} sales (all payment types), Kabila ${kabilaSales.length} sales`);
             }
 
-            // Combine sales and listings from both marketplaces, including HTS tokens
-            const allSales = [...sentxSales, ...kabilaSales, ...sentxHTSSales];
-            const allListings = [...sentxListings, ...kabilaListings, ...sentxHTSListings];
+            // Combine sales and listings from both marketplaces (now includes all payment types)
+            const allSales = [...sentxSales, ...kabilaSales];
+            const allListings = [...sentxListings, ...kabilaListings];
 
             // Create a map of collection names to token IDs for fallback matching
             const collectionNameMap = {};

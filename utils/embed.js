@@ -22,8 +22,19 @@ class EmbedUtils {
      * @returns {EmbedBuilder} Discord embed object
      */
     async createSaleEmbed(sale, hbarRate, guildId = null) {
-        const usdValue = sale.price_hbar * hbarRate;
         const marketplace = sale.marketplace || 'SentX';
+        const paymentSymbol = sale.payment_symbol || 'HBAR';
+        const displayPrice = sale.display_price || `${sale.price_hbar} ${paymentSymbol}`;
+        
+        // Calculate USD value based on payment token
+        let usdValue;
+        if (paymentSymbol === 'HBAR') {
+            usdValue = sale.price_hbar * hbarRate;
+        } else {
+            // For HTS tokens, we'll show the token amount without USD conversion for now
+            // In the future, we could add HTS token price lookup
+            usdValue = null;
+        }
         
         // Create a more friendly title and description
         const nftName = sale.nft_name || `NFT #${sale.serial_number || 'Unknown'}`;
@@ -39,7 +50,7 @@ class EmbedUtils {
         
         const embed = new EmbedBuilder()
             .setTitle(`${emoji} ${nftName} ${saleTypeText}!`)
-            .setDescription(`A new ${isOrderFill ? 'order fill' : 'sale'} happened on ${marketplace} for **$${usdValue.toFixed(2)} USD** (${sale.price_hbar} HBAR)`)
+            .setDescription(`A new ${isOrderFill ? 'order fill' : 'sale'} happened on ${marketplace} for **${displayPrice}**${usdValue ? ` ≈ $${usdValue.toFixed(2)} USD` : ''}`)
             .setColor('#FFFFFF')
             .setTimestamp(new Date(sale.timestamp));
 
@@ -227,7 +238,7 @@ class EmbedUtils {
             : `📦 **Collection:** ${sale.collection_name}`;
             
         const saleInfo = [
-            `💰 **Sale Price:** ${sale.price_hbar} HBAR ≈ $${usdValue.toFixed(2)} USD`,
+            `💰 **Sale Price:** ${displayPrice}${usdValue ? ` ≈ $${usdValue.toFixed(2)} USD` : ''}`,
             `🏪 **Marketplace:** ${marketplace}`,
             collectionLink
         ];
@@ -397,8 +408,18 @@ class EmbedUtils {
      * @returns {EmbedBuilder} Discord embed object
      */
     async createListingEmbed(listing, hbarRate, guildId = null) {
-        const usdValue = listing.price_hbar * hbarRate;
         const marketplace = listing.marketplace || 'SentX';
+        const paymentSymbol = listing.payment_symbol || 'HBAR';
+        const displayPrice = listing.display_price || `${listing.price_hbar} ${paymentSymbol}`;
+        
+        // Calculate USD value based on payment token
+        let usdValue;
+        if (paymentSymbol === 'HBAR') {
+            usdValue = listing.price_hbar * hbarRate;
+        } else {
+            // For HTS tokens, we'll show the token amount without USD conversion for now
+            usdValue = null;
+        }
         
         // Create a more friendly title and description
         const nftName = listing.nft_name || `NFT #${listing.serial_number || 'Unknown'}`;
@@ -414,7 +435,7 @@ class EmbedUtils {
         
         const embed = new EmbedBuilder()
             .setTitle(`${emoji} ${nftName} ${action}!`)
-            .setDescription(`A new ${listingType.toLowerCase()} appeared on ${marketplace} for **$${usdValue.toFixed(2)} USD** (${listing.price_hbar} HBAR)`)
+            .setDescription(`A new ${listingType.toLowerCase()} appeared on ${marketplace} for **${displayPrice}**${usdValue ? ` ≈ $${usdValue.toFixed(2)} USD` : ''}`)
             .setColor(isAuction ? '#ff6b35' : '#00ff41');
         
         // Add timestamp with validation to prevent "Invalid time value" errors
@@ -551,7 +572,7 @@ class EmbedUtils {
             : `📦 **Collection:** ${listing.collection_name}`;
             
         const listingInfo = [
-            `💰 **Asking Price:** ${listing.price_hbar} HBAR ≈ $${usdValue.toFixed(2)} USD`,
+            `💰 **Asking Price:** ${displayPrice}${usdValue ? ` ≈ $${usdValue.toFixed(2)} USD` : ''}`,
             `🏪 **Marketplace:** ${marketplace}`,
             collectionLink
         ];

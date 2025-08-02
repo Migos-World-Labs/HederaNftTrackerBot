@@ -570,6 +570,9 @@ class SentXService {
                 serial_id: listing.nftSerialId,
                 serial_number: listing.nftSerialId,
                 price_hbar: this.parseHbarAmount(listing.salePrice),
+                price_raw: listing.salePrice,
+                payment_symbol: listing.paymentToken?.symbol || 'HBAR',
+                payment_token_id: listing.paymentToken?.tokenId || null,
                 seller: this.formatAddress(listing.sellerAddress),
                 timestamp: listing.saleDate,
                 image_url: listing.imageCDN || listing.nftImage || listing.nftImageUrl || listing.image || listing.imageFile || listing.imageUrl || 
@@ -590,6 +593,7 @@ class SentXService {
                 sale_type: listing.saletype || 'Listing',
                 attributes: listing.attributes || [],
                 payment_token: listing.paymentToken || { symbol: 'HBAR' },
+                display_price: this.formatDisplayPrice(listing.salePrice, listing.paymentToken),
                 listing_url: listing.listingUrl ? `https://sentx.io${listing.listingUrl}` : 
                     (listing.collectionFriendlyurl && listing.nftSerialId && listing.nftSerialId !== null && listing.nftSerialId !== undefined ? 
                         `https://sentx.io/nft-marketplace/${listing.collectionFriendlyurl}/${listing.nftSerialId}` : 
@@ -618,6 +622,9 @@ class SentXService {
                 serial_id: sale.nftSerialId,
                 serial_number: sale.nftSerialId,
                 price_hbar: this.parseHbarAmount(sale.salePrice),
+                price_raw: sale.salePrice,
+                payment_symbol: sale.paymentToken?.symbol || 'HBAR',
+                payment_token_id: sale.paymentToken?.tokenId || null,
                 buyer: this.formatAddress(sale.buyerAddress),
                 seller: this.formatAddress(sale.sellerAddress),
                 timestamp: sale.saleDate,
@@ -641,6 +648,7 @@ class SentXService {
                 sale_type: sale.saletype || 'Sale',
                 attributes: sale.attributes || [],
                 payment_token: sale.paymentToken || { symbol: 'HBAR' },
+                display_price: this.formatDisplayPrice(sale.salePrice, sale.paymentToken),
                 listing_url: sale.listingUrl ? `https://sentx.io${sale.listingUrl}` : 
                     (sale.collectionFriendlyurl && sale.nftSerialId && sale.nftSerialId !== null && sale.nftSerialId !== undefined ? 
                         `https://sentx.io/nft-marketplace/${sale.collectionFriendlyurl}/${sale.nftSerialId}` : 
@@ -723,6 +731,24 @@ class SentXService {
         // If it's already in HBAR
         const hbarAmount = parseFloat(amount);
         return isNaN(hbarAmount) ? 0 : hbarAmount;
+    }
+
+    /**
+     * Format price with appropriate token symbol for display
+     * @param {number|string} price - The price amount
+     * @param {Object} paymentToken - Payment token info
+     * @returns {string} Formatted price string
+     */
+    formatDisplayPrice(price, paymentToken) {
+        const symbol = paymentToken?.symbol || 'HBAR';
+        const amount = parseFloat(price) || 0;
+        
+        if (symbol === 'HBAR') {
+            return `${amount.toLocaleString()} ${symbol}`;
+        } else {
+            // For HTS tokens, format with appropriate decimals
+            return `${amount.toLocaleString()} ${symbol}`;
+        }
     }
 
     /**
