@@ -89,16 +89,7 @@ class SentXService {
                 const nftSales = salesOnly.filter(sale => sale.nftSerialId !== null && sale.nftSerialId !== undefined);
                 const htsSales = salesOnly.filter(sale => !sale.nftSerialId && sale.salePrice && sale.tokenSymbol);
                 
-                console.log(`🔍 SentX HTS Sales Debug: ${nftSales.length} NFT sales, ${htsSales.length} HTS token sales`);
-                
-                // Debug payment tokens for NFT sales
-                const nftSalesWithHTS = nftSales.filter(sale => {
-                    const hasHtsPayment = sale.paymentToken && sale.paymentToken.symbol && sale.paymentToken.symbol !== 'HBAR';
-                    if (hasHtsPayment) {
-                        console.log(`🪙 Found NFT sale with HTS payment: ${sale.nftName} paid with ${sale.paymentToken.symbol}`);
-                    }
-                    return true; // Include all NFT sales for now
-                });
+                const nftSalesWithHTS = nftSales;
                 
                 const formattedNFT = this.formatSalesData(nftSalesWithHTS);
                 const formattedHTS = this.formatHTSSalesData(htsSales);

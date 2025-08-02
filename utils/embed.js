@@ -48,9 +48,13 @@ class EmbedUtils {
         const saleTypeText = isOrderFill ? 'order was filled' : 'just sold';
         const emoji = isOrderFill ? '📋' : '🎉';
         
+        // Add PAWS icon next to marketplace name for PAWS token payments
+        const isPawsPayment = sale.payment_symbol && (sale.payment_symbol.toLowerCase() === 'paws' || sale.payment_symbol.toLowerCase() === 'paw');
+        const marketplaceDisplay = isPawsPayment ? `${marketplace} 🐾` : marketplace;
+        
         const embed = new EmbedBuilder()
             .setTitle(`${emoji} ${nftName} ${saleTypeText}!`)
-            .setDescription(`A new ${isOrderFill ? 'order fill' : 'sale'} happened on ${marketplace} for **${displayPrice}**${usdValue ? ` ≈ $${usdValue.toFixed(2)} USD` : ''}`)
+            .setDescription(`A new ${isOrderFill ? 'order fill' : 'sale'} happened on ${marketplaceDisplay} for **${displayPrice}**${usdValue ? ` ≈ $${usdValue.toFixed(2)} USD` : ''}`)
             .setColor('#FFFFFF')
             .setTimestamp(new Date(sale.timestamp));
 
@@ -433,9 +437,13 @@ class EmbedUtils {
         const emoji = isAuction ? '🏆' : '📝';
         const action = isAuction ? 'auction started' : 'listed for sale';
         
+        // Add PAWS icon next to marketplace name for PAWS token payments
+        const isPawsPayment = listing.payment_symbol && (listing.payment_symbol.toLowerCase() === 'paws' || listing.payment_symbol.toLowerCase() === 'paw');
+        const marketplaceDisplay = isPawsPayment ? `${marketplace} 🐾` : marketplace;
+        
         const embed = new EmbedBuilder()
             .setTitle(`${emoji} ${nftName} ${action}!`)
-            .setDescription(`A new ${listingType.toLowerCase()} appeared on ${marketplace} for **${displayPrice}**${usdValue ? ` ≈ $${usdValue.toFixed(2)} USD` : ''}`)
+            .setDescription(`A new ${listingType.toLowerCase()} appeared on ${marketplaceDisplay} for **${displayPrice}**${usdValue ? ` ≈ $${usdValue.toFixed(2)} USD` : ''}`)
             .setColor(isAuction ? '#ff6b35' : '#00ff41');
         
         // Add timestamp with validation to prevent "Invalid time value" errors
