@@ -1185,6 +1185,41 @@ class NFTSalesBot {
                 description: 'Get support and help with the bot'
             },
             {
+                name: 'announce',
+                description: 'Send bot update announcements (Admin only)',
+                default_member_permissions: '8', // Administrator permission
+                options: [
+                    {
+                        name: 'type',
+                        type: 3, // STRING
+                        description: 'Type of announcement to send',
+                        required: true,
+                        choices: [
+                            {
+                                name: 'HTS Token Update - August 2025',
+                                value: 'hts-update-aug-2025'
+                            },
+                            {
+                                name: 'Custom Message',
+                                value: 'custom'
+                            }
+                        ]
+                    },
+                    {
+                        name: 'message',
+                        type: 3, // STRING
+                        description: 'Custom announcement message (only for custom type)',
+                        required: false
+                    },
+                    {
+                        name: 'channel',
+                        type: 7, // CHANNEL
+                        description: 'Channel to send announcement (defaults to current channel)',
+                        required: false
+                    }
+                ]
+            },
+            {
                 name: 'test',
                 description: 'Test the bot functionality',
                 options: [
@@ -1280,6 +1315,9 @@ class NFTSalesBot {
                     break;
                 case 'support':
                     await this.handleSupportCommand(interaction);
+                    break;
+                case 'announce':
+                    await this.handleAnnounceCommand(interaction, options);
                     break;
                 default:
                     await interaction.reply('Unknown command');
@@ -1847,7 +1885,131 @@ class NFTSalesBot {
         }
     }
 
+    async handleAnnounceCommand(interaction, options) {
+        try {
+            // Check if user has administrator permissions
+            if (!interaction.member.permissions.has('Administrator')) {
+                await interaction.reply({
+                    content: '❌ You need Administrator permissions to use this command.',
+                    ephemeral: true
+                });
+                return;
+            }
 
+            const announcementType = options.getString('type');
+            const customMessage = options.getString('message');
+            const targetChannel = options.getChannel('channel') || interaction.channel;
+
+            // Validate target channel permissions
+            const botMember = interaction.guild.members.me;
+            const permissions = targetChannel.permissionsFor(botMember);
+            
+            if (!permissions.has(['SendMessages', 'EmbedLinks'])) {
+                await interaction.reply({
+                    content: `❌ I need "Send Messages" and "Embed Links" permissions in ${targetChannel}.`,
+                    ephemeral: true
+                });
+                return;
+            }
+
+            let announcementEmbed;
+
+            if (announcementType === 'hts-update-aug-2025') {
+                announcementEmbed = {
+                    title: '🪙 HTS Token Payment Update - August 2025',
+                    description: '**Major Enhancement: Complete HTS Token Support**',
+                    color: 0x00ff88,
+                    thumbnail: {
+                        url: 'attachment://migos-logo.png'
+                    },
+                    fields: [
+                        {
+                            name: '✅ Fixed Critical Bug',
+                            value: 'NFT sales paid with HTS tokens (PAWS, SAUCE, KARATE) are now properly detected and posted',
+                            inline: false
+                        },
+                        {
+                            name: '✅ Enhanced Monitoring',
+                            value: 'All NFT transactions tracked regardless of payment method - both HBAR and HTS tokens fully supported',
+                            inline: false
+                        },
+                        {
+                            name: '✅ New Test Command',
+                            value: '`/test type:Recent HTS Payment Listing` added for manual HTS listing verification',
+                            inline: false
+                        },
+                        {
+                            name: '✅ Complete Coverage',
+                            value: 'Both sales and listings with HTS tokens automatically monitored and posted with proper token indicators (🐾 for PAWS, etc.)',
+                            inline: false
+                        },
+                        {
+                            name: '🎯 What This Means',
+                            value: 'Wild Tigers sold for 55,000 PAWS tokens are now properly detected and posted. No more missed HTS token transactions across any tracked collections.',
+                            inline: false
+                        },
+                        {
+                            name: '🚀 Status',
+                            value: 'Bot updated and HTS token monitoring active immediately across all servers.',
+                            inline: false
+                        }
+                    ],
+                    footer: {
+                        text: 'Enhanced for the Hedera NFT community by Migos World Labs',
+                        icon_url: 'https://sentient-bherbhd8e3cyg4dn.z01.azurefd.net/media/web/hedera-logo-128.png'
+                    },
+                    timestamp: new Date().toISOString()
+                };
+            } else if (announcementType === 'custom') {
+                if (!customMessage) {
+                    await interaction.reply({
+                        content: '❌ Please provide a custom message when using the custom announcement type.',
+                        ephemeral: true
+                    });
+                    return;
+                }
+
+                announcementEmbed = {
+                    title: '📢 Bot Announcement',
+                    description: customMessage,
+                    color: 0x0099ff,
+                    thumbnail: {
+                        url: 'attachment://migos-logo.png'
+                    },
+                    footer: {
+                        text: 'NFT Sales Bot by Migos World Labs',
+                        icon_url: 'https://sentient-bherbhd8e3cyg4dn.z01.azurefd.net/media/web/hedera-logo-128.png'
+                    },
+                    timestamp: new Date().toISOString()
+                };
+            }
+
+            // Send the announcement
+            const attachment = new AttachmentBuilder('./migos-logo.png', { name: 'migos-logo.png' });
+            
+            await targetChannel.send({
+                embeds: [announcementEmbed],
+                files: [attachment]
+            });
+
+            // Confirm to the admin
+            await interaction.reply({
+                content: `✅ Announcement sent successfully to ${targetChannel}!`,
+                ephemeral: true
+            });
+
+        } catch (error) {
+            console.error('Error handling announce command:', error);
+            try {
+                await interaction.reply({
+                    content: '❌ Failed to send announcement. Please check bot permissions and try again.',
+                    ephemeral: true
+                });
+            } catch (replyError) {
+                console.error('Error replying to announce command:', replyError);
+            }
+        }
+    }
 
     async initializeDatabase() {
         try {
