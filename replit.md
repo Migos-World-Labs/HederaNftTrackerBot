@@ -3,6 +3,9 @@
 ## Overview
 This project is a Discord bot designed to provide real-time NFT marketplace analytics for the Hedera blockchain. Its primary purpose is to monitor NFT sales and listings across multiple marketplaces (SentX and Kabila) and deliver rich, comprehensive notifications to Discord servers. The bot aims to offer users up-to-date sales data, including pricing, buyer/seller information, and NFT metadata, enhancing transparency and accessibility within the Hedera NFT ecosystem.
 
+## Recent Updates (August 2025)
+**Enhanced HTS Token Payment Support**: Fixed critical bug in HTS payment detection and added comprehensive HTS listings test functionality. The bot now properly detects and monitors NFT sales and listings paid with HTS tokens like PAWS, SAUCE, and KARATE across all tracked collections.
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
