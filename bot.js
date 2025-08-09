@@ -1518,7 +1518,7 @@ class NFTSalesBot {
             try {
                 const buttonInteraction = await interaction.awaitMessageComponent({ 
                     filter, 
-                    time: 30000 // 30 seconds timeout
+                    time: 60000 // 60 seconds timeout (increased from 30s)
                 });
 
                 if (buttonInteraction.customId === 'remove_all_confirm') {
@@ -1557,18 +1557,35 @@ class NFTSalesBot {
                 }
 
             } catch (timeoutError) {
-                // Handle timeout
-                const timeoutEmbed = {
-                    title: '⏰ Confirmation Timeout',
-                    description: 'Remove all collections confirmation timed out. No changes were made.',
-                    color: 0x888888, // Gray color
-                    timestamp: new Date().toISOString()
-                };
+                // Handle timeout - check if interaction is still valid
+                console.log('Remove all command timed out:', timeoutError.message);
+                
+                try {
+                    const timeoutEmbed = {
+                        title: '⏰ Confirmation Timeout',
+                        description: 'Remove all collections confirmation timed out after 60 seconds. No changes were made.\n\nPlease try the command again and click a button within 60 seconds.',
+                        color: 0x888888, // Gray color
+                        timestamp: new Date().toISOString()
+                    };
 
-                await interaction.editReply({
-                    embeds: [timeoutEmbed],
-                    components: [] // Remove buttons
-                });
+                    // Check if interaction is still valid before editing
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({
+                            embeds: [timeoutEmbed],
+                            components: [],
+                            ephemeral: true
+                        });
+                    } else {
+                        await interaction.editReply({
+                            embeds: [timeoutEmbed],
+                            components: [] // Remove buttons
+                        });
+                    }
+                } catch (editError) {
+                    console.error('Failed to update interaction after timeout:', editError.message);
+                    // If we can't edit the interaction, at least log what happened
+                    console.log('Remove all collections operation timed out without user confirmation');
+                }
             }
 
         } catch (error) {
