@@ -1213,6 +1213,10 @@ class NFTSalesBot {
                             {
                                 name: 'Recent HTS Payment Sale',
                                 value: 'recent-hts-sale'
+                            },
+                            {
+                                name: 'Recent HTS Payment Listing',
+                                value: 'recent-hts-listing'
                             }
                         ]
                     },
@@ -1677,6 +1681,10 @@ class NFTSalesBot {
                 console.log('🪙 Testing most recent HTS payment sale...');
                 console.log(`🔍 Test type confirmed: ${testType}, specific collection: ${specificCollection || 'none'}`);
                 embed = await this.getTestRecentHTSSaleEmbed(interaction.guildId, specificCollection);
+            } else if (testType === 'recent-hts-listing') {
+                console.log('🪙 Testing most recent HTS payment listing...');
+                console.log(`🔍 Test type confirmed: ${testType}, specific collection: ${specificCollection || 'none'}`);
+                embed = await this.getTestRecentHTSListingEmbed(interaction.guildId, specificCollection);
             } else {
                 // Default: recent-sentx-sale
                 console.log('Testing most recent SentX sale...');
@@ -2811,6 +2819,113 @@ class NFTSalesBot {
             return this.embedUtils.createErrorEmbed(
                 'Test Failed',
                 'Failed to create test HTS payment sale embed',
+                error.message
+            );
+        }
+    }
+
+    async getTestRecentHTSListingEmbed(guildId, specificCollection = null) {
+        try {
+            console.log('🪙 Creating test HTS payment listing embed...');
+            
+            // Get recent listings from SentX with HTS token payments (includeHTS = true)
+            const recentListings = await this.sentxService.getRecentListings(100, false, true);
+            
+            if (!recentListings || recentListings.length === 0) {
+                return this.embedUtils.createErrorEmbed(
+                    'No Recent Listings Found',
+                    'No recent listings found from SentX marketplace.\n\nTry again in a few minutes as new listings happen frequently.'
+                );
+            }
+            
+            console.log(`🔍 Found ${recentListings.length} total listings, filtering for HTS token payments...`);
+            
+            // Debug: Show payment symbols of first few listings
+            console.log('🔍 First 3 listings payment symbols:', 
+                recentListings.slice(0, 3).map(listing => `${listing.nft_name || listing.token_name}: ${listing.payment_symbol || 'HBAR'}`)
+            );
+            
+            // Filter for listings paid with HTS tokens (not HBAR)
+            const htsListings = recentListings.filter(listing => {
+                const paymentSymbol = listing.payment_symbol || 'HBAR';
+                const isHTS = paymentSymbol !== 'HBAR';
+                const hasNFT = !!listing.nft_name;
+                
+                if (isHTS && hasNFT) {
+                    console.log(`✅ Found HTS listing: ${listing.nft_name} (${listing.token_id}) listed for ${paymentSymbol}`);
+                }
+                
+                return isHTS && hasNFT; // Ensure it's an NFT listing with HTS payment
+            });
+            
+            console.log(`🪙 Found ${htsListings.length} HTS token payment listings`);
+            
+            if (htsListings.length === 0) {
+                return this.embedUtils.createErrorEmbed(
+                    'No HTS Payment Listings Found',
+                    'No recent NFT listings with HTS token payments found.\n\nMost listings are currently priced in HBAR. HTS token listings like PAWS are less common but do happen.'
+                );
+            }
+            
+            // Get tracked collections for this guild
+            const trackedCollections = await this.storage.getCollections(guildId);
+            const trackedTokenIds = trackedCollections.map(c => c.token_id || c.tokenId);
+            
+            // Filter listings to show those from tracked collections, or any if none tracked
+            let filteredListings = htsListings;
+            if (trackedTokenIds.length > 0) {
+                const trackedHtsListings = htsListings.filter(listing => 
+                    trackedTokenIds.includes(listing.token_id || listing.tokenId)
+                );
+                
+                if (trackedHtsListings.length > 0) {
+                    filteredListings = trackedHtsListings;
+                    console.log(`🎯 Using ${trackedHtsListings.length} HTS payment listings from tracked collections`);
+                } else {
+                    console.log(`📝 No HTS payment listings from tracked collections, showing any HTS payment listing`);
+                }
+            }
+            
+            // If specific collection requested, filter further
+            if (specificCollection) {
+                console.log(`🔍 Filtering ${filteredListings.length} HTS listings for collection: ${specificCollection}`);
+                
+                const beforeCount = filteredListings.length;
+                filteredListings = filteredListings.filter(listing => {
+                    const listingTokenId = listing.token_id || listing.tokenId;
+                    const matches = listingTokenId === specificCollection;
+                    if (matches) {
+                        console.log(`✅ Found matching HTS listing: ${listing.nft_name} (${listingTokenId}) listed for ${listing.payment_symbol}`);
+                    }
+                    return matches;
+                });
+                
+                console.log(`🎯 Collection filter result: ${beforeCount} → ${filteredListings.length} HTS listings for ${specificCollection}`);
+                
+                if (filteredListings.length === 0) {
+                    return this.embedUtils.createErrorEmbed(
+                        'No HTS Payment Listings Found',
+                        `No recent HTS token payment listings found for collection ${specificCollection}.\n\nTry testing without specifying a collection to see all available HTS listings.`
+                    );
+                }
+            }
+            
+            // Get the most recent HTS payment listing
+            const testListing = filteredListings[0];
+            
+            console.log(`🪙 Testing HTS payment listing: ${testListing.nft_name} listed for ${testListing.payment_symbol}`);
+            
+            // Get HBAR rate (even though we won't use it for HTS token prices)
+            const hbarRate = await this.currencyService.getHbarToUsdRate();
+            
+            // Create and return the embed
+            return await this.embedUtils.createListingEmbed(testListing, hbarRate);
+            
+        } catch (error) {
+            console.error('Error creating test HTS payment listing embed:', error);
+            return this.embedUtils.createErrorEmbed(
+                'Test Failed',
+                'Failed to create test HTS payment listing embed',
                 error.message
             );
         }
