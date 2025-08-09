@@ -1185,47 +1185,6 @@ class NFTSalesBot {
                 description: 'Get support and help with the bot'
             },
             {
-                name: 'announce',
-                description: 'Send bot update announcements (Admin only)',
-                default_member_permissions: '8', // Administrator permission
-                options: [
-                    {
-                        name: 'type',
-                        type: 3, // STRING
-                        description: 'Type of announcement to send',
-                        required: true,
-                        choices: [
-                            {
-                                name: 'HTS Token Update - August 2025',
-                                value: 'hts-update-aug-2025'
-                            },
-                            {
-                                name: 'Custom Message',
-                                value: 'custom'
-                            }
-                        ]
-                    },
-                    {
-                        name: 'message',
-                        type: 3, // STRING
-                        description: 'Custom announcement message (only for custom type)',
-                        required: false
-                    },
-                    {
-                        name: 'channel',
-                        type: 7, // CHANNEL
-                        description: 'Channel to send announcement (defaults to current channel)',
-                        required: false
-                    },
-                    {
-                        name: 'broadcast',
-                        type: 5, // BOOLEAN
-                        description: 'Send announcement to ALL Discord servers where the bot is active',
-                        required: false
-                    }
-                ]
-            },
-            {
                 name: 'test',
                 description: 'Test the bot functionality',
                 options: [
@@ -1274,18 +1233,73 @@ class NFTSalesBot {
 
         try {
             console.log('Registering slash commands...');
-            console.log(`Registering ${commands.length} commands including: ${commands.map(c => c.name).join(', ')}`);
+            console.log(`Registering ${commands.length} public commands including: ${commands.map(c => c.name).join(', ')}`);
             
-            // Register commands globally (no clearing - keeps existing commands intact)
+            // Register public commands globally (no clearing - keeps existing commands intact)
             await rest.put(
                 Routes.applicationCommands(this.client.user.id),
                 { body: commands }
             );
             
-            console.log(`✅ Successfully registered ${commands.length} slash commands globally:`);
+            console.log(`✅ Successfully registered ${commands.length} public slash commands globally:`);
             commands.forEach(cmd => {
                 console.log(`   /${cmd.name} - ${cmd.description}`);
             });
+
+            // Register development-only commands to a specific test server (if in development mode)
+            if (process.env.NODE_ENV === 'development' || process.env.ENABLE_DEV_COMMANDS === 'true') {
+                const devCommands = [
+                    {
+                        name: 'announce',
+                        description: 'Send bot update announcements (Admin only - Dev Command)',
+                        default_member_permissions: '8', // Administrator permission
+                        options: [
+                            {
+                                name: 'type',
+                                type: 3, // STRING
+                                description: 'Type of announcement to send',
+                                required: true,
+                                choices: [
+                                    {
+                                        name: 'HTS Token Update - August 2025',
+                                        value: 'hts-update-aug-2025'
+                                    },
+                                    {
+                                        name: 'Custom Message',
+                                        value: 'custom'
+                                    }
+                                ]
+                            },
+                            {
+                                name: 'message',
+                                type: 3, // STRING
+                                description: 'Custom announcement message (only for custom type)',
+                                required: false
+                            },
+                            {
+                                name: 'channel',
+                                type: 7, // CHANNEL
+                                description: 'Channel to send announcement (defaults to current channel)',
+                                required: false
+                            },
+                            {
+                                name: 'broadcast',
+                                type: 5, // BOOLEAN
+                                description: 'Send announcement to ALL Discord servers where the bot is active',
+                                required: false
+                            }
+                        ]
+                    }
+                ];
+
+                // Register dev commands globally but hidden from autocomplete
+                await rest.put(
+                    Routes.applicationCommands(this.client.user.id),
+                    { body: [...commands, ...devCommands] }
+                );
+                
+                console.log(`🔧 Development mode: Added ${devCommands.length} dev commands (announce)`);
+            }
             console.log('Command registration completed successfully');
         } catch (error) {
             console.error('Error registering slash commands:', error);
