@@ -1216,6 +1216,12 @@ class NFTSalesBot {
                         type: 7, // CHANNEL
                         description: 'Channel to send announcement (defaults to current channel)',
                         required: false
+                    },
+                    {
+                        name: 'broadcast',
+                        type: 5, // BOOLEAN
+                        description: 'Send announcement to ALL Discord servers where the bot is active',
+                        required: false
                     }
                 ]
             },
@@ -1899,17 +1905,20 @@ class NFTSalesBot {
             const announcementType = options.getString('type');
             const customMessage = options.getString('message');
             const targetChannel = options.getChannel('channel') || interaction.channel;
+            const broadcastToAll = options.getBoolean('broadcast') || false;
 
-            // Validate target channel permissions
-            const botMember = interaction.guild.members.me;
-            const permissions = targetChannel.permissionsFor(botMember);
-            
-            if (!permissions.has(['SendMessages', 'EmbedLinks'])) {
-                await interaction.reply({
-                    content: `❌ I need "Send Messages" and "Embed Links" permissions in ${targetChannel}.`,
-                    ephemeral: true
-                });
-                return;
+            // If broadcasting to all servers, validate that, otherwise validate target channel
+            if (!broadcastToAll) {
+                const botMember = interaction.guild.members.me;
+                const permissions = targetChannel.permissionsFor(botMember);
+                
+                if (!permissions.has(['SendMessages', 'EmbedLinks'])) {
+                    await interaction.reply({
+                        content: `❌ I need "Send Messages" and "Embed Links" permissions in ${targetChannel}.`,
+                        ephemeral: true
+                    });
+                    return;
+                }
             }
 
             let announcementEmbed;
@@ -1984,19 +1993,72 @@ class NFTSalesBot {
                 };
             }
 
-            // Send the announcement
-            const attachment = new AttachmentBuilder('./migos-logo.png', { name: 'migos-logo.png' });
-            
-            await targetChannel.send({
-                embeds: [announcementEmbed],
-                files: [attachment]
-            });
+            if (broadcastToAll) {
+                // Broadcast announcement to all configured servers
+                await interaction.reply({
+                    content: '🔄 Broadcasting announcement to all servers...',
+                    ephemeral: true
+                });
 
-            // Confirm to the admin
-            await interaction.reply({
-                content: `✅ Announcement sent successfully to ${targetChannel}!`,
-                ephemeral: true
-            });
+                const serverConfigs = await this.storage.getAllServerConfigs();
+                let successCount = 0;
+                let totalServers = 0;
+
+                console.log(`📢 Broadcasting HTS announcement to ${serverConfigs.length} configured servers...`);
+
+                for (const serverConfig of serverConfigs) {
+                    try {
+                        totalServers++;
+                        const channel = this.client.channels.cache.get(serverConfig.channelId);
+                        
+                        if (channel) {
+                            const permissions = channel.permissionsFor(this.client.user);
+                            if (permissions && permissions.has(['SendMessages', 'EmbedLinks'])) {
+                                const attachment = new AttachmentBuilder('./migos-logo.png', { name: 'migos-logo.png' });
+                                
+                                await channel.send({
+                                    embeds: [announcementEmbed],
+                                    files: [attachment]
+                                });
+                                
+                                successCount++;
+                                console.log(`  ✅ ${serverConfig.guildName || serverConfig.guildId}: announcement sent successfully`);
+                            } else {
+                                console.log(`  ❌ ${serverConfig.guildName || serverConfig.guildId}: insufficient permissions`);
+                            }
+                        } else {
+                            console.log(`  ❌ ${serverConfig.guildName || serverConfig.guildId}: channel not found`);
+                        }
+                    } catch (error) {
+                        console.log(`  ❌ ${serverConfig.guildName || serverConfig.guildId}: ${error.message}`);
+                    }
+                }
+
+                // Update admin with results
+                try {
+                    await interaction.editReply({
+                        content: `📢 Broadcast complete! Sent to ${successCount}/${totalServers} servers.`,
+                        ephemeral: true
+                    });
+                } catch (updateError) {
+                    console.log('Failed to update broadcast status:', updateError.message);
+                }
+
+            } else {
+                // Send to single channel
+                const attachment = new AttachmentBuilder('./migos-logo.png', { name: 'migos-logo.png' });
+                
+                await targetChannel.send({
+                    embeds: [announcementEmbed],
+                    files: [attachment]
+                });
+
+                // Confirm to the admin
+                await interaction.reply({
+                    content: `✅ Announcement sent successfully to ${targetChannel}!`,
+                    ephemeral: true
+                });
+            }
 
         } catch (error) {
             console.error('Error handling announce command:', error);
