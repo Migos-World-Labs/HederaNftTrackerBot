@@ -1503,20 +1503,21 @@ class NFTSalesBot {
             const row = new ActionRowBuilder()
                 .addComponents(confirmButton, cancelButton);
 
-            await interaction.reply({
+            const confirmMessage = await interaction.reply({
                 embeds: [confirmEmbed],
                 components: [row],
-                ephemeral: false
+                flags: [], // Use flags instead of ephemeral: false
+                fetchReply: true
             });
 
-            // Wait for button interaction
+            // Wait for button interaction using the message collector
             const filter = (buttonInteraction) => {
                 return ['remove_all_confirm', 'remove_all_cancel'].includes(buttonInteraction.customId) && 
                        buttonInteraction.user.id === interaction.user.id;
             };
 
             try {
-                const buttonInteraction = await interaction.awaitMessageComponent({ 
+                const buttonInteraction = await confirmMessage.awaitMessageComponent({ 
                     filter, 
                     time: 60000 // 60 seconds timeout (increased from 30s)
                 });
@@ -1573,7 +1574,7 @@ class NFTSalesBot {
                         await interaction.reply({
                             embeds: [timeoutEmbed],
                             components: [],
-                            ephemeral: true
+                            flags: [64] // MessageFlags.Ephemeral
                         });
                     } else {
                         await interaction.editReply({
