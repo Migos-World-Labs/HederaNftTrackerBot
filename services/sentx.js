@@ -83,16 +83,27 @@ class SentXService {
                 return hasCompletedSale;
             });
             
-            // If including HTS tokens, separate NFT and HTS sales
+            // If including HTS tokens, include all NFT sales (regardless of payment method) and pure HTS token sales
             let formattedData;
             if (includeHTS) {
+                // Include ALL NFT sales (paid with HBAR or HTS tokens like PAWS)
                 const nftSales = salesOnly.filter(sale => sale.nftSerialId !== null && sale.nftSerialId !== undefined);
+                // Pure HTS token sales (not NFTs, just tokens)
                 const htsSales = salesOnly.filter(sale => !sale.nftSerialId && sale.salePrice && sale.tokenSymbol);
                 
-                const nftSalesWithHTS = nftSales;
-                
-                const formattedNFT = this.formatSalesData(nftSalesWithHTS);
+                const formattedNFT = this.formatSalesData(nftSales);
                 const formattedHTS = this.formatHTSSalesData(htsSales);
+                
+                // Debug: Log HTS payment detection
+                const pawsPayments = formattedNFT.filter(sale => 
+                    sale.payment_symbol && sale.payment_symbol.toLowerCase().includes('paws')
+                );
+                if (pawsPayments.length > 0) {
+                    console.log(`🐾 PAWS Payment Detection: Found ${pawsPayments.length} NFT sales paid with PAWS`);
+                    pawsPayments.forEach(sale => {
+                        console.log(`   - ${sale.nft_name} (${sale.token_id}) for ${sale.display_price}`);
+                    });
+                }
                 
                 formattedData = [...formattedNFT, ...formattedHTS];
             } else {
