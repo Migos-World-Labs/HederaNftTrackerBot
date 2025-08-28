@@ -931,14 +931,20 @@ class NFTSalesBot {
             
             // For Forever Mints, we'll post to all servers since it's a special feature
             for (const server of servers) {
-                // Post to main sales channel
-                if (server.channel_id) {
-                    await this.sendForeverMintNotification(server.server_id, server.channel_id, mint, hbarRate);
+                // Determine which channel to use for mint notifications
+                let mintChannelId = null;
+                
+                if (server.mint_channel_id) {
+                    // Use dedicated mint channel if configured
+                    mintChannelId = server.mint_channel_id;
+                } else if (server.channel_id) {
+                    // Fall back to main sales channel if no dedicated mint channel
+                    mintChannelId = server.channel_id;
                 }
                 
-                // Also post to listings channel if it exists and is different from main channel
-                if (server.listings_channel_id && server.listings_channel_id !== server.channel_id) {
-                    await this.sendForeverMintNotification(server.server_id, server.listings_channel_id, mint, hbarRate);
+                // Send Forever Mint notification to the appropriate channel
+                if (mintChannelId) {
+                    await this.sendForeverMintNotification(server.server_id, mintChannelId, mint, hbarRate);
                 }
             }
         } catch (error) {
@@ -1209,7 +1215,7 @@ class NFTSalesBot {
                             },
                             {
                                 name: '📚 Available Commands',
-                                value: '• `/add` - Add NFT collection to track\n• `/remove` - Remove collection from tracking\n• `/remove-all` - Remove ALL collections (with confirmation)\n• `/list` - Show all tracked collections\n• `/status` - Check bot health and statistics\n• `/set-listings-channel` - Set separate channel for listings\n• `/test` - Test bot functionality\n• `/support` - Get help and support info',
+                                value: '• `/add` - Add NFT collection to track\n• `/remove` - Remove collection from tracking\n• `/remove-all` - Remove ALL collections (with confirmation)\n• `/list` - Show all tracked collections\n• `/status` - Check bot health and statistics\n• `/set-listings-channel` - Set separate channel for listings\n• `/set-mint-channel` - Set separate channel for Forever Mint notifications\n• `/test` - Test bot functionality\n• `/support` - Get help and support info',
                                 inline: false
                             },
                             {
@@ -1316,6 +1322,18 @@ class NFTSalesBot {
                         name: 'channel',
                         type: 7, // CHANNEL
                         description: 'The channel where listing notifications should be sent',
+                        required: true
+                    }
+                ]
+            },
+            {
+                name: 'set-mint-channel',
+                description: 'Set a separate channel for Forever Mint notifications (Wild Tigers)',
+                options: [
+                    {
+                        name: 'channel',
+                        type: 7, // CHANNEL
+                        description: 'The channel where Forever Mint notifications should be sent',
                         required: true
                     }
                 ]
@@ -1472,6 +1490,9 @@ class NFTSalesBot {
                     break;
                 case 'set-listings-channel':
                     await this.handleSetListingsChannelCommand(interaction, options);
+                    break;
+                case 'set-mint-channel':
+                    await this.handleSetMintChannelCommand(interaction, options);
                     break;
                 case 'support':
                     await this.handleSupportCommand(interaction);
@@ -2001,6 +2022,56 @@ class NFTSalesBot {
         }
     }
 
+    async handleSetMintChannelCommand(interaction, options) {
+        try {
+            const channel = options.getChannel('channel');
+            const guildId = interaction.guildId;
+
+            // Validate channel type (must be text channel)
+            if (channel.type !== 0) {
+                await interaction.reply({
+                    content: '❌ Please select a text channel for Forever Mint notifications.',
+                    ephemeral: true
+                });
+                return;
+            }
+
+            // Check if bot has permissions in the channel
+            const botMember = interaction.guild.members.me;
+            const permissions = channel.permissionsFor(botMember);
+            
+            if (!permissions.has(['SendMessages', 'EmbedLinks'])) {
+                await interaction.reply({
+                    content: '❌ I need "Send Messages" and "Embed Links" permissions in that channel.',
+                    ephemeral: true
+                });
+                return;
+            }
+
+            // Update the server config with mint channel
+            const success = await this.storage.setMintChannel(guildId, channel.id);
+            
+            if (success) {
+                await interaction.reply({
+                    content: `✅ Forever Mint channel set to ${channel}!\n\n🌟 **Wild Tigers Forever Mint notifications** will now be posted in ${channel}\n🔥 **Sales and other notifications** will continue in your main channels\n\nUse the same command again to change the mint channel, or disable by selecting the same channel as your main sales channel.`,
+                    ephemeral: false
+                });
+            } else {
+                await interaction.reply({
+                    content: '❌ Failed to set mint channel. Make sure the bot is properly configured in this server.',
+                    ephemeral: true
+                });
+            }
+
+        } catch (error) {
+            console.error('Error setting mint channel:', error);
+            await interaction.reply({
+                content: '❌ An error occurred while setting the mint channel. Please try again.',
+                ephemeral: true
+            });
+        }
+    }
+
     async handleSupportCommand(interaction) {
         try {
             const supportEmbed = {
@@ -2018,7 +2089,7 @@ class NFTSalesBot {
                     },
                     {
                         name: '📚 Available Commands',
-                        value: '• `/add` - Add NFT collection to track\n• `/remove` - Remove collection from tracking\n• `/remove-all` - Remove ALL collections (with confirmation)\n• `/list` - Show all tracked collections\n• `/status` - Check bot health and statistics\n• `/set-listings-channel` - Set separate channel for listings\n• `/test` - Test bot functionality\n• `/support` - Get help and support info',
+                        value: '• `/add` - Add NFT collection to track\n• `/remove` - Remove collection from tracking\n• `/remove-all` - Remove ALL collections (with confirmation)\n• `/list` - Show all tracked collections\n• `/status` - Check bot health and statistics\n• `/set-listings-channel` - Set separate channel for listings\n• `/set-mint-channel` - Set separate channel for Forever Mint notifications\n• `/test` - Test bot functionality\n• `/support` - Get help and support info',
                         inline: false
                     },
                     {

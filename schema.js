@@ -18,6 +18,7 @@ const serverConfigs = pgTable('server_configs', {
   guildId: text('guild_id').notNull().unique(),
   channelId: text('channel_id').notNull(),
   listingsChannelId: text('listings_channel_id'), // Optional separate channel for listings
+  mintChannelId: text('mint_channel_id'), // Optional separate channel for Forever Mint notifications
   guildName: text('guild_name').notNull(),
   enabled: boolean('enabled').notNull().default(true),
   addedDate: timestamp('added_date').defaultNow().notNull(),

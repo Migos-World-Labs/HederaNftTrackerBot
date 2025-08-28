@@ -220,6 +220,31 @@ class DatabaseStorage {
         }
     }
 
+    async setMintChannel(guildId, mintChannelId) {
+        try {
+            const existing = await db.select()
+                .from(serverConfigs)
+                .where(eq(serverConfigs.guildId, guildId))
+                .limit(1);
+
+            if (existing.length > 0) {
+                await db.update(serverConfigs)
+                    .set({
+                        mintChannelId,
+                        lastUpdated: new Date()
+                    })
+                    .where(eq(serverConfigs.guildId, guildId));
+                return true;
+            } else {
+                console.log('No server config found to update mint channel');
+                return false;
+            }
+        } catch (error) {
+            console.error('Error setting mint channel:', error);
+            return false;
+        }
+    }
+
     async getAllServerConfigs() {
         try {
             return await db.select()
