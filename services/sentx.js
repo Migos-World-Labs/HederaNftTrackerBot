@@ -75,60 +75,54 @@ class SentXService {
                 console.log('📋 First activity structure:', JSON.stringify(response.data.response[0], null, 2));
             }
             
-            // For testing, let's get the most recent activity regardless of Forever Mint status
-            // This will help us send a test notification to see the format
-            const recentActivity = response.data.response.length > 0 ? response.data.response[0] : null;
+            // For testing: Create a sample Forever Mint notification to showcase the format
+            console.log('🧪 Creating test Forever Mint notification for demonstration...');
             
-            if (recentActivity) {
-                console.log(`🧪 Testing with most recent activity: ${JSON.stringify(recentActivity, null, 2)}`);
+            const testMint = {
+                // Core mint data
+                nft_name: 'Wild Tigers #2750',
+                collection_name: 'Wild Tigers 🐯',
+                token_id: '0.0.6024491',
+                serial_number: 2750,
                 
-                // Create a test Forever Mint notification with the most recent activity
-                const testMint = {
-                    // Core mint data - use whatever fields are available
-                    nft_name: recentActivity.nftName || `Wild Tigers #${recentActivity.nftSerialId || 'Unknown'}`,
-                    collection_name: 'Wild Tigers 🐯',
-                    token_id: '0.0.6024491',
-                    serial_number: recentActivity.nftSerialId || 1,
-                    
-                    // Mint details
-                    mint_type: 'Forever Mint',
-                    mint_subtype: 'Forever Mint',
-                    mint_date: recentActivity.saleDate || new Date().toISOString(),
-                    timestamp: recentActivity.saleDate || new Date().toISOString(),
-                    mint_date_unix: recentActivity.saleDateUnix || Math.floor(Date.now() / 1000),
-                    
-                    // Minter details
-                    minter_address: recentActivity.buyerAddress || '0.0.123456',
-                    minter_account_id: recentActivity.buyerAddress || '0.0.123456',
-                    
-                    // Cost details
-                    mint_cost: recentActivity.salePrice || 50,
-                    mint_cost_symbol: recentActivity.salePriceSymbol || 'HBAR',
-                    
-                    // NFT metadata
-                    image_url: recentActivity.nftImage || recentActivity.imageCDN,
-                    image_cdn: recentActivity.imageCDN,
-                    metadata_url: recentActivity.nftMetadata,
-                    
-                    // Rarity data
-                    rarity_rank: recentActivity.rarityRank || 500,
-                    rarity_percentage: recentActivity.rarityPct || 25.5,
-                    
-                    // Collection info
-                    collection_url: recentActivity.collectionFriendlyurl,
-                    
-                    // Market data
-                    marketplace: 'SentX',
-                    transaction_id: recentActivity.saleTransactionId,
-                    
-                    // Additional context
-                    is_forever_mint: true,
-                    listing_url: recentActivity.listingUrl
-                };
+                // Mint details
+                mint_type: 'Forever Mint',
+                mint_subtype: 'Forever Mint',
+                mint_date: new Date().toISOString(),
+                timestamp: new Date().toISOString(),
+                mint_date_unix: Math.floor(Date.now() / 1000),
                 
-                console.log(`🎯 Created test Forever Mint: ${testMint.nft_name}`);
-                return [testMint]; // Return as array for testing
-            }
+                // Minter details
+                minter_address: '0.0.1234567',
+                minter_account_id: '0.0.1234567',
+                
+                // Cost details
+                mint_cost: 50,
+                mint_cost_symbol: 'HBAR',
+                
+                // NFT metadata
+                image_url: 'https://sentx.io/api/v1/public/nft/image/0.0.6024491/2750',
+                image_cdn: 'https://sentx.io/api/v1/public/nft/image/0.0.6024491/2750',
+                metadata_url: 'https://sentx.io/metadata/wildtigers/2750',
+                
+                // Rarity data
+                rarity_rank: 450,
+                rarity_percentage: 22.5,
+                
+                // Collection info
+                collection_url: 'wild-tigers',
+                
+                // Market data
+                marketplace: 'SentX',
+                transaction_id: 'test-transaction-id',
+                
+                // Additional context
+                is_forever_mint: true,
+                listing_url: 'https://sentx.io/nft/wild-tigers/2750'
+            };
+            
+            console.log(`🎯 Created test Forever Mint: ${testMint.nft_name}`);
+            return [testMint]; // Return as array for testing
             
             // Filter for Forever Mints specifically
             const wildTigersMints = response.data.response.filter(activity => {
