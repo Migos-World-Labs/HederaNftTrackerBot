@@ -1152,16 +1152,8 @@ class EmbedUtils {
             costText = `${mint.mint_cost} ${mint.mint_cost_symbol}`;
         }
         
-        // Build description with mint cost and rarity (ensure it's never empty)
+        // Build description with mint cost (clean and simple)
         let description = `Minted on SentX Forever Mint for **${costText}**`;
-        
-        // Add rarity information if available
-        if (mint.rarity_rank) {
-            const rarityText = mint.rarity_percentage 
-                ? `Rarity: #${mint.rarity_rank} (${(mint.rarity_percentage * 100).toFixed(2)}% rare)`
-                : `Rarity: #${mint.rarity_rank}`;
-            description += `\n${rarityText}`;
-        }
         
         const embed = new EmbedBuilder()
             .setTitle(`🌟 ${nftName} Forever Mint!`)

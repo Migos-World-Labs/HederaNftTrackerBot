@@ -155,14 +155,8 @@ class SentXService {
             
             console.log(`🎯 Found ${wildTigersMints.length} Forever Mint activities`);
             
-            // Format mint data consistently with enhanced rarity data
-            const formattedMints = await Promise.all(wildTigersMints.map(async (mint) => {
-                let rarityData = {};
-                
-                // Temporarily disable rarity fetching to prevent rate limiting
-                // This will be re-enabled once rate limiting is fully resolved
-                console.log(`📋 Skipping rarity data for ${mint.nftName} to prevent rate limiting`);
-                
+            // Format mint data without rarity to keep notifications simple and fast
+            const formattedMints = wildTigersMints.map((mint) => {
                 return {
                     // Core mint data
                     nft_name: mint.nftName,
@@ -190,9 +184,6 @@ class SentXService {
                     image_cdn: mint.imageCDN,
                     metadata_url: mint.nftMetadata,
                     
-                    // Enhanced rarity data
-                    ...rarityData,
-                    
                     // Collection info
                     collection_url: mint.collectionFriendlyurl,
                     
@@ -204,7 +195,7 @@ class SentXService {
                     is_forever_mint: true,
                     listing_url: mint.listingUrl
                 };
-            }));
+            });
             
             return formattedMints;
 
