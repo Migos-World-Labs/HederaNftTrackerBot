@@ -1230,8 +1230,8 @@ class EmbedUtils {
             embed.setImage(finalImageUrl);
         }
 
-        // Set Migos World logo as thumbnail
-        embed.setThumbnail('attachment://migos-logo.png');
+        // Set Wild Tigers Forever Mint pack as thumbnail
+        embed.setThumbnail('attachment://forever-mint-pack.png');
 
         // Set footer with timestamp and marketplace
         embed.setFooter({
