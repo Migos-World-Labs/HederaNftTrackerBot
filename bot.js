@@ -974,8 +974,8 @@ class NFTSalesBot {
             const fs = require('fs');
             const path = require('path');
             
-            const logoPath = path.join(__dirname, 'attached_assets', 'ForverMint Pack1_1756349280390.png');
-            const logoAttachment = new AttachmentBuilder(logoPath, { name: 'forever-mint-pack.png' });
+            const logoPath = path.join(__dirname, 'attached_assets', 'Forever Mint Sticker_1756349371753.png');
+            const logoAttachment = new AttachmentBuilder(logoPath, { name: 'forever-mint-sticker.png' });
             
             // Send the embed with logo attachment
             await channel.send({ 

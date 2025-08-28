@@ -1230,8 +1230,8 @@ class EmbedUtils {
             embed.setImage(finalImageUrl);
         }
 
-        // Set Wild Tigers Forever Mint pack as thumbnail
-        embed.setThumbnail('attachment://forever-mint-pack.png');
+        // Set Wild Tigers Forever Mint sticker as thumbnail
+        embed.setThumbnail('attachment://forever-mint-sticker.png');
 
         // Set footer with timestamp and marketplace
         embed.setFooter({
