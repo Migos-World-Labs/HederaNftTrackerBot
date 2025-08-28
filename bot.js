@@ -235,7 +235,13 @@ class NFTSalesBot {
         // Set initial timestamp to now to avoid posting old sales
         await this.initializeLastProcessedTimestamp();
         
+        // Rate limiting variables
+        this.rateLimitBackoff = 0; // Start with no backoff
+        this.maxBackoff = 300000; // Max 5 minutes backoff
+        this.rateLimitCount = 0; // Track consecutive rate limit hits
+        
         // Monitor every 5 seconds for new sales with error handling and overlap prevention
+        // But with dynamic backoff for rate limiting
         this.monitoringTask = cron.schedule('*/5 * * * * *', async () => {
             // Skip if previous monitoring cycle is still running
             if (this.monitoringInProgress) {
@@ -243,11 +249,33 @@ class NFTSalesBot {
                 return;
             }
             
+            // Skip if we're in rate limit backoff period
+            if (this.rateLimitBackoff > 0) {
+                const remainingBackoff = Math.ceil(this.rateLimitBackoff / 1000);
+                console.log(`⏳ Rate limit backoff: ${remainingBackoff}s remaining`);
+                this.rateLimitBackoff = Math.max(0, this.rateLimitBackoff - 5000);
+                return;
+            }
+            
             try {
                 this.monitoringInProgress = true;
                 await this.checkForNewSales();
+                
+                // Reset rate limit tracking on successful cycle
+                if (this.rateLimitCount > 0) {
+                    console.log('✅ API calls successful - resetting rate limit backoff');
+                    this.rateLimitCount = 0;
+                    this.rateLimitBackoff = 0;
+                }
             } catch (error) {
-                console.error('Error in monitoring task:', error.message);
+                // Check if this is a rate limiting error
+                if (error.message && error.message.includes('429')) {
+                    this.rateLimitCount++;
+                    this.rateLimitBackoff = Math.min(this.maxBackoff, 30000 * Math.pow(2, this.rateLimitCount - 1));
+                    console.log(`🚫 Rate limit detected (count: ${this.rateLimitCount}) - backing off for ${this.rateLimitBackoff/1000}s`);
+                } else {
+                    console.error('Error in monitoring task:', error.message);
+                }
                 // Continue monitoring even if one check fails
             } finally {
                 this.monitoringInProgress = false;

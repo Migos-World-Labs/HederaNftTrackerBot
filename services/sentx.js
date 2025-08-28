@@ -18,6 +18,14 @@ class SentXService {
             }
         });
         
+        // Rate limiting variables
+        this.rateLimitDelay = 1000; // Start with 1 second between requests
+        this.maxDelay = 30000; // Max 30 seconds delay
+        this.lastRequestTime = 0;
+        this.rateLimitedUntil = 0;
+        this.requestQueue = [];
+        this.processing = false;
+        
         // Cache for floor prices (5 minute TTL) and API responses
         this.floorPriceCache = new Map();
         this.apiResponseCache = new Map();
@@ -27,6 +35,69 @@ class SentXService {
         setInterval(() => {
             this.cleanupCache();
         }, 10 * 60 * 1000); // Cleanup every 10 minutes
+    }
+
+    /**
+     * Rate limiting helper - waits between requests to avoid hitting limits
+     */
+    async waitForRateLimit() {
+        const now = Date.now();
+        
+        // If we're currently rate limited, wait longer
+        if (now < this.rateLimitedUntil) {
+            const waitTime = this.rateLimitedUntil - now;
+            console.log(`⏳ Waiting ${waitTime}ms for rate limit cooldown`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            return;
+        }
+        
+        // Normal rate limiting between requests
+        const timeSinceLastRequest = now - this.lastRequestTime;
+        if (timeSinceLastRequest < this.rateLimitDelay) {
+            const waitTime = this.rateLimitDelay - timeSinceLastRequest;
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+        
+        this.lastRequestTime = Date.now();
+    }
+
+    /**
+     * Handle rate limit response by implementing exponential backoff
+     */
+    handleRateLimit() {
+        this.rateLimitDelay = Math.min(this.maxDelay, this.rateLimitDelay * 2);
+        this.rateLimitedUntil = Date.now() + this.rateLimitDelay;
+        console.log(`🚫 Rate limited - backing off for ${this.rateLimitDelay}ms`);
+    }
+
+    /**
+     * Reset rate limiting on successful requests
+     */
+    resetRateLimit() {
+        if (this.rateLimitDelay > 1000) {
+            console.log('✅ API calls successful - resetting rate limit delay');
+            this.rateLimitDelay = 1000;
+            this.rateLimitedUntil = 0;
+        }
+    }
+
+    /**
+     * Make rate-limited HTTP request
+     */
+    async makeRequest(url, params = {}) {
+        await this.waitForRateLimit();
+        
+        try {
+            const response = await this.axiosInstance.get(url, { params });
+            this.resetRateLimit();
+            return response;
+        } catch (error) {
+            if (error.response && error.response.status === 429) {
+                this.handleRateLimit();
+                throw new Error(`Rate limited: ${error.message}`);
+            }
+            throw error;
+        }
     }
 
     /**
@@ -45,9 +116,7 @@ class SentXService {
                 page: 1
             };
             
-            const response = await this.axiosInstance.get('/v1/public/launchpad/activity', {
-                params: params
-            });
+            const response = await this.makeRequest('/v1/public/launchpad/activity', params);
 
             console.log(`🚀 Launchpad API Response Status: ${response.status}`);
             console.log(`🚀 Launchpad API Response Type: ${typeof response.data}`);
