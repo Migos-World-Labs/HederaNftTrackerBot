@@ -594,9 +594,9 @@ class NFTSalesBot {
                 const mintTimestamp = new Date(mint.timestamp).getTime();
                 const isNewer = mintTimestamp > lastProcessedTimestamp;
                 
-                // Additional check: mint must be within last 1 hour to be considered "fresh"
-                const oneHourAgo = Date.now() - (60 * 60 * 1000);
-                const isRecent = mintTimestamp > oneHourAgo;
+                // Additional check: mint must be within last 24 hours to be considered "fresh" (extended for testing)
+                const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+                const isRecent = mintTimestamp > twentyFourHoursAgo;
                 
                 return isNewer && isRecent;
             });
