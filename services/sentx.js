@@ -57,14 +57,24 @@ class SentXService {
                 return [];
             }
             
-            // Filter for Wild Tigers Forever Mints
+            // Debug: Log all Wild Tigers activities to understand activity types
+            const allWildTigersActivities = response.data.marketActivity.filter(activity => {
+                return activity.collectionName === 'Wild Tigers 🐯' || 
+                       activity.nftTokenAddress === '0.0.6024491';
+            });
+            
+            if (allWildTigersActivities.length > 0) {
+                console.log(`🐯 Found ${allWildTigersActivities.length} Wild Tigers activities:`);
+                allWildTigersActivities.slice(0, 5).forEach((activity, index) => {
+                    console.log(`   ${index + 1}. ${activity.nftName} - Type: "${activity.saletype}" | Sub: "${activity.saletypeSub || 'N/A'}" | Date: ${activity.saleDate}`);
+                });
+            }
+            
+            // Filter for Wild Tigers Forever Mints - focus on "Minted" activity type
             const wildTigersMints = response.data.marketActivity.filter(activity => {
                 const isWildTigers = activity.collectionName === 'Wild Tigers 🐯' || 
                                    activity.nftTokenAddress === '0.0.6024491';
-                const isMint = activity.saletype === 'Claimed' || 
-                              activity.saletype === 'Minted' ||
-                              activity.saletype === 'Forever Mint' ||
-                              (activity.saletypeSub && activity.saletypeSub.includes('Mint'));
+                const isMint = activity.saletype === 'Minted';
                               
                 return isWildTigers && isMint;
             }).slice(0, limit);
