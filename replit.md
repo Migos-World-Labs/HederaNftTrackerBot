@@ -4,12 +4,14 @@
 This project is a Discord bot designed to provide real-time NFT marketplace analytics for the Hedera blockchain. Its primary purpose is to monitor NFT sales and listings across multiple marketplaces (SentX and Kabila) and deliver rich, comprehensive notifications to Discord servers. The bot aims to offer users up-to-date sales data, including pricing, buyer/seller information, and NFT metadata, enhancing transparency and accessibility within the Hedera NFT ecosystem.
 
 ## Recent Updates (August 2025)
-**Forever Mint Notifications Limited to Migos World (August 28, 2025)**: Updated Forever Mint notification system to only send notifications to Migos World Discord (guild ID: 910963230317355008) as requested. The system now:
-- Targets only Migos World Discord for Forever Mint notifications 
+**Dual Discord Forever Mint Notifications (August 28, 2025)**: Successfully implemented dual Discord server notification system for Forever Mint tracking. The system now:
+- Sends Forever Mint notifications to BOTH Migos World Discord and Wild Tigers Discord
+- Targets Migos World (910963230317355008) and Wild Tigers (1248509900154343504) servers
 - Maintains all existing functionality: golden theme, NFT images, rarity data
-- Uses reliable Pinata IPFS gateway (gateway.pinata.cloud) for NFT image display
+- Uses reliable Hashpack CDN (hashpack.b-cdn.net) for optimized NFT image display
 - Continues detecting real Forever Mints using SentX launchpad API
 - Prevents duplicate notifications using database tracking
+- Confirmed live operation with successful notification delivery
 
 **Complete Forever Mint Notification System (August 28, 2025)**: Successfully implemented and tested comprehensive Forever Mint tracking for Wild Tigers NFTs. The system:
 - Detects real Forever Mints using SentX launchpad API (/v1/public/launchpad/activity)
@@ -29,6 +31,17 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 The bot is built as a Node.js 20 application, utilizing Discord.js v14 for Discord API integration. PostgreSQL, managed with Drizzle ORM, serves as the primary data store, ensuring type-safe database operations and schema migrations. A cron-based system (`node-cron`) monitors marketplaces every 5 seconds. API interactions with external services are handled via Axios.
+
+## Future Development Roadmap
+**Multi-Mint Tracking System**: Comprehensive roadmap developed for user-configurable mint tracking across Discord servers. Key planned features:
+- **User Commands**: `/mint-tracking setup/remove/list/toggle/settings` for collection management
+- **Multi-Collection Support**: Extend beyond Wild Tigers to any Hedera NFT collection
+- **Advanced Filtering**: Price ranges, rarity filters, and notification themes
+- **Analytics Dashboard**: Real-time mint statistics and trend analysis
+- **Community Features**: Mint leaderboards, milestones, and cross-server sharing
+- **Implementation Timeline**: 4-phase approach over 8 weeks starting with core infrastructure
+
+Detailed specifications available in `docs/ROADMAP.md` and `docs/MULTI_MINT_SPEC.md`.
 
 **Key Architectural Decisions:**
 - **Modular Services**: Marketplace-specific logic (SentX, Kabila), Hedera Mirror Node interactions, and currency conversions are encapsulated in dedicated services for maintainability.
