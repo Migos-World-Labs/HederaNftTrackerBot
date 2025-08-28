@@ -75,17 +75,12 @@ class SentXService {
                 console.log('📋 First activity structure:', JSON.stringify(response.data.response[0], null, 2));
             }
             
-            // Filter for Forever Mints specifically
+            // Filter for Forever Mints - ALL Wild Tigers mints are Forever Mints
             const wildTigersMints = response.data.response.filter(activity => {
-                // Look for Forever Mint activities - check multiple possible indicators
-                const isForeverMint = activity.isForeverMint === true;
                 const isMinted = activity.saletype === 'Minted';
                 const isWildTigers = activity.collectionName === 'Wild Tigers';
                 
-                // Debug logging for each activity
-                console.log(`   Activity: isForeverMint=${activity.isForeverMint}, cfriendlyurl=${activity.cfriendlyurl}`);
-                
-                // For now, treat all Wild Tigers mints as potential Forever Mints since the field structure is unclear
+                // All Wild Tigers mints are Forever Mints by definition
                 return isMinted && isWildTigers;
             });
             
