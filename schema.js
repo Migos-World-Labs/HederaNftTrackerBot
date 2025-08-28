@@ -40,9 +40,18 @@ const processedSales = pgTable('processed_sales', {
   processedAt: timestamp('processed_at').defaultNow().notNull()
 });
 
+// Processed mints table for duplicate prevention (Forever Mints)
+const processedMints = pgTable('processed_mints', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  mintId: text('mint_id').notNull().unique(),
+  tokenId: text('token_id').notNull(),
+  processedAt: timestamp('processed_at').defaultNow().notNull()
+});
+
 module.exports = {
   collections,
   serverConfigs,
   botState,
-  processedSales
+  processedSales,
+  processedMints
 };

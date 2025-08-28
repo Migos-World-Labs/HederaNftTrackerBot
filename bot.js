@@ -72,6 +72,9 @@ class NFTSalesBot {
                 console.log('Cleaning up orphaned server data...');
                 await this.cleanupOrphanedData();
                 
+                console.log('Cleaning up old processed mints...');
+                await this.storage.cleanupOldMints();
+                
                 await this.registerSlashCommands();
                 await this.startMonitoring();
                 
@@ -318,9 +321,12 @@ class NFTSalesBot {
             const sentxListings = await sentxService.getRecentListings(50, false, true); // Include HTS token payments
             const kabilaListings = await kabilaService.getRecentListings(50);
             
+            // Get recent Forever Mints from SentX for Wild Tigers
+            const foreverMints = await sentxService.getRecentForeverMints(20);
+            
             // Debug: Log API response counts for monitoring
-            if (sentxSales.length > 0 || kabilaSales.length > 0) {
-                console.log(`📊 API Response Summary: SentX ${sentxSales.length} sales (all payment types), Kabila ${kabilaSales.length} sales`);
+            if (sentxSales.length > 0 || kabilaSales.length > 0 || foreverMints.length > 0) {
+                console.log(`📊 API Response Summary: SentX ${sentxSales.length} sales (all payment types), Kabila ${kabilaSales.length} sales, ${foreverMints.length} Forever Mints`);
             }
 
             // Combine sales and listings from both marketplaces (now includes all payment types)
@@ -460,6 +466,11 @@ class NFTSalesBot {
             if (hasNewListings) {
                 await this.processNewListings(trackedListings, hbarRate);
             }
+            
+            // Process Forever Mints (always process for Wild Tigers since it's a special feature)
+            if (foreverMints && foreverMints.length > 0) {
+                await this.processNewForeverMints(foreverMints, hbarRate);
+            }
 
         } catch (error) {
             console.error('Error checking for new sales and listings:', error);
@@ -568,6 +579,86 @@ class NFTSalesBot {
             }
         } catch (error) {
             console.error('Error processing new sales:', error);
+        }
+    }
+
+    async processNewForeverMints(allMints, hbarRate) {
+        try {
+            // Get the timestamp of the last processed mint (use a separate timestamp for mints)
+            const lastProcessedTimestamp = await this.storage.getLastProcessedMint();
+            
+            // Filter for truly new mints only (mints that happened after our last check)
+            let newMints = allMints.filter(mint => {
+                const mintTimestamp = new Date(mint.timestamp).getTime();
+                const isNewer = mintTimestamp > lastProcessedTimestamp;
+                
+                // Additional check: mint must be within last 1 hour to be considered "fresh"
+                const oneHourAgo = Date.now() - (60 * 60 * 1000);
+                const isRecent = mintTimestamp > oneHourAgo;
+                
+                return isNewer && isRecent;
+            });
+
+            if (newMints.length === 0) {
+                return;
+            }
+
+            console.log(`🌟 Found ${newMints.length} new Wild Tigers Forever Mints!`);
+
+            // Sort by timestamp to process oldest first
+            newMints.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+            // Process each new mint
+            for (const mint of newMints) {
+                // Create unique mint ID to prevent duplicates
+                const tokenId = mint.token_id;
+                const serialNumber = mint.serial_number;
+                const mintTsMs = new Date(mint.timestamp).getTime();
+                const transactionId = mint.transaction_id || '';
+                
+                // Create primary mint ID with transaction ID if available
+                let mintId;
+                if (transactionId) {
+                    mintId = `mint_${tokenId}_${serialNumber}_${transactionId}`;
+                } else {
+                    // Fallback to timestamp-based ID if no transaction ID
+                    mintId = `mint_${tokenId}_${serialNumber}_${mintTsMs}`;
+                }
+                
+                // Skip processing if essential data is missing
+                if (!mint.token_id || !mint.serial_number) {
+                    console.log(`Skipping mint due to missing data: ${mint.nft_name || 'Unknown'}`);
+                    continue;
+                }
+                
+                // Check if we've already processed this mint
+                const alreadyProcessed = await this.storage.isMintProcessed(mintId);
+                if (alreadyProcessed) {
+                    console.log(`Skipping already processed mint: ${mint.nft_name} (${mintId})`);
+                    continue;
+                }
+                
+                console.log(`🌟 NEW FOREVER MINT: ${mint.nft_name} - ${mint.mint_cost || 'Free'} ${mint.mint_cost_symbol || ''}`);
+                console.log(`   Token ID: ${mint.token_id}, Serial: ${mint.serial_number}, Minter: ${mint.minter_account_id}`);
+                
+                // Mark mint as processed BEFORE posting to prevent race conditions
+                const marked = await this.storage.markMintProcessed(mintId, mint.token_id);
+                
+                if (marked) {
+                    await this.processForeverMint(mint, hbarRate);
+                    
+                    // Update last processed timestamp for mints
+                    const processedTsMs = new Date(mint.timestamp).getTime();
+                    await this.storage.setLastProcessedMint(processedTsMs);
+                    
+                    // Small delay between messages to avoid rate limiting
+                    await this.delay(1000);
+                } else {
+                    console.log(`Failed to mark mint as processed, skipping: ${mint.nft_name}`);
+                }
+            }
+        } catch (error) {
+            console.error('Error processing new Forever Mints:', error);
         }
     }
 
@@ -830,6 +921,55 @@ class NFTSalesBot {
 
         } catch (error) {
             console.error('Error processing sale:', error.message);
+        }
+    }
+
+    async processForeverMint(mint, hbarRate) {
+        try {
+            // Get all server configurations
+            const servers = await this.storage.getServers();
+            
+            // For Forever Mints, we'll post to all servers since it's a special feature
+            for (const server of servers) {
+                // Post to main sales channel
+                if (server.channel_id) {
+                    await this.sendForeverMintNotification(server.server_id, server.channel_id, mint, hbarRate);
+                }
+                
+                // Also post to listings channel if it exists and is different from main channel
+                if (server.listings_channel_id && server.listings_channel_id !== server.channel_id) {
+                    await this.sendForeverMintNotification(server.server_id, server.listings_channel_id, mint, hbarRate);
+                }
+            }
+        } catch (error) {
+            console.error('Error processing Forever Mint:', error);
+        }
+    }
+
+    async sendForeverMintNotification(guildId, channelId, mint, hbarRate) {
+        try {
+            const guild = this.client.guilds.cache.get(guildId);
+            if (!guild) {
+                console.error(`Guild not found: ${guildId}`);
+                return;
+            }
+
+            const channel = guild.channels.cache.get(channelId);
+            if (!channel) {
+                console.error(`Channel not found: ${channelId} in guild ${guild.name}`);
+                return;
+            }
+
+            // Create Forever Mint embed
+            const embed = await this.embedUtils.createForeverMintEmbed(mint, hbarRate, guildId);
+            
+            // Send the embed
+            await channel.send({ embeds: [embed] });
+            
+            console.log(`✅ Forever Mint notification sent to ${guild.name}/#${channel.name}: ${mint.nft_name}`);
+
+        } catch (error) {
+            console.error(`Error sending Forever Mint notification to guild ${guildId}:`, error.message);
         }
     }
 

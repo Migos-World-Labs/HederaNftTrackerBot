@@ -1,6 +1,6 @@
 const { eq, desc, and, sql } = require('drizzle-orm');
 const { db } = require('./db');
-const { collections, serverConfigs, botState, processedSales } = require('./schema');
+const { collections, serverConfigs, botState, processedSales, processedMints } = require('./schema');
 
 class DatabaseStorage {
     constructor() {
@@ -447,6 +447,78 @@ class DatabaseStorage {
             console.log(`Cleaned up ${result.rowCount || 0} old processed sales (older than 3 days)`);
         } catch (error) {
             console.error('Error cleaning up old processed sales:', error);
+        }
+    }
+
+    // Forever Mint management
+    async getLastProcessedMint() {
+        try {
+            const result = await this.getBotState('lastProcessedMint', 0);
+            return typeof result === 'number' ? result : 0;
+        } catch (error) {
+            console.error('Error getting last processed mint timestamp:', error);
+            return 0;
+        }
+    }
+
+    async setLastProcessedMint(timestamp) {
+        try {
+            await this.setBotState('lastProcessedMint', timestamp);
+            return true;
+        } catch (error) {
+            console.error('Error setting last processed mint timestamp:', error);
+            return false;
+        }
+    }
+
+    async isMintProcessed(mintId) {
+        try {
+            const result = await db.select()
+                .from(processedMints)
+                .where(eq(processedMints.mintId, mintId))
+                .limit(1);
+            
+            return result.length > 0;
+        } catch (error) {
+            console.error('Error checking if mint is processed:', error);
+            return false;
+        }
+    }
+
+    async markMintProcessed(mintId, tokenId) {
+        try {
+            await db.insert(processedMints).values({
+                mintId: mintId,
+                tokenId: tokenId
+            });
+            return true;
+        } catch (error) {
+            if (error.code === '23505') { // Unique constraint violation
+                console.log(`Mint ${mintId} already processed, skipping`);
+                return false;
+            }
+            console.error('Error marking mint as processed:', error);
+            return false;
+        }
+    }
+
+    async cleanupOldMints() {
+        try {
+            // Remove processed mints older than 3 days
+            const threeDaysAgo = new Date();
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+            
+            const result = await db.delete(processedMints)
+                .where(sql`${processedMints.processedAt} < ${threeDaysAgo}`);
+            
+            const deletedCount = result.rowCount || 0;
+            if (deletedCount > 0) {
+                console.log(`Cleaned up ${deletedCount} old processed mints (older than 3 days)`);
+            }
+            return deletedCount;
+        } catch (error) {
+            console.error('Error cleaning up old processed mints:', error);
+            return 0;
         }
     }
 

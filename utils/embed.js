@@ -1134,6 +1134,114 @@ class EmbedUtils {
 
         return embed;
     }
+
+    /**
+     * Create a Discord embed for a Forever Mint
+     * @param {Object} mint - Mint data object
+     * @param {number} hbarRate - Current HBAR to USD rate
+     * @param {string} guildId - Discord server ID (for checking image effects setting)
+     * @returns {EmbedBuilder} Discord embed object
+     */
+    async createForeverMintEmbed(mint, hbarRate, guildId = null) {
+        const nftName = mint.nft_name || `NFT #${mint.serial_number || 'Unknown'}`;
+        const collectionName = mint.collection_name || 'Wild Tigers 🐯';
+        
+        // Format mint cost
+        let costText = 'Free';
+        if (mint.mint_cost && mint.mint_cost > 0) {
+            const usdValue = mint.mint_cost_symbol === 'HBAR' ? mint.mint_cost * hbarRate : null;
+            costText = `${mint.mint_cost} ${mint.mint_cost_symbol}`;
+            if (usdValue) {
+                costText += ` ≈ $${usdValue.toFixed(2)} USD`;
+            }
+        }
+        
+        const embed = new EmbedBuilder()
+            .setTitle(`🌟 ${nftName} Forever Minted!`)
+            .setDescription(`A new Wild Tiger was just minted on SentX Forever Mint for **${costText}**`)
+            .setColor('#FF6B35') // Orange color for mints
+            .setTimestamp(new Date(mint.timestamp));
+
+        // Add collection info
+        embed.setAuthor({
+            name: `${collectionName} Forever Mint`,
+            iconURL: null
+        });
+
+        // NFT Details
+        const nftDetails = [];
+        nftDetails.push(`**Token ID:** ${mint.token_id}`);
+        nftDetails.push(`**Serial:** #${mint.serial_number}`);
+        
+        if (mint.rarity_rank) {
+            const rarityText = mint.rarity_percentage 
+                ? `#${mint.rarity_rank} (${(mint.rarity_percentage * 100).toFixed(2)}% rare)`
+                : `#${mint.rarity_rank}`;
+            nftDetails.push(`**Rarity:** ${rarityText}`);
+        }
+        
+        embed.addFields({
+            name: '🎲 NFT Details',
+            value: nftDetails.join('\n'),
+            inline: true
+        });
+
+        // Minter Details
+        const minterDetails = [];
+        minterDetails.push(`**Account:** ${mint.minter_account_id}`);
+        minterDetails.push(`**Mint Type:** ${mint.mint_type}`);
+        if (mint.mint_subtype) {
+            minterDetails.push(`**Category:** ${mint.mint_subtype}`);
+        }
+        
+        embed.addFields({
+            name: '👤 Minter Details',
+            value: minterDetails.join('\n'),
+            inline: true
+        });
+
+        // Add spacer field for better layout
+        embed.addFields({
+            name: '\u200B',
+            value: '\u200B',
+            inline: false
+        });
+
+        // Transaction Details
+        const transactionDetails = [];
+        transactionDetails.push(`**Marketplace:** SentX Forever Mint`);
+        transactionDetails.push(`**Mint Cost:** ${costText}`);
+        if (mint.transaction_id) {
+            transactionDetails.push(`**Transaction:** ${mint.transaction_id}`);
+        }
+        
+        embed.addFields({
+            name: '💰 Mint Information',
+            value: transactionDetails.join('\n'),
+            inline: false
+        });
+
+        // Set NFT image if available
+        if (mint.image_cdn || mint.image_url) {
+            const imageUrl = mint.image_cdn || mint.image_url;
+            
+            // Convert IPFS to gateway URL if needed
+            let finalImageUrl = imageUrl;
+            if (imageUrl.startsWith('ipfs://')) {
+                finalImageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
+            }
+            
+            embed.setImage(finalImageUrl);
+        }
+
+        // Set footer with timestamp and marketplace
+        embed.setFooter({
+            text: `Forever Minted on SentX • ${new Date(mint.timestamp).toLocaleString()}`,
+            iconURL: 'https://sentinent-bherbhd8e3cyg4dn.z01.azurefd.net/media/web/hedera-logo-128.png'
+        });
+
+        return embed;
+    }
 }
 
 module.exports = new EmbedUtils();

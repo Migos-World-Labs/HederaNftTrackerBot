@@ -30,6 +30,98 @@ class SentXService {
     }
 
     /**
+     * Get recent Forever Mints from SentX marketplace for Wild Tigers collection
+     * @param {number} limit - Number of mints to fetch
+     * @returns {Array} Array of mint objects
+     */
+    async getRecentForeverMints(limit = 20) {
+        try {
+            const apiKey = process.env.SENTX_API_KEY;
+            
+            const params = {
+                apikey: apiKey,
+                activityFilter: 'All', // Get all activities to find mints
+                amount: limit * 3, // Get more to filter for mints
+                page: 1
+            };
+            
+            const response = await this.axiosInstance.get('/v1/public/market/activity', {
+                params: params
+            });
+
+            if (!response.data || !response.data.success) {
+                return [];
+            }
+
+            if (!response.data.marketActivity || response.data.marketActivity.length === 0) {
+                return [];
+            }
+            
+            // Filter for Wild Tigers Forever Mints
+            const wildTigersMints = response.data.marketActivity.filter(activity => {
+                const isWildTigers = activity.collectionName === 'Wild Tigers 🐯' || 
+                                   activity.nftTokenAddress === '0.0.6024491';
+                const isMint = activity.saletype === 'Claimed' || 
+                              activity.saletype === 'Minted' ||
+                              activity.saletype === 'Forever Mint' ||
+                              (activity.saletypeSub && activity.saletypeSub.includes('Mint'));
+                              
+                return isWildTigers && isMint;
+            }).slice(0, limit);
+            
+            // Format mint data consistently
+            const formattedMints = wildTigersMints.map(mint => ({
+                // Core mint data
+                nft_name: mint.nftName,
+                collection_name: mint.collectionName,
+                token_id: mint.nftTokenAddress,
+                serial_number: mint.nftSerialId,
+                
+                // Mint details
+                mint_type: mint.saletype,
+                mint_subtype: mint.saletypeSub,
+                mint_date: mint.saleDate,
+                timestamp: mint.saleDate,
+                mint_date_unix: mint.saleDateUnix,
+                
+                // Minter details
+                minter_address: mint.buyerAddress, // In mints, buyer is the minter
+                minter_account_id: mint.buyerAddress,
+                
+                // Cost details (if any)
+                mint_cost: mint.salePrice || 0,
+                mint_cost_symbol: mint.salePriceSymbol || 'Free',
+                
+                // NFT metadata
+                image_url: mint.nftImage,
+                image_cdn: mint.imageCDN,
+                metadata_url: mint.nftMetadata,
+                
+                // Rarity data
+                rarity_rank: mint.rarityRank,
+                rarity_percentage: mint.rarityPct,
+                
+                // Collection info
+                collection_url: mint.collectionFriendlyurl,
+                
+                // Market data
+                marketplace: 'SentX',
+                transaction_id: mint.saleTransactionId,
+                
+                // Additional context
+                is_forever_mint: true,
+                listing_url: mint.listingUrl
+            }));
+            
+            return formattedMints;
+
+        } catch (error) {
+            console.error('Error fetching Forever Mints from SentX:', error.message);
+            return [];
+        }
+    }
+
+    /**
      * Get recent NFT sales from SentX marketplace
      * @param {number} limit - Number of sales to fetch
      * @returns {Array} Array of sale objects
