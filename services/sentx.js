@@ -40,44 +40,45 @@ class SentXService {
             
             const params = {
                 apikey: apiKey,
-                activityFilter: 'All', // Get all activities to find mints
-                amount: limit * 3, // Get more to filter for mints
+                token: '0.0.6024491', // Wild Tigers token address to filter for Wild Tigers mints only
+                limit: limit,
                 page: 1
             };
             
-            const response = await this.axiosInstance.get('/v1/public/market/activity', {
+            const response = await this.axiosInstance.get('/v1/public/launchpad/activity', {
                 params: params
             });
 
-            if (!response.data || !response.data.success) {
+            console.log(`🚀 Launchpad API Response Status: ${response.status}`);
+            console.log(`🚀 Launchpad API Response Type: ${typeof response.data}`);
+            
+            // Check if response is HTML (error page)
+            if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+                console.log('❌ Launchpad API returned HTML page - endpoint may not be available');
                 return [];
             }
 
-            if (!response.data.marketActivity || response.data.marketActivity.length === 0) {
+            if (!response.data || !response.data.success) {
+                console.log('❌ Launchpad API returned unsuccessful response:', response.data);
+                return [];
+            }
+
+            if (!response.data.response || response.data.response.length === 0) {
+                console.log('⚠️ Launchpad API returned no activities');
                 return [];
             }
             
-            // Debug: Log all Wild Tigers activities to understand activity types
-            const allWildTigersActivities = response.data.marketActivity.filter(activity => {
-                return activity.collectionName === 'Wild Tigers 🐯' || 
-                       activity.nftTokenAddress === '0.0.6024491';
+            console.log(`🐯 Found ${response.data.response.length} Wild Tigers launchpad activities`);
+            
+            // Filter for Forever Mints specifically
+            const wildTigersMints = response.data.response.filter(activity => {
+                // Look for Forever Mint activities
+                const isForeverMint = activity.isForeverMint === true;
+                console.log(`   Activity: isForeverMint=${activity.isForeverMint}, cfriendlyurl=${activity.cfriendlyurl}`);
+                return isForeverMint;
             });
             
-            if (allWildTigersActivities.length > 0) {
-                console.log(`🐯 Found ${allWildTigersActivities.length} Wild Tigers activities:`);
-                allWildTigersActivities.slice(0, 5).forEach((activity, index) => {
-                    console.log(`   ${index + 1}. ${activity.nftName} - Type: "${activity.saletype}" | Sub: "${activity.saletypeSub || 'N/A'}" | Date: ${activity.saleDate}`);
-                });
-            }
-            
-            // Filter for Wild Tigers Forever Mints - focus on "Minted" activity type
-            const wildTigersMints = response.data.marketActivity.filter(activity => {
-                const isWildTigers = activity.collectionName === 'Wild Tigers 🐯' || 
-                                   activity.nftTokenAddress === '0.0.6024491';
-                const isMint = activity.saletype === 'Minted';
-                              
-                return isWildTigers && isMint;
-            }).slice(0, limit);
+            console.log(`🎯 Found ${wildTigersMints.length} Forever Mint activities`);
             
             // Format mint data consistently
             const formattedMints = wildTigersMints.map(mint => ({
@@ -126,8 +127,98 @@ class SentXService {
             return formattedMints;
 
         } catch (error) {
-            console.error('Error fetching Forever Mints from SentX:', error.message);
-            return [];
+            console.error('Error fetching Forever Mints from SentX launchpad API:', error.message);
+            console.log('🔄 Falling back to market activity API for mint detection...');
+            
+            // Fallback to market activity API with improved mint detection
+            try {
+                const fallbackParams = {
+                    apikey: process.env.SENTX_API_KEY,
+                    activityFilter: 'All',
+                    amount: limit * 3,
+                    page: 1
+                };
+                
+                const fallbackResponse = await this.axiosInstance.get('/v1/public/market/activity', {
+                    params: fallbackParams
+                });
+
+                if (!fallbackResponse.data || !fallbackResponse.data.success || !fallbackResponse.data.marketActivity) {
+                    return [];
+                }
+
+                // Look for Wild Tigers mints in market activity
+                const wildTigersActivities = fallbackResponse.data.marketActivity.filter(activity => {
+                    return activity.collectionName === 'Wild Tigers 🐯' || 
+                           activity.nftTokenAddress === '0.0.6024491';
+                });
+
+                if (wildTigersActivities.length > 0) {
+                    console.log(`🐯 Found ${wildTigersActivities.length} Wild Tigers activities in market API:`);
+                    wildTigersActivities.slice(0, 5).forEach((activity, index) => {
+                        console.log(`   ${index + 1}. ${activity.nftName} - Type: "${activity.saletype}" | Sub: "${activity.saletypeSub || 'N/A'}" | Date: ${activity.saleDate}`);
+                    });
+                }
+
+                // Filter for mint activities
+                const marketMints = wildTigersActivities.filter(activity => {
+                    return activity.saletype === 'Minted' || 
+                           activity.saletype === 'Claimed' ||
+                           activity.saletype === 'Forever Mint' ||
+                           (activity.saletypeSub && activity.saletypeSub.toLowerCase().includes('mint'));
+                }).slice(0, limit);
+
+                // Format mint data from market activity
+                const formattedMarketMints = marketMints.map(mint => ({
+                    // Core mint data
+                    nft_name: mint.nftName,
+                    collection_name: mint.collectionName,
+                    token_id: mint.nftTokenAddress,
+                    serial_number: mint.nftSerialId,
+                    
+                    // Mint details
+                    mint_type: mint.saletype,
+                    mint_subtype: mint.saletypeSub,
+                    mint_date: mint.saleDate,
+                    timestamp: mint.saleDate,
+                    mint_date_unix: mint.saleDateUnix,
+                    
+                    // Minter details
+                    minter_address: mint.buyerAddress,
+                    minter_account_id: mint.buyerAddress,
+                    
+                    // Cost details
+                    mint_cost: mint.salePrice || 0,
+                    mint_cost_symbol: mint.salePriceSymbol || 'HBAR',
+                    
+                    // NFT metadata
+                    image_url: mint.nftImage,
+                    image_cdn: mint.imageCDN,
+                    metadata_url: mint.nftMetadata,
+                    
+                    // Rarity data
+                    rarity_rank: mint.rarityRank,
+                    rarity_percentage: mint.rarityPct,
+                    
+                    // Collection info
+                    collection_url: mint.collectionFriendlyurl,
+                    
+                    // Market data
+                    marketplace: 'SentX',
+                    transaction_id: mint.saleTransactionId,
+                    
+                    // Additional context
+                    is_forever_mint: true,
+                    listing_url: mint.listingUrl
+                }));
+
+                console.log(`🎯 Fallback found ${formattedMarketMints.length} Forever Mints from market activity`);
+                return formattedMarketMints;
+
+            } catch (fallbackError) {
+                console.error('Error in fallback mint detection:', fallbackError.message);
+                return [];
+            }
         }
     }
 
