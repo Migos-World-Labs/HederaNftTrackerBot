@@ -1152,9 +1152,20 @@ class EmbedUtils {
             costText = `${mint.mint_cost} ${mint.mint_cost_symbol}`;
         }
         
+        // Build description with mint cost and rarity (ensure it's never empty)
+        let description = `Minted on SentX Forever Mint for **${costText}**`;
+        
+        // Add rarity information if available
+        if (mint.rarity_rank) {
+            const rarityText = mint.rarity_percentage 
+                ? `Rarity: #${mint.rarity_rank} (${(mint.rarity_percentage * 100).toFixed(2)}% rare)`
+                : `Rarity: #${mint.rarity_rank}`;
+            description += `\n${rarityText}`;
+        }
+        
         const embed = new EmbedBuilder()
             .setTitle(`🌟 ${nftName} Forever Mint!`)
-            .setDescription(`Minted on SentX Forever Mint for **${costText}**`)
+            .setDescription(description)
             .setColor('#FF6B35') // Orange color for mints
             .setTimestamp(new Date(mint.timestamp));
 
@@ -1163,14 +1174,6 @@ class EmbedUtils {
             name: `${collectionName} Forever Mint`,
             iconURL: null
         });
-
-        // Add rarity information if available (simple inline text)
-        if (mint.rarity_rank) {
-            const rarityText = mint.rarity_percentage 
-                ? `Rarity: #${mint.rarity_rank} (${(mint.rarity_percentage * 100).toFixed(2)}% rare)`
-                : `Rarity: #${mint.rarity_rank}`;
-            embed.setDescription(`Minted on SentX Forever Mint for **${costText}**\n${rarityText}`);
-        }
 
         // Set NFT image if available
         if (mint.image_cdn || mint.image_url) {

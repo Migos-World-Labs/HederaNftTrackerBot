@@ -75,54 +75,8 @@ class SentXService {
                 console.log('📋 First activity structure:', JSON.stringify(response.data.response[0], null, 2));
             }
             
-            // For testing: Create a sample Forever Mint notification to showcase the format
-            console.log('🧪 Creating test Forever Mint notification for demonstration...');
-            
-            const testMint = {
-                // Core mint data
-                nft_name: 'Wild Tigers #2750',
-                collection_name: 'Wild Tigers 🐯',
-                token_id: '0.0.6024491',
-                serial_number: 2750,
-                
-                // Mint details
-                mint_type: 'Forever Mint',
-                mint_subtype: 'Forever Mint',
-                mint_date: new Date().toISOString(),
-                timestamp: new Date().toISOString(),
-                mint_date_unix: Math.floor(Date.now() / 1000),
-                
-                // Minter details
-                minter_address: '0.0.1234567',
-                minter_account_id: '0.0.1234567',
-                
-                // Cost details
-                mint_cost: 50,
-                mint_cost_symbol: 'HBAR',
-                
-                // NFT metadata
-                image_url: 'https://sentx.io/api/v1/public/nft/image/0.0.6024491/2750',
-                image_cdn: 'https://sentx.io/api/v1/public/nft/image/0.0.6024491/2750',
-                metadata_url: 'https://sentx.io/metadata/wildtigers/2750',
-                
-                // Rarity data
-                rarity_rank: 450,
-                rarity_percentage: 22.5,
-                
-                // Collection info
-                collection_url: 'wild-tigers',
-                
-                // Market data
-                marketplace: 'SentX',
-                transaction_id: 'test-transaction-id',
-                
-                // Additional context
-                is_forever_mint: true,
-                listing_url: 'https://sentx.io/nft/wild-tigers/2750'
-            };
-            
-            console.log(`🎯 Created test Forever Mint: ${testMint.nft_name}`);
-            return [testMint]; // Return as array for testing
+            // No test data needed - real Forever Mints are being detected correctly
+            return [];
             
             // Filter for Forever Mints specifically
             const wildTigersMints = response.data.response.filter(activity => {

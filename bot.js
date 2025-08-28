@@ -472,48 +472,7 @@ class NFTSalesBot {
                 await this.processNewForeverMints(foreverMints, hbarRate);
             }
             
-            // TEMPORARY: Force send test Forever Mint notification to specific channel
-            if (this.testMintCounter === undefined) this.testMintCounter = 0;
-            if (this.testMintCounter < 1) { // Only send once
-                this.testMintCounter++;
-                console.log('🧪 Sending test Forever Mint notification to channel 910963234209673231...');
-                
-                const testMint = {
-                    nft_name: 'Wild Tigers #2750',
-                    collection_name: 'Wild Tigers 🐯',
-                    token_id: '0.0.6024491',
-                    serial_number: 2750,
-                    mint_type: 'Forever Mint',
-                    mint_date: new Date().toISOString(),
-                    timestamp: new Date().toISOString(),
-                    minter_address: '0.0.1234567',
-                    mint_cost: 50,
-                    mint_cost_symbol: 'HBAR',
-                    image_url: 'https://sentx.io/api/v1/public/nft/image/0.0.6024491/2750',
-                    rarity_rank: 450,
-                    rarity_percentage: 22.5,
-                    marketplace: 'SentX',
-                    is_forever_mint: true
-                };
-                
-                try {
-                    // Send directly to the specified channel
-                    const { createForeverMintEmbed } = require('./utils/embed.js');
-                    const targetChannel = this.client.channels.cache.get('910963234209673231');
-                    
-                    if (targetChannel) {
-                        const usdValue = testMint.mint_cost * hbarRate;
-                        const embed = createForeverMintEmbed(testMint, usdValue);
-                        await targetChannel.send({ embeds: [embed] });
-                        console.log('✅ Test Forever Mint notification sent to target channel!');
-                    } else {
-                        console.log('❌ Target channel not found, falling back to regular processing...');
-                        await this.processNewForeverMints([testMint], hbarRate);
-                    }
-                } catch (error) {
-                    console.error('❌ Error sending test notification:', error.message);
-                }
-            }
+
 
         } catch (error) {
             console.error('Error checking for new sales and listings:', error);
