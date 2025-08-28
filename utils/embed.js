@@ -1166,7 +1166,7 @@ class EmbedUtils {
         const embed = new EmbedBuilder()
             .setTitle(`🌟 ${nftName} Forever Mint!`)
             .setDescription(description)
-            .setColor('#FF6B35') // Orange color for mints
+            .setColor('#FFD700') // Golden color to match the Forever Mint sticker
             .setTimestamp(new Date(mint.timestamp));
 
         // Add collection info

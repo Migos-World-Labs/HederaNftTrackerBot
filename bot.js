@@ -2374,9 +2374,37 @@ class NFTSalesBot {
 
     async getTestForeverMintEmbed(guildId) {
         try {
-            console.log('🌟 Creating test Forever Mint embed for Wild Tigers #339...');
+            console.log('🌟 Creating enhanced test Forever Mint embed for Wild Tigers #339...');
             
-            // Create mock mint data based on the actual Wild Tigers #339 from the logs
+            // Try to fetch real rarity data for Wild Tigers #339
+            let rarityData = {};
+            try {
+                console.log('🏆 Fetching real rarity data for Wild Tigers #339...');
+                const nftDetails = await sentxService.getNFTDetails('0.0.6024491', 339);
+                if (nftDetails && nftDetails.rarityRank) {
+                    rarityData = {
+                        rarity_rank: nftDetails.rarityRank,
+                        rarity_percentage: nftDetails.rarityPct
+                    };
+                    console.log(`✅ Enhanced test with real rarity data: Rank #${nftDetails.rarityRank}`);
+                } else {
+                    // Use example rarity data for test purposes
+                    rarityData = {
+                        rarity_rank: 245,
+                        rarity_percentage: 0.1254
+                    };
+                    console.log('⚠️ Using example rarity data for test');
+                }
+            } catch (rarityError) {
+                console.log(`⚠️ Could not fetch real rarity data: ${rarityError.message}`);
+                // Use example rarity data for test purposes
+                rarityData = {
+                    rarity_rank: 245,
+                    rarity_percentage: 0.1254
+                };
+            }
+            
+            // Create enhanced mint data with image and rarity
             const testMintData = {
                 nft_name: 'Wild Tigers #339',
                 collection_name: 'Wild Tigers',
@@ -2391,7 +2419,8 @@ class NFTSalesBot {
                 mint_date: '2025-08-28T03:41:02.000Z',
                 transaction_id: '0.0.1993805@1756352451.353904556',
                 marketplace: 'SentX',
-                is_forever_mint: true
+                is_forever_mint: true,
+                ...rarityData
             };
 
             // Get current HBAR rate
@@ -2400,7 +2429,7 @@ class NFTSalesBot {
             // Create Forever Mint embed using the existing function
             const embed = await embedUtils.createForeverMintEmbed(testMintData, hbarRate);
             
-            console.log('✅ Test Forever Mint embed created successfully');
+            console.log('✅ Enhanced test Forever Mint embed created with image and rarity data');
             return embed;
             
         } catch (error) {

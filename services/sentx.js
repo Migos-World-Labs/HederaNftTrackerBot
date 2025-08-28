@@ -86,48 +86,65 @@ class SentXService {
             
             console.log(`🎯 Found ${wildTigersMints.length} Forever Mint activities`);
             
-            // Format mint data consistently
-            const formattedMints = wildTigersMints.map(mint => ({
-                // Core mint data
-                nft_name: mint.nftName,
-                collection_name: mint.collectionName,
-                token_id: mint.nftTokenAddress || '0.0.6024491', // Wild Tigers token ID
-                serial_number: mint.nftSerialId,
+            // Format mint data consistently with enhanced rarity data
+            const formattedMints = await Promise.all(wildTigersMints.map(async (mint) => {
+                let rarityData = {};
                 
-                // Mint details
-                mint_type: mint.saletype,
-                mint_subtype: mint.saletypeSub,
-                mint_date: mint.saleDate,
-                timestamp: mint.saleDate,
-                mint_date_unix: mint.saleDateUnix,
+                // Try to fetch rarity data for this specific NFT
+                try {
+                    const nftDetails = await this.getNFTDetails('0.0.6024491', mint.nftSerialId);
+                    if (nftDetails && nftDetails.rarityRank) {
+                        rarityData = {
+                            rarity_rank: nftDetails.rarityRank,
+                            rarity_percentage: nftDetails.rarityPct
+                        };
+                        console.log(`🏆 Enhanced ${mint.nftName} with rarity data: Rank #${nftDetails.rarityRank}`);
+                    }
+                } catch (error) {
+                    console.log(`⚠️ Could not fetch rarity for ${mint.nftName}: ${error.message}`);
+                }
                 
-                // Minter details
-                minter_address: mint.buyerAddress, // In mints, buyer is the minter
-                minter_account_id: mint.buyerAddress,
-                
-                // Cost details (if any)
-                mint_cost: mint.salePrice || 0,
-                mint_cost_symbol: mint.salePriceSymbol || 'Free',
-                
-                // NFT metadata
-                image_url: mint.nftImage,
-                image_cdn: mint.imageCDN,
-                metadata_url: mint.nftMetadata,
-                
-                // Rarity data
-                rarity_rank: mint.rarityRank,
-                rarity_percentage: mint.rarityPct,
-                
-                // Collection info
-                collection_url: mint.collectionFriendlyurl,
-                
-                // Market data
-                marketplace: 'SentX',
-                transaction_id: mint.saleTransactionId,
-                
-                // Additional context
-                is_forever_mint: true,
-                listing_url: mint.listingUrl
+                return {
+                    // Core mint data
+                    nft_name: mint.nftName,
+                    collection_name: mint.collectionName,
+                    token_id: mint.nftTokenAddress || '0.0.6024491', // Wild Tigers token ID
+                    serial_number: mint.nftSerialId,
+                    
+                    // Mint details
+                    mint_type: mint.saletype,
+                    mint_subtype: mint.saletypeSub,
+                    mint_date: mint.saleDate,
+                    timestamp: mint.saleDate,
+                    mint_date_unix: mint.saleDateUnix,
+                    
+                    // Minter details
+                    minter_address: mint.buyerAddress, // In mints, buyer is the minter
+                    minter_account_id: mint.buyerAddress,
+                    
+                    // Cost details (if any)
+                    mint_cost: mint.salePrice || 0,
+                    mint_cost_symbol: mint.salePriceSymbol || 'Free',
+                    
+                    // NFT metadata
+                    image_url: mint.nftImage,
+                    image_cdn: mint.imageCDN,
+                    metadata_url: mint.nftMetadata,
+                    
+                    // Enhanced rarity data
+                    ...rarityData,
+                    
+                    // Collection info
+                    collection_url: mint.collectionFriendlyurl,
+                    
+                    // Market data
+                    marketplace: 'SentX',
+                    transaction_id: mint.saleTransactionId,
+                    
+                    // Additional context
+                    is_forever_mint: true,
+                    listing_url: mint.listingUrl
+                };
             }));
             
             return formattedMints;
