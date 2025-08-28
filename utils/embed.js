@@ -1153,7 +1153,7 @@ class EmbedUtils {
         }
         
         const embed = new EmbedBuilder()
-            .setTitle(`🌟 ${nftName} Forever Minted!`)
+            .setTitle(`🌟 ${nftName} Forever Mint!`)
             .setDescription(`Minted on SentX Forever Mint for **${costText}**`)
             .setColor('#FF6B35') // Orange color for mints
             .setTimestamp(new Date(mint.timestamp));
