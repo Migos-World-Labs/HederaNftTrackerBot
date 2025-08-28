@@ -12,22 +12,7 @@ const HashinalService = require('../services/hashinal');
 class EmbedUtils {
     constructor() {
         this.hashinalService = new HashinalService();
-    }
 
-    /**
-     * Convert Hedera account ID to HashPack format
-     * @param {string} accountId - Hedera account ID (e.g., "0.0.6251738")
-     * @returns {string} HashPack formatted address
-     */
-    convertToHashPackFormat(accountId) {
-        if (!accountId || typeof accountId !== 'string') {
-            return accountId;
-        }
-        
-        // Remove leading zeros and convert to HashPack format
-        // Example: "0.0.6251738" becomes "0.0.6251738" (keep as is for HashPack)
-        // HashPack uses the same format as Hedera account IDs
-        return accountId;
     }
     /**
      * Create a Discord embed for an NFT sale
@@ -1170,18 +1155,12 @@ class EmbedUtils {
         // Build description with mint cost and rarity (ensure it's never empty)
         let description = `Minted on SentX Forever Mint for **${costText}**`;
         
-        // Add minter information in HashPack format
-        if (mint.minter_account_id) {
-            const hashPackAddress = this.convertToHashPackFormat(mint.minter_account_id);
-            description += `\n👤 Minter: \`${hashPackAddress}\``;
-        }
-        
         // Add rarity information if available
         if (mint.rarity_rank) {
             const rarityText = mint.rarity_percentage 
                 ? `Rarity: #${mint.rarity_rank} (${(mint.rarity_percentage * 100).toFixed(2)}% rare)`
                 : `Rarity: #${mint.rarity_rank}`;
-            description += `\n🏆 ${rarityText}`;
+            description += `\n${rarityText}`;
         }
         
         const embed = new EmbedBuilder()
