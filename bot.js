@@ -472,11 +472,11 @@ class NFTSalesBot {
                 await this.processNewForeverMints(foreverMints, hbarRate);
             }
             
-            // TEMPORARY: Force send test Forever Mint notification to main channels
+            // TEMPORARY: Force send test Forever Mint notification to specific channel
             if (this.testMintCounter === undefined) this.testMintCounter = 0;
             if (this.testMintCounter < 1) { // Only send once
                 this.testMintCounter++;
-                console.log('🧪 Sending test Forever Mint notification to all servers...');
+                console.log('🧪 Sending test Forever Mint notification to channel 910963234209673231...');
                 
                 const testMint = {
                     nft_name: 'Wild Tigers #2750',
@@ -497,8 +497,19 @@ class NFTSalesBot {
                 };
                 
                 try {
-                    await this.processNewForeverMints([testMint], hbarRate);
-                    console.log('✅ Test Forever Mint notification sent successfully!');
+                    // Send directly to the specified channel
+                    const { createForeverMintEmbed } = require('./utils/embed.js');
+                    const targetChannel = this.client.channels.cache.get('910963234209673231');
+                    
+                    if (targetChannel) {
+                        const usdValue = testMint.mint_cost * hbarRate;
+                        const embed = createForeverMintEmbed(testMint, usdValue);
+                        await targetChannel.send({ embeds: [embed] });
+                        console.log('✅ Test Forever Mint notification sent to target channel!');
+                    } else {
+                        console.log('❌ Target channel not found, falling back to regular processing...');
+                        await this.processNewForeverMints([testMint], hbarRate);
+                    }
                 } catch (error) {
                     console.error('❌ Error sending test notification:', error.message);
                 }
