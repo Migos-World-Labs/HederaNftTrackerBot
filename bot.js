@@ -931,31 +931,36 @@ class NFTSalesBot {
 
     async processForeverMint(mint, hbarRate) {
         try {
-            // Migos World Discord guild ID - only send Forever Mint notifications here
-            const migosWorldGuildId = '910963230317355008';
+            // Forever Mint target Discord servers
+            const targetServers = [
+                '910963230317355008', // Migos World Discord
+                '1248509900154343504'  // Wild Tigers Discord
+            ];
             
-            // Get Migos World server configuration
-            const migosServer = await this.storage.getServerConfig(migosWorldGuildId);
-            
-            if (migosServer) {
-                // Determine which channel to use for mint notifications
-                let mintChannelId = null;
+            // Send notifications to both servers
+            for (const guildId of targetServers) {
+                const serverConfig = await this.storage.getServerConfig(guildId);
                 
-                if (migosServer.mintChannelId) {
-                    // Use dedicated mint channel if configured
-                    mintChannelId = migosServer.mintChannelId;
-                } else if (migosServer.channelId) {
-                    // Fall back to main sales channel if no dedicated mint channel
-                    mintChannelId = migosServer.channelId;
+                if (serverConfig) {
+                    // Determine which channel to use for mint notifications
+                    let mintChannelId = null;
+                    
+                    if (serverConfig.mintChannelId) {
+                        // Use dedicated mint channel if configured
+                        mintChannelId = serverConfig.mintChannelId;
+                    } else if (serverConfig.channelId) {
+                        // Fall back to main sales channel if no dedicated mint channel
+                        mintChannelId = serverConfig.channelId;
+                    }
+                    
+                    // Send Forever Mint notification
+                    if (mintChannelId) {
+                        console.log(`🌟 Sending Forever Mint notification to ${serverConfig.guild_name || guildId}: ${mint.nft_name}`);
+                        await this.sendForeverMintNotification(serverConfig.guildId, mintChannelId, mint, hbarRate);
+                    }
+                } else {
+                    console.log(`⚠️ Server ${guildId} not found - Forever Mint notification not sent`);
                 }
-                
-                // Send Forever Mint notification only to Migos World
-                if (mintChannelId) {
-                    console.log(`🌟 Sending Forever Mint notification only to Migos World: ${mint.nft_name}`);
-                    await this.sendForeverMintNotification(migosServer.guildId, mintChannelId, mint, hbarRate);
-                }
-            } else {
-                console.log('⚠️ Migos World server not found - Forever Mint notification not sent');
             }
         } catch (error) {
             console.error('Error processing Forever Mint:', error);
