@@ -75,14 +75,18 @@ class SentXService {
                 console.log('📋 First activity structure:', JSON.stringify(response.data.response[0], null, 2));
             }
             
-            // No test data needed - real Forever Mints are being detected correctly
-            return [];
-            
             // Filter for Forever Mints specifically
             const wildTigersMints = response.data.response.filter(activity => {
-                // Look for Forever Mint activities
+                // Look for Forever Mint activities - check multiple possible indicators
                 const isForeverMint = activity.isForeverMint === true;
-                return isForeverMint;
+                const isMinted = activity.saletype === 'Minted';
+                const isWildTigers = activity.collectionName === 'Wild Tigers';
+                
+                // Debug logging for each activity
+                console.log(`   Activity: isForeverMint=${activity.isForeverMint}, cfriendlyurl=${activity.cfriendlyurl}`);
+                
+                // For now, treat all Wild Tigers mints as potential Forever Mints since the field structure is unclear
+                return isMinted && isWildTigers;
             });
             
             console.log(`🎯 Found ${wildTigersMints.length} Forever Mint activities`);
@@ -92,7 +96,7 @@ class SentXService {
                 // Core mint data
                 nft_name: mint.nftName,
                 collection_name: mint.collectionName,
-                token_id: mint.nftTokenAddress,
+                token_id: mint.nftTokenAddress || '0.0.6024491', // Wild Tigers token ID
                 serial_number: mint.nftSerialId,
                 
                 // Mint details

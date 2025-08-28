@@ -627,9 +627,12 @@ class NFTSalesBot {
                     mintId = `mint_${tokenId}_${serialNumber}_${mintTsMs}`;
                 }
                 
+                // Debug: Log mint data to understand what's missing
+                console.log(`   Debug mint data: token_id=${mint.token_id}, serial_number=${mint.serial_number}, nft_name=${mint.nft_name}`);
+                
                 // Skip processing if essential data is missing
                 if (!mint.token_id || !mint.serial_number) {
-                    console.log(`Skipping mint due to missing data: ${mint.nft_name || 'Unknown'}`);
+                    console.log(`Skipping mint due to missing data: ${mint.nft_name || 'Unknown'} - token_id: ${mint.token_id}, serial_number: ${mint.serial_number}`);
                     continue;
                 }
                 
@@ -1388,6 +1391,10 @@ class NFTSalesBot {
                             {
                                 name: 'Recent HTS Payment Listing',
                                 value: 'recent-hts-listing'
+                            },
+                            {
+                                name: 'Wild Tigers Forever Mint',
+                                value: 'forever-mint'
                             }
                         ]
                     },
@@ -1935,6 +1942,9 @@ class NFTSalesBot {
                 console.log('🪙 Testing most recent HTS payment listing...');
                 console.log(`🔍 Test type confirmed: ${testType}, specific collection: ${specificCollection || 'none'}`);
                 embed = await this.getTestRecentHTSListingEmbed(interaction.guildId, specificCollection);
+            } else if (testType === 'forever-mint') {
+                console.log('🌟 Testing Wild Tigers Forever Mint notification...');
+                embed = await this.getTestForeverMintEmbed(interaction.guildId);
             } else {
                 // Default: recent-sentx-sale
                 console.log('Testing most recent SentX sale...');
@@ -2344,6 +2354,47 @@ class NFTSalesBot {
         } catch (error) {
             console.error('Failed to initialize database:', error);
             throw error;
+        }
+    }
+
+    async getTestForeverMintEmbed(guildId) {
+        try {
+            console.log('🌟 Creating test Forever Mint embed for Wild Tigers #339...');
+            
+            // Create mock mint data based on the actual Wild Tigers #339 from the logs
+            const testMintData = {
+                nft_name: 'Wild Tigers #339',
+                collection_name: 'Wild Tigers',
+                token_id: '0.0.6024491',
+                serial_number: 339,
+                mint_cost: 600,
+                mint_cost_symbol: 'HBAR',
+                minter_address: '0.0.6251738',
+                minter_account_id: '0.0.6251738',
+                image_url: 'ipfs://bafkreib3vnkpr4txrslv7wmq4naqds6fpkjocs5iypvcgefbcsj453odja',
+                timestamp: '2025-08-28T03:41:02.000Z',
+                mint_date: '2025-08-28T03:41:02.000Z',
+                transaction_id: '0.0.1993805@1756352451.353904556',
+                marketplace: 'SentX',
+                is_forever_mint: true
+            };
+
+            // Get current HBAR rate
+            const hbarRate = await currencyService.getHbarToUsdRate();
+            
+            // Create Forever Mint embed using the existing function
+            const embed = await embedUtils.createForeverMintEmbed(testMintData, hbarRate);
+            
+            console.log('✅ Test Forever Mint embed created successfully');
+            return embed;
+            
+        } catch (error) {
+            console.error('Error creating test Forever Mint embed:', error);
+            return this.embedUtils.createErrorEmbed(
+                'Test Failed',
+                'Failed to create test Forever Mint embed',
+                error.message
+            );
         }
     }
 
