@@ -1954,9 +1954,24 @@ class NFTSalesBot {
             // Send the response
             try {
                 if (interaction.deferred && !interaction.replied) {
-                    await interaction.editReply({
-                        embeds: [embed]
-                    });
+                    // For Forever Mint tests, include the golden sticker attachment
+                    if (testType === 'forever-mint') {
+                        const { AttachmentBuilder } = require('discord.js');
+                        const fs = require('fs');
+                        const path = require('path');
+                        
+                        const logoPath = path.join(__dirname, 'attached_assets', 'Forever Mint Sticker_1756349371753.png');
+                        const logoAttachment = new AttachmentBuilder(logoPath, { name: 'forever-mint-sticker.png' });
+                        
+                        await interaction.editReply({
+                            embeds: [embed],
+                            files: [logoAttachment]
+                        });
+                    } else {
+                        await interaction.editReply({
+                            embeds: [embed]
+                        });
+                    }
                 }
             } catch (replyError) {
                 if (replyError.code === 10062) {
