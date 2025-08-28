@@ -4,13 +4,19 @@
 This project is a Discord bot designed to provide real-time NFT marketplace analytics for the Hedera blockchain. Its primary purpose is to monitor NFT sales and listings across multiple marketplaces (SentX and Kabila) and deliver rich, comprehensive notifications to Discord servers. The bot aims to offer users up-to-date sales data, including pricing, buyer/seller information, and NFT metadata, enhancing transparency and accessibility within the Hedera NFT ecosystem.
 
 ## Recent Updates (August 2025)
-**Complete Forever Mint Notification System (August 28, 2025)**: Successfully implemented and tested comprehensive Forever Mint tracking for Wild Tigers NFTs. The system now:
+**Forever Mint Notifications Limited to Migos World (August 28, 2025)**: Updated Forever Mint notification system to only send notifications to Migos World Discord (guild ID: 910963230317355008) as requested. The system now:
+- Targets only Migos World Discord for Forever Mint notifications 
+- Maintains all existing functionality: golden theme, NFT images, rarity data
+- Uses reliable Pinata IPFS gateway (gateway.pinata.cloud) for NFT image display
+- Continues detecting real Forever Mints using SentX launchpad API
+- Prevents duplicate notifications using database tracking
+
+**Complete Forever Mint Notification System (August 28, 2025)**: Successfully implemented and tested comprehensive Forever Mint tracking for Wild Tigers NFTs. The system:
 - Detects real Forever Mints using SentX launchpad API (/v1/public/launchpad/activity)
 - Sends beautiful Discord notifications with golden Forever Mint sticker thumbnails
 - Displays NFT images, rarity information, mint costs, and minter details
 - Successfully tested notification delivery to Discord channels
 - Confirmed detection of actual Forever Mints (Wild Tigers #415 and #339 for 600 HBAR)
-- Prevents duplicate notifications using database tracking
 
 **Enhanced HTS Token Payment Support**: Fixed critical bug in HTS payment detection and added comprehensive HTS listings test functionality. The bot now properly detects and monitors NFT sales and listings paid with HTS tokens like PAWS, SAUCE, and KARATE across all tracked collections.
 

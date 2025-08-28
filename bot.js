@@ -931,26 +931,31 @@ class NFTSalesBot {
 
     async processForeverMint(mint, hbarRate) {
         try {
-            // Get all server configurations
-            const servers = await this.storage.getAllServerConfigs();
+            // Migos World Discord guild ID - only send Forever Mint notifications here
+            const migosWorldGuildId = '910963230317355008';
             
-            // For Forever Mints, we'll post to all servers since it's a special feature
-            for (const server of servers) {
+            // Get Migos World server configuration
+            const migosServer = await this.storage.getServerConfig(migosWorldGuildId);
+            
+            if (migosServer) {
                 // Determine which channel to use for mint notifications
                 let mintChannelId = null;
                 
-                if (server.mintChannelId) {
+                if (migosServer.mintChannelId) {
                     // Use dedicated mint channel if configured
-                    mintChannelId = server.mintChannelId;
-                } else if (server.channelId) {
+                    mintChannelId = migosServer.mintChannelId;
+                } else if (migosServer.channelId) {
                     // Fall back to main sales channel if no dedicated mint channel
-                    mintChannelId = server.channelId;
+                    mintChannelId = migosServer.channelId;
                 }
                 
-                // Send Forever Mint notification to the appropriate channel
+                // Send Forever Mint notification only to Migos World
                 if (mintChannelId) {
-                    await this.sendForeverMintNotification(server.guildId, mintChannelId, mint, hbarRate);
+                    console.log(`🌟 Sending Forever Mint notification only to Migos World: ${mint.nft_name}`);
+                    await this.sendForeverMintNotification(migosServer.guildId, mintChannelId, mint, hbarRate);
                 }
+            } else {
+                console.log('⚠️ Migos World server not found - Forever Mint notification not sent');
             }
         } catch (error) {
             console.error('Error processing Forever Mint:', error);
