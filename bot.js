@@ -471,6 +471,38 @@ class NFTSalesBot {
             if (foreverMints && foreverMints.length > 0) {
                 await this.processNewForeverMints(foreverMints, hbarRate);
             }
+            
+            // TEMPORARY: Force send test Forever Mint notification to main channels
+            if (this.testMintCounter === undefined) this.testMintCounter = 0;
+            if (this.testMintCounter < 1) { // Only send once
+                this.testMintCounter++;
+                console.log('🧪 Sending test Forever Mint notification to all servers...');
+                
+                const testMint = {
+                    nft_name: 'Wild Tigers #2750',
+                    collection_name: 'Wild Tigers 🐯',
+                    token_id: '0.0.6024491',
+                    serial_number: 2750,
+                    mint_type: 'Forever Mint',
+                    mint_date: new Date().toISOString(),
+                    timestamp: new Date().toISOString(),
+                    minter_address: '0.0.1234567',
+                    mint_cost: 50,
+                    mint_cost_symbol: 'HBAR',
+                    image_url: 'https://sentx.io/api/v1/public/nft/image/0.0.6024491/2750',
+                    rarity_rank: 450,
+                    rarity_percentage: 22.5,
+                    marketplace: 'SentX',
+                    is_forever_mint: true
+                };
+                
+                try {
+                    await this.processNewForeverMints([testMint], hbarRate);
+                    console.log('✅ Test Forever Mint notification sent successfully!');
+                } catch (error) {
+                    console.error('❌ Error sending test notification:', error.message);
+                }
+            }
 
         } catch (error) {
             console.error('Error checking for new sales and listings:', error);
