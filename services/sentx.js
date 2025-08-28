@@ -159,19 +159,9 @@ class SentXService {
             const formattedMints = await Promise.all(wildTigersMints.map(async (mint) => {
                 let rarityData = {};
                 
-                // Try to fetch rarity data for this specific NFT
-                try {
-                    const nftDetails = await this.getNFTDetails('0.0.6024491', mint.nftSerialId);
-                    if (nftDetails && nftDetails.rarityRank) {
-                        rarityData = {
-                            rarity_rank: nftDetails.rarityRank,
-                            rarity_percentage: nftDetails.rarityPct
-                        };
-                        console.log(`🏆 Enhanced ${mint.nftName} with rarity data: Rank #${nftDetails.rarityRank}`);
-                    }
-                } catch (error) {
-                    console.log(`⚠️ Could not fetch rarity for ${mint.nftName}: ${error.message}`);
-                }
+                // Temporarily disable rarity fetching to prevent rate limiting
+                // This will be re-enabled once rate limiting is fully resolved
+                console.log(`📋 Skipping rarity data for ${mint.nftName} to prevent rate limiting`);
                 
                 return {
                     // Core mint data

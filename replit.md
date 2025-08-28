@@ -4,6 +4,14 @@
 This project is a Discord bot designed to provide real-time NFT marketplace analytics for the Hedera blockchain. Its primary purpose is to monitor NFT sales and listings across multiple marketplaces (SentX and Kabila) and deliver rich, comprehensive notifications to Discord servers. The bot aims to offer users up-to-date sales data, including pricing, buyer/seller information, and NFT metadata, enhancing transparency and accessibility within the Hedera NFT ecosystem.
 
 ## Recent Updates (August 2025)
+**Critical Rate Limiting Fixes (August 28, 2025)**: Resolved severe SentX API rate limiting that was causing missed Forever Mint notifications. Implemented comprehensive rate limiting solution:
+- Extended monitoring intervals from 5 seconds to 15 seconds to reduce API load
+- Added exponential backoff system: 60s → 120s → 240s → 300s delays when rate limited
+- Built request throttling with minimum 1-second delays between API calls
+- Implemented smart recovery that automatically resets delays when requests succeed
+- Temporarily disabled intensive rarity enrichment to prevent API overload
+- Added rate limit detection and intelligent backoff in monitoring cycles
+
 **Dual Discord Forever Mint Notifications (August 28, 2025)**: Successfully implemented dual Discord server notification system for Forever Mint tracking. The system now:
 - Sends Forever Mint notifications to BOTH Migos World Discord and Wild Tigers Discord
 - Targets Migos World (910963230317355008) and Wild Tigers (1248509900154343504) servers

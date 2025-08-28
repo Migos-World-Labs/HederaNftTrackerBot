@@ -240,9 +240,9 @@ class NFTSalesBot {
         this.maxBackoff = 300000; // Max 5 minutes backoff
         this.rateLimitCount = 0; // Track consecutive rate limit hits
         
-        // Monitor every 5 seconds for new sales with error handling and overlap prevention
-        // But with dynamic backoff for rate limiting
-        this.monitoringTask = cron.schedule('*/5 * * * * *', async () => {
+        // Monitor every 15 seconds for new sales with error handling and overlap prevention
+        // Reduced frequency to prevent rate limiting
+        this.monitoringTask = cron.schedule('*/15 * * * * *', async () => {
             // Skip if previous monitoring cycle is still running
             if (this.monitoringInProgress) {
                 console.log('⏸️ Skipping monitoring cycle - previous cycle still in progress');
@@ -253,7 +253,7 @@ class NFTSalesBot {
             if (this.rateLimitBackoff > 0) {
                 const remainingBackoff = Math.ceil(this.rateLimitBackoff / 1000);
                 console.log(`⏳ Rate limit backoff: ${remainingBackoff}s remaining`);
-                this.rateLimitBackoff = Math.max(0, this.rateLimitBackoff - 5000);
+                this.rateLimitBackoff = Math.max(0, this.rateLimitBackoff - 15000);
                 return;
             }
             
@@ -271,7 +271,7 @@ class NFTSalesBot {
                 // Check if this is a rate limiting error
                 if (error.message && error.message.includes('429')) {
                     this.rateLimitCount++;
-                    this.rateLimitBackoff = Math.min(this.maxBackoff, 30000 * Math.pow(2, this.rateLimitCount - 1));
+                    this.rateLimitBackoff = Math.min(this.maxBackoff, 60000 * Math.pow(2, this.rateLimitCount - 1));
                     console.log(`🚫 Rate limit detected (count: ${this.rateLimitCount}) - backing off for ${this.rateLimitBackoff/1000}s`);
                 } else {
                     console.error('Error in monitoring task:', error.message);
