@@ -11,6 +11,7 @@ This project is a Discord bot designed to provide real-time NFT marketplace anal
 - Implemented smart recovery that automatically resets delays when requests succeed
 - Temporarily disabled intensive rarity enrichment to prevent API overload
 - Added rate limit detection and intelligent backoff in monitoring cycles
+- Confirmed catch-up functionality: bot detects missed mints within 24 hours when restarting
 
 **Dual Discord Forever Mint Notifications (August 28, 2025)**: Successfully implemented dual Discord server notification system for Forever Mint tracking. The system now:
 - Sends Forever Mint notifications to BOTH Migos World Discord and Wild Tigers Discord
