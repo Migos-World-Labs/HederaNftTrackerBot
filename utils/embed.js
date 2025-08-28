@@ -1158,7 +1158,7 @@ class EmbedUtils {
         
         const embed = new EmbedBuilder()
             .setTitle(`🌟 ${nftName} Forever Minted!`)
-            .setDescription(`A new Wild Tiger was just minted on SentX Forever Mint for **${costText}**`)
+            .setDescription(`Minted on SentX Forever Mint for **${costText}**`)
             .setColor('#FF6B35') // Orange color for mints
             .setTimestamp(new Date(mint.timestamp));
 
