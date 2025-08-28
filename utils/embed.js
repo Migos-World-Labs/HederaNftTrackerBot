@@ -1176,16 +1176,26 @@ class EmbedUtils {
         });
 
         // Set NFT image if available
+        console.log(`🖼️ Image debug for ${nftName}:`, {
+            image_cdn: mint.image_cdn,
+            image_url: mint.image_url,
+            has_image_cdn: !!mint.image_cdn,
+            has_image_url: !!mint.image_url
+        });
+        
         if (mint.image_cdn || mint.image_url) {
             const imageUrl = mint.image_cdn || mint.image_url;
             
-            // Convert IPFS to gateway URL if needed
+            // Convert IPFS to gateway URL if needed - using Pinata gateway for better reliability
             let finalImageUrl = imageUrl;
             if (imageUrl.startsWith('ipfs://')) {
-                finalImageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
+                finalImageUrl = imageUrl.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/');
             }
             
+            console.log(`🖼️ Setting image for ${nftName}: ${finalImageUrl}`);
             embed.setImage(finalImageUrl);
+        } else {
+            console.log(`⚠️ No image URL found for ${nftName}`);
         }
 
         // Set Wild Tigers Forever Mint sticker as thumbnail
