@@ -969,8 +969,19 @@ class NFTSalesBot {
             // Create Forever Mint embed
             const embed = await this.embedUtils.createForeverMintEmbed(mint, hbarRate, guildId);
             
-            // Send the embed
-            await channel.send({ embeds: [embed] });
+            // Attach Migos World logo for thumbnail
+            const { AttachmentBuilder } = require('discord.js');
+            const fs = require('fs');
+            const path = require('path');
+            
+            const logoPath = path.join(__dirname, 'attached_assets', 'Migos logo_1752353399648.png');
+            const logoAttachment = new AttachmentBuilder(logoPath, { name: 'migos-logo.png' });
+            
+            // Send the embed with logo attachment
+            await channel.send({ 
+                embeds: [embed],
+                files: [logoAttachment]
+            });
             
             console.log(`✅ Forever Mint notification sent to ${guild.name}/#${channel.name}: ${mint.nft_name}`);
 

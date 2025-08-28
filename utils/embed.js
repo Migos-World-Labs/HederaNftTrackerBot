@@ -1230,6 +1230,9 @@ class EmbedUtils {
             embed.setImage(finalImageUrl);
         }
 
+        // Set Migos World logo as thumbnail
+        embed.setThumbnail('attachment://migos-logo.png');
+
         // Set footer with timestamp and marketplace
         embed.setFooter({
             text: `Forever Minted on SentX • ${new Date(mint.timestamp).toLocaleString()}`,
