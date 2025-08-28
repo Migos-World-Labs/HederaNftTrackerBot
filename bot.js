@@ -932,24 +932,24 @@ class NFTSalesBot {
     async processForeverMint(mint, hbarRate) {
         try {
             // Get all server configurations
-            const servers = await this.storage.getServers();
+            const servers = await this.storage.getAllServerConfigs();
             
             // For Forever Mints, we'll post to all servers since it's a special feature
             for (const server of servers) {
                 // Determine which channel to use for mint notifications
                 let mintChannelId = null;
                 
-                if (server.mint_channel_id) {
+                if (server.mintChannelId) {
                     // Use dedicated mint channel if configured
-                    mintChannelId = server.mint_channel_id;
-                } else if (server.channel_id) {
+                    mintChannelId = server.mintChannelId;
+                } else if (server.channelId) {
                     // Fall back to main sales channel if no dedicated mint channel
-                    mintChannelId = server.channel_id;
+                    mintChannelId = server.channelId;
                 }
                 
                 // Send Forever Mint notification to the appropriate channel
                 if (mintChannelId) {
-                    await this.sendForeverMintNotification(server.server_id, mintChannelId, mint, hbarRate);
+                    await this.sendForeverMintNotification(server.guildId, mintChannelId, mint, hbarRate);
                 }
             }
         } catch (error) {
