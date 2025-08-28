@@ -48,19 +48,21 @@ function createForeverMintEmbedOptimized(mint, hbarRate) {
     if (mint.image_url) {
         const imageUrl = mint.image_url;
         
-        // BEFORE: Old slow gateway
-        const oldGateway = imageUrl.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/');
-        console.log(`   ❌ OLD (Slower): ${oldGateway}`);
+        // BEFORE: Old slow gateways
+        const oldPinata = imageUrl.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/');
+        const oldCloudflare = imageUrl.replace('ipfs://', 'https://cloudflare-ipfs.com/ipfs/');
+        console.log(`   ❌ OLD (Pinata): ${oldPinata}`);
+        console.log(`   ❌ OLD (Cloudflare): ${oldCloudflare}`);
         
-        // AFTER: New optimized Cloudflare gateway
+        // AFTER: New optimized Hashpack CDN with image optimization
         let finalImageUrl = imageUrl;
         if (imageUrl.startsWith('ipfs://')) {
             const ipfsHash = imageUrl.replace('ipfs://', '');
-            finalImageUrl = `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`;
+            finalImageUrl = `https://hashpack.b-cdn.net/ipfs/${ipfsHash}?optimizer=image&width=1500`;
         }
         
-        console.log(`   ✅ NEW (Faster): ${finalImageUrl}`);
-        console.log(`   🚀 Optimization: Using Cloudflare IPFS gateway for faster Discord image loading`);
+        console.log(`   ✅ NEW (Hashpack CDN): ${finalImageUrl}`);
+        console.log(`   🚀 Optimization: Using Hashpack CDN with image optimizer for fastest Discord loading`);
         
         embed.setImage(finalImageUrl);
     }
@@ -108,10 +110,12 @@ console.log(`Thumbnail: ${optimizedEmbed.data.thumbnail.url}`);
 
 console.log('\n✅ IMAGE OPTIMIZATION SUMMARY:');
 console.log('===============================');
-console.log('• Changed from: gateway.pinata.cloud (slower)');
-console.log('• Changed to: cloudflare-ipfs.com (faster)');
+console.log('• Changed from: gateway.pinata.cloud (slowest)');
+console.log('• Previous: cloudflare-ipfs.com (faster)');
+console.log('• NOW USING: hashpack.b-cdn.net with image optimizer (FASTEST)');
+console.log('• Features: Image optimization, 1500px width, CDN acceleration');
 console.log('• Target: Migos World Discord only');
-console.log('• Result: Significantly faster image loading in Discord notifications');
+console.log('• Result: Maximum speed image loading in Discord notifications');
 
-console.log('\n🎯 The optimization is now active in the bot!');
-console.log('   All new Forever Mint notifications will use the faster Cloudflare IPFS gateway.');
+console.log('\n🎯 The Hashpack CDN optimization is now active in the bot!');
+console.log('   All new Forever Mint notifications will use the fastest Hashpack CDN with image optimization.');

@@ -1186,13 +1186,12 @@ class EmbedUtils {
         if (mint.image_cdn || mint.image_url) {
             const imageUrl = mint.image_cdn || mint.image_url;
             
-            // Convert IPFS to gateway URL if needed - using fastest gateways for better reliability
+            // Convert IPFS to gateway URL if needed - using Hashpack CDN for optimal performance
             let finalImageUrl = imageUrl;
             if (imageUrl.startsWith('ipfs://')) {
                 const ipfsHash = imageUrl.replace('ipfs://', '');
-                // Use multiple fast IPFS gateways with fallback
-                // Cloudflare's IPFS gateway is typically fastest
-                finalImageUrl = `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`;
+                // Use Hashpack CDN with image optimization for fastest loading
+                finalImageUrl = `https://hashpack.b-cdn.net/ipfs/${ipfsHash}?optimizer=image&width=1500`;
             }
             
             console.log(`🖼️ Setting optimized image for ${nftName}: ${finalImageUrl}`);
