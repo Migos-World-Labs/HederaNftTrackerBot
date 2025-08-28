@@ -931,9 +931,8 @@ class NFTSalesBot {
 
     async processForeverMint(mint, hbarRate) {
         try {
-            // Forever Mint target Discord servers
+            // Forever Mint target Discord servers (temporarily Wild Tigers only)
             const targetServers = [
-                '910963230317355008', // Migos World Discord
                 '1248509900154343504'  // Wild Tigers Discord
             ];
             
