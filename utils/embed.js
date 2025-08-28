@@ -1146,14 +1146,10 @@ class EmbedUtils {
         const nftName = mint.nft_name || `NFT #${mint.serial_number || 'Unknown'}`;
         const collectionName = mint.collection_name || 'Wild Tigers 🐯';
         
-        // Format mint cost
+        // Format mint cost (HBAR only, no USD conversion)
         let costText = 'Free';
         if (mint.mint_cost && mint.mint_cost > 0) {
-            const usdValue = mint.mint_cost_symbol === 'HBAR' ? mint.mint_cost * hbarRate : null;
             costText = `${mint.mint_cost} ${mint.mint_cost_symbol}`;
-            if (usdValue) {
-                costText += ` ≈ $${usdValue.toFixed(2)} USD`;
-            }
         }
         
         const embed = new EmbedBuilder()
