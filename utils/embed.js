@@ -1164,58 +1164,13 @@ class EmbedUtils {
             iconURL: null
         });
 
-        // NFT Details
-        const nftDetails = [];
-        nftDetails.push(`**Token ID:** ${mint.token_id}`);
-        nftDetails.push(`**Serial:** #${mint.serial_number}`);
-        
+        // Add rarity information if available (simple inline text)
         if (mint.rarity_rank) {
             const rarityText = mint.rarity_percentage 
-                ? `#${mint.rarity_rank} (${(mint.rarity_percentage * 100).toFixed(2)}% rare)`
-                : `#${mint.rarity_rank}`;
-            nftDetails.push(`**Rarity:** ${rarityText}`);
+                ? `Rarity: #${mint.rarity_rank} (${(mint.rarity_percentage * 100).toFixed(2)}% rare)`
+                : `Rarity: #${mint.rarity_rank}`;
+            embed.setDescription(`Minted on SentX Forever Mint for **${costText}**\n${rarityText}`);
         }
-        
-        embed.addFields({
-            name: '🎲 NFT Details',
-            value: nftDetails.join('\n'),
-            inline: true
-        });
-
-        // Minter Details
-        const minterDetails = [];
-        minterDetails.push(`**Account:** ${mint.minter_account_id}`);
-        minterDetails.push(`**Mint Type:** ${mint.mint_type}`);
-        if (mint.mint_subtype) {
-            minterDetails.push(`**Category:** ${mint.mint_subtype}`);
-        }
-        
-        embed.addFields({
-            name: '👤 Minter Details',
-            value: minterDetails.join('\n'),
-            inline: true
-        });
-
-        // Add spacer field for better layout
-        embed.addFields({
-            name: '\u200B',
-            value: '\u200B',
-            inline: false
-        });
-
-        // Transaction Details
-        const transactionDetails = [];
-        transactionDetails.push(`**Marketplace:** SentX Forever Mint`);
-        transactionDetails.push(`**Mint Cost:** ${costText}`);
-        if (mint.transaction_id) {
-            transactionDetails.push(`**Transaction:** ${mint.transaction_id}`);
-        }
-        
-        embed.addFields({
-            name: '💰 Mint Information',
-            value: transactionDetails.join('\n'),
-            inline: false
-        });
 
         // Set NFT image if available
         if (mint.image_cdn || mint.image_url) {
