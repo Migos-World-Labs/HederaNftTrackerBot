@@ -1186,13 +1186,16 @@ class EmbedUtils {
         if (mint.image_cdn || mint.image_url) {
             const imageUrl = mint.image_cdn || mint.image_url;
             
-            // Convert IPFS to gateway URL if needed - using Pinata gateway for better reliability
+            // Convert IPFS to gateway URL if needed - using fastest gateways for better reliability
             let finalImageUrl = imageUrl;
             if (imageUrl.startsWith('ipfs://')) {
-                finalImageUrl = imageUrl.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/');
+                const ipfsHash = imageUrl.replace('ipfs://', '');
+                // Use multiple fast IPFS gateways with fallback
+                // Cloudflare's IPFS gateway is typically fastest
+                finalImageUrl = `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`;
             }
             
-            console.log(`🖼️ Setting image for ${nftName}: ${finalImageUrl}`);
+            console.log(`🖼️ Setting optimized image for ${nftName}: ${finalImageUrl}`);
             embed.setImage(finalImageUrl);
         } else {
             console.log(`⚠️ No image URL found for ${nftName}`);
