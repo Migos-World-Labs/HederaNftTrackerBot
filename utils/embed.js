@@ -861,23 +861,24 @@ class EmbedUtils {
         if (ipfsUrl.startsWith('ipfs://')) {
             const hash = ipfsUrl.replace('ipfs://', '');
             
-            // Check if hash contains path (for traditional NFTs and some collections)
+            // Use Hashpack CDN for better iPhone/mobile compatibility and faster loading
+            // This is optimized for NFT images and works better on mobile devices
             if (hash.includes('/')) {
-                return `https://ipfs.io/ipfs/${hash}`;
+                return `https://hashpack.b-cdn.net/ipfs/${hash}?optimizer=image&width=1500`;
             }
             
             // For CIDv0 and CIDv1 hashes
             if (hash.startsWith('Qm') || hash.startsWith('baf')) {
-                return `https://ipfs.io/ipfs/${hash}`;
+                return `https://hashpack.b-cdn.net/ipfs/${hash}?optimizer=image&width=1500`;
             }
             
             // Fallback for other hash formats
-            return `https://ipfs.io/ipfs/${hash}`;
+            return `https://hashpack.b-cdn.net/ipfs/${hash}?optimizer=image&width=1500`;
         }
         
         // Handle bare IPFS hashes (common in some NFT collections)
         if (ipfsUrl.match(/^(Qm[1-9A-HJ-NP-Za-km-z]{44}|baf[a-z0-9]+)$/)) {
-            return `https://ipfs.io/ipfs/${ipfsUrl}`;
+            return `https://hashpack.b-cdn.net/ipfs/${ipfsUrl}?optimizer=image&width=1500`;
         }
         
         // Handle data URIs (base64 encoded images)
