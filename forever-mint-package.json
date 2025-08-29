@@ -1,0 +1,19 @@
+{
+  "name": "forever-mint-bot",
+  "version": "1.0.0",
+  "description": "Standalone Discord bot for Wild Tigers Forever Mint notifications",
+  "main": "forever-mint-bot.js",
+  "scripts": {
+    "start": "node forever-mint-bot.js",
+    "dev": "node forever-mint-bot.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "discord.js": "^14.14.1",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.3.1"
+  },
+  "keywords": ["discord", "bot", "nft", "hedera", "forever-mint"],
+  "author": "Your Name",
+  "license": "MIT"
+}
