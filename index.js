@@ -44,15 +44,18 @@ process.on('SIGTERM', async () => {
     process.exit(0);
 });
 
-// Handle uncaught exceptions
+// Handle uncaught exceptions without stopping the bot
 process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
-    process.exit(1);
+    console.error('Uncaught Exception:', error.message);
+    console.error('Stack:', error.stack);
+    console.log('🔄 Bot continuing to run...');
+    // Don't exit - let the bot keep running
 });
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    process.exit(1);
+    console.log('🔄 Bot continuing to run...');
+    // Don't exit - let the bot keep running
 });
 
 console.log('Discord NFT Sales Bot starting...');

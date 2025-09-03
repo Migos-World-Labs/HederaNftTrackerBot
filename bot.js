@@ -275,8 +275,9 @@ class NFTSalesBot {
                     console.log(`🚫 Rate limit detected (count: ${this.rateLimitCount}) - backing off for ${this.rateLimitBackoff/1000}s`);
                 } else {
                     console.error('Error in monitoring task:', error.message);
+                    console.error('Full error stack:', error.stack);
                 }
-                // Continue monitoring even if one check fails
+                // Continue monitoring even if one check fails - don't let errors stop the bot
             } finally {
                 this.monitoringInProgress = false;
             }
@@ -1012,24 +1013,36 @@ class NFTSalesBot {
             // Create Forever Mint embed
             const embed = await this.embedUtils.createForeverMintEmbed(mint, hbarRate, guildId);
             
-            // Attach Migos World logo for thumbnail
-            const { AttachmentBuilder } = require('discord.js');
-            const fs = require('fs');
-            const path = require('path');
+            // Attach Migos World logo for thumbnail with better error handling
+            let messageOptions = { embeds: [embed] };
             
-            const logoPath = path.join(__dirname, 'attached_assets', 'Forever Mint Sticker_1756349371753.png');
-            const logoAttachment = new AttachmentBuilder(logoPath, { name: 'forever-mint-sticker.png' });
+            try {
+                const { AttachmentBuilder } = require('discord.js');
+                const fs = require('fs');
+                const path = require('path');
+                
+                const logoPath = path.join(__dirname, 'attached_assets', 'Forever Mint Sticker_1756349371753.png');
+                
+                // Check if file exists before creating attachment
+                if (fs.existsSync(logoPath)) {
+                    const logoAttachment = new AttachmentBuilder(logoPath, { name: 'forever-mint-sticker.png' });
+                    messageOptions.files = [logoAttachment];
+                } else {
+                    console.log('⚠️ Forever Mint sticker not found, sending without attachment');
+                }
+            } catch (attachmentError) {
+                console.error('Error creating attachment, sending embed only:', attachmentError.message);
+            }
             
-            // Send the embed with logo attachment
-            await channel.send({ 
-                embeds: [embed],
-                files: [logoAttachment]
-            });
+            // Send the embed with or without attachment
+            await channel.send(messageOptions);
             
             console.log(`✅ Forever Mint notification sent to ${guild.name}/#${channel.name}: ${mint.nft_name}`);
 
         } catch (error) {
             console.error(`Error sending Forever Mint notification to guild ${guildId}:`, error.message);
+            console.error('Full error details:', error.stack);
+            // Don't rethrow - let the bot continue running
         }
     }
 
