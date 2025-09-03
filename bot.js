@@ -212,7 +212,9 @@ class NFTSalesBot {
             await this.client.login(config.DISCORD_TOKEN);
         } catch (error) {
             console.error('Failed to login to Discord:', error);
-            throw error;
+            console.error('Stack:', error.stack);
+            console.log('🔄 Bot will continue attempting to run...');
+            // Don't throw - let error handling catch this
         }
     }
 
@@ -2419,7 +2421,9 @@ class NFTSalesBot {
             console.log('Database storage ready');
         } catch (error) {
             console.error('Failed to initialize database:', error);
-            throw error;
+            console.error('Stack:', error.stack);
+            console.log('🔄 Bot will continue attempting to run...');
+            // Don't throw - let error handling catch this
         }
     }
 

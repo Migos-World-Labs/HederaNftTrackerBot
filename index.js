@@ -24,7 +24,9 @@ async function initializeBot() {
         await bot.start();
     } catch (error) {
         console.error('Failed to initialize bot:', error);
-        process.exit(1);
+        console.error('Stack:', error.stack);
+        console.log('🔄 Retrying bot initialization in 10 seconds...');
+        setTimeout(initializeBot, 10000);
     }
 }
 
