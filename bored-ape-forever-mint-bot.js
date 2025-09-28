@@ -3,6 +3,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const cron = require('node-cron');
+const SentXService = require('./services/sentx');
 
 class BoredApeForeverMintBot {
     constructor() {
@@ -22,11 +23,9 @@ class BoredApeForeverMintBot {
         // Bored Ape Hedera Club specific configuration
         this.tokenId = '0.0.9656915'; // Bored Ape Hedera Club token ID
         this.collectionName = 'Bored Ape Hedera Club';
+        this.sentxService = new SentXService();
         
         this.processedMints = new Set(); // Track processed mints to prevent duplicates
-        this.rateLimitBackoff = 60000; // Start with 60 seconds
-        this.rateLimitCount = 0;
-        this.maxBackoff = 300000; // 5 minutes max
     }
 
     async initialize() {
@@ -75,42 +74,8 @@ class BoredApeForeverMintBot {
         try {
             console.log('🔍 Checking for new Bored Ape Hedera Club Forever Mints...');
             
-            // Fetch Bored Ape Hedera Club activities from SentX Launchpad API
-            const response = await axios.get('https://api.sentx.io/v1/public/launchpad/activity', {
-                params: {
-                    count: 20,
-                    offset: 0
-                },
-                timeout: 10000
-            });
-
-            if (response.status === 429) {
-                this.handleRateLimit();
-                return;
-            }
-
-            // Reset rate limit if successful
-            if (this.rateLimitCount > 0) {
-                console.log('✅ Rate limit recovered - resetting backoff');
-                this.rateLimitCount = 0;
-                this.rateLimitBackoff = 60000;
-            }
-
-            const activities = response.data;
-            
-            if (!activities || !Array.isArray(activities)) {
-                console.log('⚠️ No activities data received');
-                return;
-            }
-
-            // Filter for Bored Ape Hedera Club Forever Mints
-            const foreverMints = activities.filter(activity => 
-                (activity.nftTokenAddress === this.tokenId || 
-                 activity.collectionName === this.collectionName ||
-                 activity.collectionName?.toLowerCase().includes('bored ape') ||
-                 activity.collectionName?.toLowerCase().includes('ape')) &&
-                activity.saletype === 'Minted'
-            );
+            // Use SentX service to get Bored Ape Forever Mints
+            const foreverMints = await this.sentxService.getRecentBoredApeForeverMints(20);
 
             if (foreverMints.length === 0) {
                 console.log('📊 No new Bored Ape Forever Mints found');
@@ -121,15 +86,15 @@ class BoredApeForeverMintBot {
 
             // Process each mint
             for (const mint of foreverMints) {
-                const mintId = `${mint.nftSerialId}-${mint.saleDate}`;
+                const mintId = `${mint.serial_number}-${mint.mint_date}`;
                 
                 // Skip if already processed
                 if (this.processedMints.has(mintId)) {
                     continue;
                 }
 
-                console.log(`🦍 NEW BORED APE FOREVER MINT: ${mint.nftName} - ${mint.salePrice || 'Free'} ${mint.salePriceSymbol || 'HBAR'}`);
-                console.log(`   Serial: ${mint.nftSerialId}, Minter: ${mint.buyerAddress}`);
+                console.log(`🦍 NEW BORED APE FOREVER MINT: ${mint.nft_name} - ${mint.mint_cost} ${mint.mint_cost_symbol}`);
+                console.log(`   Serial: ${mint.serial_number}, Minter: ${mint.minter_address}`);
 
                 // Send notifications to all configured servers
                 await this.sendMintNotifications(mint);
@@ -139,23 +104,10 @@ class BoredApeForeverMintBot {
             }
 
         } catch (error) {
-            if (error.response && error.response.status === 429) {
-                this.handleRateLimit();
-            } else {
-                console.error('❌ Error checking for Bored Ape mints:', error.message);
-            }
+            console.error('❌ Error checking for Bored Ape mints:', error.message);
         }
     }
 
-    handleRateLimit() {
-        this.rateLimitCount++;
-        console.log(`🚫 Rate limit hit (count: ${this.rateLimitCount}) - backing off for ${this.rateLimitBackoff/1000}s`);
-        
-        // Exponential backoff: 60s → 120s → 240s → 300s (max)
-        if (this.rateLimitBackoff < this.maxBackoff) {
-            this.rateLimitBackoff = Math.min(this.rateLimitBackoff * 2, this.maxBackoff);
-        }
-    }
 
     async sendMintNotifications(mint) {
         for (const server of this.servers) {
@@ -176,7 +128,7 @@ class BoredApeForeverMintBot {
                 const embed = await this.createMintEmbed(mint);
                 
                 const messageOptions = { 
-                    content: `🦍 **BORED APE FOREVER MINT ALERT!** ${mint.nftName}`,
+                    content: `🦍 **BORED APE FOREVER MINT ALERT!** ${mint.nft_name}`,
                     embeds: [embed] 
                 };
 
@@ -191,22 +143,22 @@ class BoredApeForeverMintBot {
 
     async createMintEmbed(mint) {
         // Convert IPFS to iPhone-compatible Hashpack CDN
-        const optimizedImageUrl = this.convertIpfsToHttp(mint.nftImage);
+        const optimizedImageUrl = this.convertIpfsToHttp(mint.image_url);
         
         const embed = new EmbedBuilder()
-            .setTitle(`🦍 BORED APE FOREVER MINT! ${mint.nftName} 🦍`)
+            .setTitle(`🦍 BORED APE FOREVER MINT! ${mint.nft_name} 🦍`)
             .setDescription(`🎉 **Forever Mint Successful!** A new Bored Ape Hedera Club NFT has been minted!`)
             .addFields([
-                { name: '💰 Mint Cost', value: `${mint.salePrice || 'Free'} ${mint.salePriceSymbol || 'HBAR'}`, inline: true },
-                { name: '🔢 Serial Number', value: `#${mint.nftSerialId}`, inline: true },
-                { name: '👤 Minted By', value: mint.buyerAddress, inline: true },
+                { name: '💰 Mint Cost', value: `${mint.mint_cost || 'Free'} ${mint.mint_cost_symbol || 'HBAR'}`, inline: true },
+                { name: '🔢 Serial Number', value: `#${mint.serial_number}`, inline: true },
+                { name: '👤 Minted By', value: mint.minter_address, inline: true },
                 { name: '🎲 Forever Mint', value: '**Bored Ape Hedera Club** - New member!', inline: true },
-                { name: '📅 Mint Date', value: new Date(mint.saleDate).toLocaleDateString(), inline: true },
-                { name: '🌐 Marketplace', value: 'SentX Launchpad', inline: true },
-                { name: '🔗 Token ID', value: this.tokenId, inline: true }
+                { name: '📅 Mint Date', value: new Date(mint.mint_date).toLocaleDateString(), inline: true },
+                { name: '🌐 Marketplace', value: mint.marketplace || 'SentX', inline: true },
+                { name: '🔗 Token ID', value: mint.token_id || this.tokenId, inline: true }
             ])
             .setColor('#8B4513') // Brown color for apes
-            .setTimestamp(new Date(mint.saleDate));
+            .setTimestamp(new Date(mint.mint_date));
 
         // Add iPhone-compatible image
         if (optimizedImageUrl) {

@@ -101,6 +101,203 @@ class SentXService {
     }
 
     /**
+     * Get recent Forever Mints from SentX marketplace for Bored Ape Hedera Club collection
+     * @param {number} limit - Number of mints to fetch
+     * @returns {Array} Array of mint objects
+     */
+    async getRecentBoredApeForeverMints(limit = 20) {
+        try {
+            const apiKey = process.env.SENTX_API_KEY;
+            
+            const params = {
+                apikey: apiKey,
+                token: '0.0.9656915', // Bored Ape Hedera Club token address
+                limit: limit,
+                page: 1
+            };
+            
+            const response = await this.makeRequest('/v1/public/launchpad/activity', params);
+
+            console.log(`🚀 Bored Ape Launchpad API Response Status: ${response.status}`);
+            console.log(`🚀 Bored Ape Launchpad API Response Type: ${typeof response.data}`);
+            
+            // Check if response is HTML (error page)
+            if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+                console.log('❌ Bored Ape Launchpad API returned HTML page - endpoint may not be available');
+                return [];
+            }
+
+            if (!response.data || !response.data.success) {
+                console.log('❌ Bored Ape Launchpad API returned unsuccessful response:', response.data);
+                return [];
+            }
+
+            if (!response.data.response || response.data.response.length === 0) {
+                console.log('⚠️ Bored Ape Launchpad API returned no activities');
+                return [];
+            }
+            
+            console.log(`🦍 Found ${response.data.response.length} Bored Ape Hedera Club launchpad activities`);
+            
+            // Debug: Log actual structure of first activity
+            if (response.data.response.length > 0) {
+                console.log('📋 First Bored Ape activity structure:', JSON.stringify(response.data.response[0], null, 2));
+            }
+            
+            // Filter for Forever Mints - ALL Bored Ape Hedera Club mints are Forever Mints
+            const boredApeMints = response.data.response.filter(activity => {
+                const isMinted = activity.saletype === 'Minted';
+                const isBoredApe = activity.collectionName?.toLowerCase().includes('bored ape') ||
+                                   activity.collectionName?.toLowerCase().includes('ape') ||
+                                   activity.nftTokenAddress === '0.0.9656915';
+                
+                return isMinted && isBoredApe;
+            });
+            
+            console.log(`🎯 Found ${boredApeMints.length} Bored Ape Forever Mint activities`);
+            
+            // Format mint data without rarity to keep notifications simple and fast
+            const formattedMints = boredApeMints.map((mint) => {
+                return {
+                    // Core mint data
+                    nft_name: mint.nftName,
+                    collection_name: mint.collectionName,
+                    token_id: mint.nftTokenAddress || '0.0.9656915', // Bored Ape Hedera Club token ID
+                    serial_number: mint.nftSerialId,
+                    
+                    // Mint details
+                    mint_type: mint.saletype,
+                    mint_subtype: mint.saletypeSub,
+                    mint_date: mint.saleDate,
+                    timestamp: mint.saleDate,
+                    mint_date_unix: mint.saleDateUnix,
+                    
+                    // Minter details
+                    minter_address: mint.buyerAddress, // In mints, buyer is the minter
+                    minter_account_id: mint.buyerAddress,
+                    
+                    // Cost details (if any)
+                    mint_cost: mint.salePrice || 0,
+                    mint_cost_symbol: mint.salePriceSymbol || 'Free',
+                    
+                    // NFT metadata
+                    image_url: mint.nftImage,
+                    image_cdn: mint.imageCDN,
+                    metadata_url: mint.nftMetadata,
+                    
+                    // Collection info
+                    collection_url: mint.collectionFriendlyurl,
+                    
+                    // Market data
+                    marketplace: 'SentX',
+                    transaction_id: mint.saleTransactionId,
+                    
+                    // Additional context
+                    is_forever_mint: true,
+                    listing_url: mint.listingUrl
+                };
+            });
+            
+            return formattedMints;
+
+        } catch (error) {
+            console.error('Error fetching Bored Ape Forever Mints from SentX launchpad API:', error.message);
+            console.log('🔄 Falling back to market activity API for Bored Ape mint detection...');
+            
+            // Fallback to market activity API with improved mint detection
+            try {
+                const fallbackParams = {
+                    apikey: process.env.SENTX_API_KEY,
+                    activityFilter: 'All',
+                    amount: limit * 3,
+                    page: 1
+                };
+                
+                const fallbackResponse = await this.axiosInstance.get('/v1/public/market/activity', {
+                    params: fallbackParams
+                });
+
+                if (!fallbackResponse.data || !fallbackResponse.data.success || !fallbackResponse.data.marketActivity) {
+                    return [];
+                }
+
+                // Look for Bored Ape Hedera Club mints in market activity
+                const boredApeActivities = fallbackResponse.data.marketActivity.filter(activity => {
+                    return activity.collectionName?.toLowerCase().includes('bored ape') || 
+                           activity.collectionName?.toLowerCase().includes('ape') ||
+                           activity.nftTokenAddress === '0.0.9656915';
+                });
+
+                if (boredApeActivities.length > 0) {
+                    console.log(`🦍 Found ${boredApeActivities.length} Bored Ape activities in market API:`);
+                    boredApeActivities.slice(0, 5).forEach((activity, index) => {
+                        console.log(`   ${index + 1}. ${activity.nftName} - Type: "${activity.saletype}" | Sub: "${activity.saletypeSub || 'N/A'}" | Date: ${activity.saleDate}`);
+                    });
+                }
+
+                // Filter for mint activities
+                const marketMints = boredApeActivities.filter(activity => {
+                    return activity.saletype === 'Minted' || 
+                           activity.saletype === 'Claimed' ||
+                           activity.saletype === 'Forever Mint' ||
+                           (activity.saletypeSub && activity.saletypeSub.toLowerCase().includes('mint'));
+                }).slice(0, limit);
+
+                // Format mint data from market activity
+                const formattedMarketMints = marketMints.map(mint => ({
+                    // Core mint data
+                    nft_name: mint.nftName,
+                    collection_name: mint.collectionName,
+                    token_id: mint.nftTokenAddress,
+                    serial_number: mint.nftSerialId,
+                    
+                    // Mint details
+                    mint_type: mint.saletype,
+                    mint_subtype: mint.saletypeSub,
+                    mint_date: mint.saleDate,
+                    timestamp: mint.saleDate,
+                    mint_date_unix: mint.saleDateUnix,
+                    
+                    // Minter details
+                    minter_address: mint.buyerAddress,
+                    minter_account_id: mint.buyerAddress,
+                    
+                    // Cost details
+                    mint_cost: mint.salePrice || 0,
+                    mint_cost_symbol: mint.salePriceSymbol || 'HBAR',
+                    
+                    // NFT metadata
+                    image_url: mint.nftImage,
+                    image_cdn: mint.imageCDN,
+                    metadata_url: mint.nftMetadata,
+                    
+                    // Rarity data
+                    rarity_rank: mint.rarityRank,
+                    rarity_percentage: mint.rarityPct,
+                    
+                    // Collection info
+                    collection_url: mint.collectionFriendlyurl,
+                    
+                    // Market data
+                    marketplace: 'SentX',
+                    transaction_id: mint.saleTransactionId,
+                    
+                    // Additional context
+                    is_forever_mint: true,
+                    listing_url: mint.listingUrl
+                }));
+
+                console.log(`🎯 Fallback found ${formattedMarketMints.length} Bored Ape Forever Mints from market activity`);
+                return formattedMarketMints;
+
+            } catch (fallbackError) {
+                console.error('Error in Bored Ape fallback mint detection:', fallbackError.message);
+                return [];
+            }
+        }
+    }
+
+    /**
      * Get recent Forever Mints from SentX marketplace for Wild Tigers collection
      * @param {number} limit - Number of mints to fetch
      * @returns {Array} Array of mint objects
