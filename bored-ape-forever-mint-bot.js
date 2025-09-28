@@ -23,7 +23,7 @@ class BoredApeForeverMintBot {
         // Bored Ape Hedera Club specific configuration
         this.tokenId = '0.0.9656915'; // Bored Ape Hedera Club token ID
         this.collectionName = 'Bored Ape Hedera Club';
-        this.sentxService = new SentXService();
+        this.sentxService = SentXService;
         
         this.processedMints = new Set(); // Track processed mints to prevent duplicates
     }
