@@ -14,7 +14,7 @@ class BoredApeForeverMintBot {
         // Configuration for Bored Ape Hedera Club
         this.servers = [
             {
-                guildId: '', // Will be auto-detected when bot joins server
+                guildId: '1403386825669873744', // Bored Ape Hedera Club server
                 channelId: '1403391275570434218', // Bored Ape Hedera Club channel
                 name: 'Bored Ape Hedera Club'
             }

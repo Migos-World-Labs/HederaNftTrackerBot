@@ -29,6 +29,14 @@ This project is a Discord bot designed to provide real-time NFT marketplace anal
 - Successfully tested notification delivery to Discord channels
 - Confirmed detection of actual Forever Mints (Wild Tigers #415 and #339 for 600 HBAR)
 
+**Bored Ape Hedera Club Forever Mint Integration (September 28, 2025)**: Successfully implemented dedicated monitoring system for Bored Ape Hedera Club (token ID 0.0.9656915). The system:
+- Monitors token 0.0.9656915 for new Hedera Ape mint activities
+- Posts notifications to Discord server 1403386825669873744, channel 1403391275570434218
+- Uses SentX launchpad API with specialized collection filtering for Bored Ape activities
+- Displays mint details including cost (280-400 HBAR), serial numbers, minter addresses, and NFT images
+- Successfully detecting and posting real-time notifications for "Hedera Ape" NFT mints
+- Features ape-themed Discord embeds with brown styling and appropriate emojis
+
 **Enhanced HTS Token Payment Support**: Fixed critical bug in HTS payment detection and added comprehensive HTS listings test functionality. The bot now properly detects and monitors NFT sales and listings paid with HTS tokens like PAWS, SAUCE, and KARATE across all tracked collections.
 
 **Command Security Enhancement**: Hidden `/announce` command from regular users, making it development-only via `ENABLE_DEV_COMMANDS` environment variable. Users now see only 8 essential commands while development team retains full broadcasting capabilities.
