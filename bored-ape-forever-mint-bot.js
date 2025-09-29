@@ -140,10 +140,22 @@ class BoredApeForeverMintBot {
                 // Create embed for Bored Ape Hedera Club
                 const embed = await this.createMintEmbed(mint);
                 
+                // Load Bored Ape Forever Mint pack thumbnail
+                const thumbnailPath = path.join(__dirname, 'attached_assets', 'BAHC_Forever_Mint_Pack_1759104228478.webp');
+                let thumbnailAttachment = null;
+                
+                if (fs.existsSync(thumbnailPath)) {
+                    thumbnailAttachment = new AttachmentBuilder(thumbnailPath, { name: 'bahc-forever-mint-pack.webp' });
+                }
+                
                 const messageOptions = { 
                     content: `🦍 **BORED APE FOREVER MINT ALERT!** ${mint.nft_name}`,
                     embeds: [embed] 
                 };
+                
+                if (thumbnailAttachment) {
+                    messageOptions.files = [thumbnailAttachment];
+                }
 
                 await channel.send(messageOptions);
                 console.log(`✅ Bored Ape Forever Mint notification sent to ${server.name}`);
@@ -170,6 +182,9 @@ class BoredApeForeverMintBot {
         if (optimizedImageUrl) {
             embed.setImage(optimizedImageUrl);
         }
+
+        // Add Bored Ape pack as thumbnail
+        embed.setThumbnail('attachment://bahc-forever-mint-pack.webp');
 
         return embed;
     }
