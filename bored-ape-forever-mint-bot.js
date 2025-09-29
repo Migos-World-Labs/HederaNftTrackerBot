@@ -24,6 +24,7 @@ class BoredApeForeverMintBot {
         
         this.processedMints = new Set(); // Track processed mints to prevent duplicates
         this.monitoringTask = null; // Monitoring task reference
+        this.isFirstRun = true; // Track if this is the first check after startup
     }
 
     async initialize() {
@@ -79,10 +80,17 @@ class BoredApeForeverMintBot {
      */
     async checkForNewMints() {
         try {
+            // On first run, only fetch 1 mint to establish baseline and avoid rate limits
+            const fetchLimit = this.isFirstRun ? 1 : 5;
+            
             // Fetch recent Bored Ape mints from SentX
-            const recentMints = await sentxService.getBoredApeForeverMints(this.tokenId, 20);
+            const recentMints = await sentxService.getRecentBoredApeForeverMints(fetchLimit);
             
             if (!recentMints || recentMints.length === 0) {
+                if (this.isFirstRun) {
+                    console.log('📍 Bored Ape baseline established - no recent mints found');
+                    this.isFirstRun = false;
+                }
                 return;
             }
             
@@ -95,6 +103,13 @@ class BoredApeForeverMintBot {
                     continue;
                 }
                 
+                // On first run, just mark as processed without notifications to establish baseline
+                if (this.isFirstRun) {
+                    this.processedMints.add(mintId);
+                    console.log(`📍 Baseline: Found existing Bored Ape mint ${mint.nft_name} #${mint.serial_number} (not notifying)`);
+                    continue;
+                }
+                
                 console.log(`🦍 NEW BORED APE FOREVER MINT: ${mint.nft_name} - ${mint.mint_cost} ${mint.mint_cost_symbol}`);
                 console.log(`   Serial: ${mint.serial_number}, Minter: ${mint.minter_address}`);
                 
@@ -103,6 +118,12 @@ class BoredApeForeverMintBot {
                 
                 // Mark as processed
                 this.processedMints.add(mintId);
+            }
+            
+            // Mark first run as complete
+            if (this.isFirstRun) {
+                this.isFirstRun = false;
+                console.log('✅ Bored Ape baseline established - monitoring for new mints only');
             }
             
         } catch (error) {

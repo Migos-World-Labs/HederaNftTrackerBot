@@ -25,6 +25,7 @@ class ForeverMintBot {
         
         this.processedMints = new Set(); // Track processed mints to prevent duplicates
         this.monitoringTask = null; // Monitoring task reference
+        this.isFirstRun = true; // Track if this is the first check after startup
     }
 
     async initialize() {
@@ -61,10 +62,17 @@ class ForeverMintBot {
      */
     async checkForNewMints() {
         try {
+            // On first run, only fetch 1 mint to establish baseline and avoid rate limits
+            const fetchLimit = this.isFirstRun ? 1 : 5;
+            
             // Fetch recent Wild Tigers mints from SentX
-            const recentMints = await sentxService.getRecentForeverMints(20);
+            const recentMints = await sentxService.getRecentForeverMints(fetchLimit);
             
             if (!recentMints || recentMints.length === 0) {
+                if (this.isFirstRun) {
+                    console.log('📍 Wild Tigers baseline established - no recent mints found');
+                    this.isFirstRun = false;
+                }
                 return;
             }
             
@@ -77,6 +85,13 @@ class ForeverMintBot {
                     continue;
                 }
                 
+                // On first run, just mark as processed without notifications to establish baseline
+                if (this.isFirstRun) {
+                    this.processedMints.add(mintId);
+                    console.log(`📍 Baseline: Found existing Wild Tigers mint ${mint.nftName} #${mint.nftSerialId} (not notifying)`);
+                    continue;
+                }
+                
                 console.log(`🌟 NEW WILD TIGERS FOREVER MINT: ${mint.nftName} - ${mint.salePrice} ${mint.salePriceSymbol}`);
                 console.log(`   Serial: ${mint.nftSerialId}, Minter: ${mint.buyerAddress}`);
                 
@@ -85,6 +100,12 @@ class ForeverMintBot {
                 
                 // Mark as processed
                 this.processedMints.add(mintId);
+            }
+            
+            // Mark first run as complete
+            if (this.isFirstRun) {
+                this.isFirstRun = false;
+                console.log('✅ Wild Tigers baseline established - monitoring for new mints only');
             }
             
         } catch (error) {
