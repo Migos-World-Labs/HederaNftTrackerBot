@@ -20,6 +20,14 @@ args = "Dev Bot"
 task = "workflow.run"
 args = "Bored Ape Forever Mint Bot"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Wild Tigers Forever Mint Bot"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Main Discord Bot"
+
 [[workflows.workflow]]
 name = "Dev Bot"
 author = "agent"
@@ -35,6 +43,28 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node bored-ape-forever-mint-bot.js"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "Wild Tigers Forever Mint Bot"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node forever-mint-bot.js"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "Main Discord Bot"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node index.js"
 
 [workflows.workflow.metadata]
 outputType = "console"

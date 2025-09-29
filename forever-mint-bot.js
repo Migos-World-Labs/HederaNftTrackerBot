@@ -60,6 +60,7 @@ class ForeverMintBot {
             // Fetch Wild Tigers Forever Mints from SentX Launchpad API
             const response = await axios.get('https://api.sentx.io/v1/public/launchpad/activity', {
                 params: {
+                    apikey: process.env.SENTX_API_KEY,
                     count: 20,
                     offset: 0
                 },
