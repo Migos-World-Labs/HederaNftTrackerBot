@@ -146,19 +146,12 @@ class BoredApeForeverMintBot {
         const optimizedImageUrl = this.convertIpfsToHttp(mint.image_url);
         
         const embed = new EmbedBuilder()
-            .setTitle(`🦍 BORED APE FOREVER MINT! ${mint.nft_name} 🦍`)
-            .setDescription(`🎉 **Forever Mint Successful!** A new Bored Ape Hedera Club NFT has been minted!`)
+            .setTitle(`🦍 BORED APE FOREVER MINT! 🦍`)
             .addFields([
-                { name: '💰 Mint Cost', value: `${mint.mint_cost || 'Free'} ${mint.mint_cost_symbol || 'HBAR'}`, inline: true },
                 { name: '🔢 Serial Number', value: `#${mint.serial_number}`, inline: true },
-                { name: '👤 Minted By', value: mint.minter_address, inline: true },
-                { name: '🎲 Forever Mint', value: '**Bored Ape Hedera Club** - New member!', inline: true },
-                { name: '📅 Mint Date', value: new Date(mint.mint_date).toLocaleDateString(), inline: true },
-                { name: '🌐 Marketplace', value: mint.marketplace || 'SentX', inline: true },
-                { name: '🔗 Token ID', value: mint.token_id || this.tokenId, inline: true }
+                { name: '💰 Price', value: `${mint.mint_cost || 'Free'} ${mint.mint_cost_symbol || 'HBAR'}`, inline: true }
             ])
-            .setColor('#8B4513') // Brown color for apes
-            .setTimestamp(new Date(mint.mint_date));
+            .setColor('#8B4513'); // Brown color for apes
 
         // Add iPhone-compatible image
         if (optimizedImageUrl) {
