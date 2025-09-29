@@ -78,7 +78,7 @@ class ForeverMintBot {
             
             // Process each mint
             for (const mint of recentMints) {
-                const mintId = `${mint.nftSerialId}-${mint.saleDate}`;
+                const mintId = `${mint.serial_number}-${mint.mint_date}`;
                 
                 // Skip if already processed
                 if (this.processedMints.has(mintId)) {
@@ -88,12 +88,12 @@ class ForeverMintBot {
                 // On first run, just mark as processed without notifications to establish baseline
                 if (this.isFirstRun) {
                     this.processedMints.add(mintId);
-                    console.log(`📍 Baseline: Found existing Wild Tigers mint ${mint.nftName} #${mint.nftSerialId} (not notifying)`);
+                    console.log(`📍 Baseline: Found existing Wild Tigers mint ${mint.nft_name} #${mint.serial_number} (not notifying)`);
                     continue;
                 }
                 
-                console.log(`🌟 NEW WILD TIGERS FOREVER MINT: ${mint.nftName} - ${mint.salePrice} ${mint.salePriceSymbol}`);
-                console.log(`   Serial: ${mint.nftSerialId}, Minter: ${mint.buyerAddress}`);
+                console.log(`🌟 NEW WILD TIGERS FOREVER MINT: ${mint.nft_name} - ${mint.mint_cost} ${mint.mint_cost_symbol}`);
+                console.log(`   Serial: ${mint.serial_number}, Minter: ${mint.minter_address}`);
                 
                 // Send notifications
                 await this.sendMintNotifications(mint);
@@ -140,7 +140,7 @@ class ForeverMintBot {
                 }
 
                 const messageOptions = { 
-                    content: `🎉 **FOREVER MINT ALERT!** ${mint.nftName}`,
+                    content: `🎉 **FOREVER MINT ALERT!** ${mint.nft_name}`,
                     embeds: [embed] 
                 };
                 
@@ -159,21 +159,21 @@ class ForeverMintBot {
 
     async createMintEmbed(mint) {
         // Convert IPFS to iPhone-compatible Hashpack CDN
-        const optimizedImageUrl = this.convertIpfsToHttp(mint.nftImage);
+        const optimizedImageUrl = this.convertIpfsToHttp(mint.image_url);
         
         const embed = new EmbedBuilder()
-            .setTitle(`✨ FOREVER MINT! ${mint.nftName} ✨`)
+            .setTitle(`✨ FOREVER MINT! ${mint.nft_name} ✨`)
             .setDescription(`🎉 **Forever Mint Successful!** A new Wild Tigers has been minted for exactly 500 HBAR!`)
             .addFields([
-                { name: '💰 Mint Cost', value: `${mint.salePrice} HBAR`, inline: true },
-                { name: '🔢 Serial Number', value: `#${mint.nftSerialId}`, inline: true },
-                { name: '👤 Minted By', value: mint.buyerAddress, inline: true },
+                { name: '💰 Mint Cost', value: `${mint.mint_cost} HBAR`, inline: true },
+                { name: '🔢 Serial Number', value: `#${mint.serial_number}`, inline: true },
+                { name: '👤 Minted By', value: mint.minter_address, inline: true },
                 { name: '🎲 Forever Mint', value: '**500 HBAR** - Lucky mint!', inline: true },
-                { name: '📅 Mint Date', value: new Date(mint.saleDate).toLocaleDateString(), inline: true },
+                { name: '📅 Mint Date', value: new Date(mint.mint_date).toLocaleDateString(), inline: true },
                 { name: '🌐 Marketplace', value: 'SentX Launchpad', inline: true }
             ])
             .setColor('#FFD700')
-            .setTimestamp(new Date(mint.saleDate));
+            .setTimestamp(new Date(mint.mint_date));
 
         // Add iPhone-compatible image
         if (optimizedImageUrl) {
