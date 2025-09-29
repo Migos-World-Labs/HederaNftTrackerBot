@@ -58,8 +58,8 @@ args = "node index.js"
 outputType = "console"
 
 [deployment]
-run = ["sh", "-c", "npm install discord.js axios node-cron dotenv && node index.js"]
-deploymentTarget = "gce"
+run = ["sh", "-c", "node index.js & node bored-ape-forever-mint-bot.js & node forever-mint-bot.js & wait"]
+deploymentTarget = "vm"
 ignorePorts = true
 
 [[ports]]
