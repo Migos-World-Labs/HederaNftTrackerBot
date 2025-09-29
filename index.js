@@ -7,6 +7,7 @@ const NFTSalesBot = require('./bot');
 const config = require('./config');
 const DatabaseStorage = require('./database-storage');
 const sentxService = require('./services/sentx');
+const sentxScheduler = require('./services/sentx-scheduler');
 const kabilaService = require('./services/kabila');
 const currencyService = require('./services/currency');
 const embedUtils = require('./utils/embed');
@@ -19,6 +20,10 @@ async function initializeBot() {
     try {
         await storage.init();
         console.log('Database storage initialized');
+        
+        // Start the centralized SentX scheduler monitoring
+        console.log('🚀 Starting centralized SentX scheduler...');
+        sentxScheduler.startMonitoring();
         
         // Start the bot
         await bot.start();

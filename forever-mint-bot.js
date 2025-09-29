@@ -1,8 +1,7 @@
 const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const cron = require('node-cron');
+const sentxScheduler = require('./services/sentx-scheduler');
 
 class ForeverMintBot {
     constructor() {
@@ -25,9 +24,7 @@ class ForeverMintBot {
         ];
         
         this.processedMints = new Set(); // Track processed mints to prevent duplicates
-        this.rateLimitBackoff = 60000; // Start with 60 seconds
-        this.rateLimitCount = 0;
-        this.maxBackoff = 300000; // 5 minutes max
+        this.sentxScheduler = sentxScheduler;
     }
 
     async initialize() {
@@ -35,8 +32,8 @@ class ForeverMintBot {
             await this.client.login(process.env.DISCORD_TOKEN);
             console.log('✅ Forever Mint Bot logged in successfully');
             
-            // Start monitoring every 15 seconds (rate limit friendly)
-            this.startMonitoring();
+            // Subscribe to Wild Tigers mint events from centralized scheduler
+            this.subscribeToMintEvents();
             
         } catch (error) {
             console.error('❌ Failed to initialize bot:', error.message);
@@ -44,98 +41,53 @@ class ForeverMintBot {
         }
     }
 
-    startMonitoring() {
-        console.log('🚀 Starting Forever Mint monitoring...');
+    /**
+     * Subscribe to Wild Tigers mint events from the centralized scheduler
+     */
+    subscribeToMintEvents() {
+        console.log('🚀 Subscribing to Wild Tigers Forever Mint events...');
         
-        // Check every 15 seconds (rate limit friendly)
-        cron.schedule('*/15 * * * * *', async () => {
-            await this.checkForNewMints();
+        this.sentxScheduler.on('wildTigersMint', async (mint) => {
+            await this.handleNewMint(mint);
         });
     }
 
-    async checkForNewMints() {
+    async handleNewMint(mint) {
         try {
-            console.log('🔍 Checking for new Forever Mints...');
+            const mintId = `${mint.serial_number}-${mint.mint_date}`;
             
-            // Fetch Wild Tigers Forever Mints from SentX Launchpad API
-            const response = await axios.get('https://api.sentx.io/v1/public/launchpad/activity', {
-                params: {
-                    apikey: process.env.SENTX_API_KEY,
-                    count: 20,
-                    offset: 0
-                },
-                timeout: 10000
-            });
-
-            if (response.status === 429) {
-                this.handleRateLimit();
+            // Skip if already processed
+            if (this.processedMints.has(mintId)) {
                 return;
             }
 
-            // Reset rate limit if successful
-            if (this.rateLimitCount > 0) {
-                console.log('✅ Rate limit recovered - resetting backoff');
-                this.rateLimitCount = 0;
-                this.rateLimitBackoff = 60000;
+            // Handle both live mints and replay mints
+            if (mint.isReplay) {
+                console.log(`🔄 REPLAY: Processing missed Wild Tigers mint: ${mint.nft_name} #${mint.serial_number}`);
+            } else {
+                console.log(`🌟 NEW WILD TIGERS FOREVER MINT: ${mint.nft_name} - ${mint.mint_cost} ${mint.mint_cost_symbol}`);
+                console.log(`   Serial: ${mint.serial_number}, Minter: ${mint.minter_address}`);
             }
 
-            const activities = response.data;
+            // Convert mint data format to match what sendMintNotifications expects
+            const formattedMint = {
+                nftName: mint.nft_name,
+                nftSerialId: mint.serial_number,
+                salePrice: mint.mint_cost,
+                salePriceSymbol: mint.mint_cost_symbol,
+                saleDate: mint.mint_date,
+                buyerAddress: mint.minter_address,
+                nftImage: mint.image_url
+            };
+
+            // Send notifications to all configured servers
+            await this.sendMintNotifications(formattedMint);
             
-            if (!activities || !Array.isArray(activities)) {
-                console.log('⚠️ No activities data received');
-                return;
-            }
-
-            // Filter for Wild Tigers Forever Mints (500 HBAR mints)
-            const foreverMints = activities.filter(activity => 
-                activity.collectionName === 'Wild Tigers' &&
-                activity.saletype === 'Minted' &&
-                activity.salePrice === 500 &&
-                activity.salePriceSymbol === 'HBAR'
-            );
-
-            if (foreverMints.length === 0) {
-                console.log('📊 No new Forever Mints found');
-                return;
-            }
-
-            console.log(`🎯 Found ${foreverMints.length} Forever Mint activities`);
-
-            // Process each mint
-            for (const mint of foreverMints) {
-                const mintId = `${mint.nftSerialId}-${mint.saleDate}`;
-                
-                // Skip if already processed
-                if (this.processedMints.has(mintId)) {
-                    continue;
-                }
-
-                console.log(`🌟 NEW FOREVER MINT: ${mint.nftName} - ${mint.salePrice} HBAR`);
-                console.log(`   Serial: ${mint.nftSerialId}, Minter: ${mint.buyerAddress}`);
-
-                // Send notifications to all configured servers
-                await this.sendMintNotifications(mint);
-                
-                // Mark as processed
-                this.processedMints.add(mintId);
-            }
+            // Mark as processed
+            this.processedMints.add(mintId);
 
         } catch (error) {
-            if (error.response && error.response.status === 429) {
-                this.handleRateLimit();
-            } else {
-                console.error('❌ Error checking for mints:', error.message);
-            }
-        }
-    }
-
-    handleRateLimit() {
-        this.rateLimitCount++;
-        console.log(`🚫 Rate limit hit (count: ${this.rateLimitCount}) - backing off for ${this.rateLimitBackoff/1000}s`);
-        
-        // Exponential backoff: 60s → 120s → 240s → 300s (max)
-        if (this.rateLimitBackoff < this.maxBackoff) {
-            this.rateLimitBackoff = Math.min(this.rateLimitBackoff * 2, this.maxBackoff);
+            console.error('❌ Error handling Wild Tigers mint:', error.message);
         }
     }
 

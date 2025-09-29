@@ -1,9 +1,7 @@
 const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const cron = require('node-cron');
-const SentXService = require('./services/sentx');
+const sentxScheduler = require('./services/sentx-scheduler');
 
 class BoredApeForeverMintBot {
     constructor() {
@@ -23,10 +21,9 @@ class BoredApeForeverMintBot {
         // Bored Ape Hedera Club specific configuration
         this.tokenId = '0.0.9656915'; // Bored Ape Hedera Club token ID
         this.collectionName = 'Bored Ape Hedera Club';
-        this.sentxService = SentXService;
+        this.sentxScheduler = sentxScheduler;
         
         this.processedMints = new Set(); // Track processed mints to prevent duplicates
-        this.botStartTime = null; // Track when bot started to avoid posting old mints
     }
 
     async initialize() {
@@ -34,15 +31,11 @@ class BoredApeForeverMintBot {
             await this.client.login(process.env.DISCORD_TOKEN);
             console.log('✅ Bored Ape Forever Mint Bot logged in successfully');
             
-            // Set bot start time to avoid posting old mints
-            this.botStartTime = new Date();
-            console.log(`🕐 Bot start time set to: ${this.botStartTime.toISOString()}`);
-            
             // Auto-detect guild ID from channel
             await this.autoDetectGuildId();
             
-            // Start monitoring every 15 seconds (rate limit friendly)
-            this.startMonitoring();
+            // Subscribe to Bored Ape mint events from centralized scheduler
+            this.subscribeToMintEvents();
             
         } catch (error) {
             console.error('❌ Failed to initialize Bored Ape bot:', error.message);
@@ -66,58 +59,42 @@ class BoredApeForeverMintBot {
         }
     }
 
-    startMonitoring() {
-        console.log('🚀 Starting Bored Ape Hedera Club Forever Mint monitoring...');
+    /**
+     * Subscribe to mint events from the centralized scheduler
+     */
+    subscribeToMintEvents() {
+        console.log('🚀 Subscribing to Bored Ape Forever Mint events...');
         
-        // Check every 15 seconds (rate limit friendly)
-        cron.schedule('*/15 * * * * *', async () => {
-            await this.checkForNewMints();
+        this.sentxScheduler.on('boredApeMint', async (mint) => {
+            await this.handleNewMint(mint);
         });
     }
 
-    async checkForNewMints() {
+    async handleNewMint(mint) {
         try {
-            console.log('🔍 Checking for new Bored Ape Hedera Club Forever Mints...');
+            const mintId = `${mint.serial_number}-${mint.mint_date}`;
             
-            // Use SentX service to get Bored Ape Forever Mints
-            const foreverMints = await this.sentxService.getRecentBoredApeForeverMints(20);
-
-            if (foreverMints.length === 0) {
-                console.log('📊 No new Bored Ape Forever Mints found');
+            // Skip if already processed
+            if (this.processedMints.has(mintId)) {
                 return;
             }
 
-            console.log(`🎯 Found ${foreverMints.length} Bored Ape Forever Mint activities`);
-
-            // Process each mint
-            for (const mint of foreverMints) {
-                const mintId = `${mint.serial_number}-${mint.mint_date}`;
-                const mintDate = new Date(mint.mint_date);
-                
-                // Skip if already processed
-                if (this.processedMints.has(mintId)) {
-                    continue;
-                }
-
-                // Only process mints that happened AFTER the bot started
-                if (mintDate <= this.botStartTime) {
-                    console.log(`⏰ Skipping old mint: ${mint.nft_name} #${mint.serial_number} (${mintDate.toISOString()}) - occurred before bot start`);
-                    this.processedMints.add(mintId); // Mark as processed to avoid checking again
-                    continue;
-                }
-
+            // Handle both live mints and replay mints
+            if (mint.isReplay) {
+                console.log(`🔄 REPLAY: Processing missed Bored Ape mint: ${mint.nft_name} #${mint.serial_number}`);
+            } else {
                 console.log(`🦍 NEW BORED APE FOREVER MINT: ${mint.nft_name} - ${mint.mint_cost} ${mint.mint_cost_symbol}`);
                 console.log(`   Serial: ${mint.serial_number}, Minter: ${mint.minter_address}`);
-
-                // Send notifications to all configured servers
-                await this.sendMintNotifications(mint);
-                
-                // Mark as processed
-                this.processedMints.add(mintId);
             }
 
+            // Send notifications to all configured servers
+            await this.sendMintNotifications(mint);
+            
+            // Mark as processed
+            this.processedMints.add(mintId);
+
         } catch (error) {
-            console.error('❌ Error checking for Bored Ape mints:', error.message);
+            console.error('❌ Error handling Bored Ape mint:', error.message);
         }
     }
 
