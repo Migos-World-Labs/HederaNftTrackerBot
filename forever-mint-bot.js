@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const sentxScheduler = require('./services/sentx-scheduler');
+const sentxService = require('./services/sentx');
 
 class ForeverMintBot {
     constructor() {
@@ -24,7 +24,7 @@ class ForeverMintBot {
         ];
         
         this.processedMints = new Set(); // Track processed mints to prevent duplicates
-        this.sentxScheduler = sentxScheduler;
+        this.monitoringTask = null; // Monitoring task reference
     }
 
     async initialize() {
@@ -32,8 +32,8 @@ class ForeverMintBot {
             await this.client.login(process.env.DISCORD_TOKEN);
             console.log('✅ Forever Mint Bot logged in successfully');
             
-            // Subscribe to Wild Tigers mint events from centralized scheduler
-            this.subscribeToMintEvents();
+            // Start monitoring for Wild Tigers mints
+            this.startMonitoring();
             
         } catch (error) {
             console.error('❌ Failed to initialize bot:', error.message);
@@ -42,52 +42,53 @@ class ForeverMintBot {
     }
 
     /**
-     * Subscribe to Wild Tigers mint events from the centralized scheduler
+     * Start monitoring for new Wild Tigers mints every 15 seconds
      */
-    subscribeToMintEvents() {
-        console.log('🚀 Subscribing to Wild Tigers Forever Mint events...');
+    startMonitoring() {
+        console.log('🚀 Starting Wild Tigers Forever Mint monitoring...');
         
-        this.sentxScheduler.on('wildTigersMint', async (mint) => {
-            await this.handleNewMint(mint);
-        });
+        this.monitoringTask = setInterval(async () => {
+            try {
+                await this.checkForNewMints();
+            } catch (error) {
+                console.error('❌ Error checking for Wild Tigers mints:', error.message);
+            }
+        }, 15000); // Check every 15 seconds
     }
 
-    async handleNewMint(mint) {
+    /**
+     * Check for new Wild Tigers mints
+     */
+    async checkForNewMints() {
         try {
-            const mintId = `${mint.serial_number}-${mint.mint_date}`;
+            // Fetch recent Wild Tigers mints from SentX
+            const recentMints = await sentxService.getRecentForeverMints(20);
             
-            // Skip if already processed
-            if (this.processedMints.has(mintId)) {
+            if (!recentMints || recentMints.length === 0) {
                 return;
             }
-
-            // Handle both live mints and replay mints
-            if (mint.isReplay) {
-                console.log(`🔄 REPLAY: Processing missed Wild Tigers mint: ${mint.nft_name} #${mint.serial_number}`);
-            } else {
-                console.log(`🌟 NEW WILD TIGERS FOREVER MINT: ${mint.nft_name} - ${mint.mint_cost} ${mint.mint_cost_symbol}`);
-                console.log(`   Serial: ${mint.serial_number}, Minter: ${mint.minter_address}`);
-            }
-
-            // Convert mint data format to match what sendMintNotifications expects
-            const formattedMint = {
-                nftName: mint.nft_name,
-                nftSerialId: mint.serial_number,
-                salePrice: mint.mint_cost,
-                salePriceSymbol: mint.mint_cost_symbol,
-                saleDate: mint.mint_date,
-                buyerAddress: mint.minter_address,
-                nftImage: mint.image_url
-            };
-
-            // Send notifications to all configured servers
-            await this.sendMintNotifications(formattedMint);
             
-            // Mark as processed
-            this.processedMints.add(mintId);
-
+            // Process each mint
+            for (const mint of recentMints) {
+                const mintId = `${mint.nftSerialId}-${mint.saleDate}`;
+                
+                // Skip if already processed
+                if (this.processedMints.has(mintId)) {
+                    continue;
+                }
+                
+                console.log(`🌟 NEW WILD TIGERS FOREVER MINT: ${mint.nftName} - ${mint.salePrice} ${mint.salePriceSymbol}`);
+                console.log(`   Serial: ${mint.nftSerialId}, Minter: ${mint.buyerAddress}`);
+                
+                // Send notifications
+                await this.sendMintNotifications(mint);
+                
+                // Mark as processed
+                this.processedMints.add(mintId);
+            }
+            
         } catch (error) {
-            console.error('❌ Error handling Wild Tigers mint:', error.message);
+            console.error('❌ Error fetching Wild Tigers mints:', error.message);
         }
     }
 

@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const sentxScheduler = require('./services/sentx-scheduler');
+const sentxService = require('./services/sentx');
 
 class BoredApeForeverMintBot {
     constructor() {
@@ -21,9 +21,9 @@ class BoredApeForeverMintBot {
         // Bored Ape Hedera Club specific configuration
         this.tokenId = '0.0.9656915'; // Bored Ape Hedera Club token ID
         this.collectionName = 'Bored Ape Hedera Club';
-        this.sentxScheduler = sentxScheduler;
         
         this.processedMints = new Set(); // Track processed mints to prevent duplicates
+        this.monitoringTask = null; // Monitoring task reference
     }
 
     async initialize() {
@@ -34,8 +34,8 @@ class BoredApeForeverMintBot {
             // Auto-detect guild ID from channel
             await this.autoDetectGuildId();
             
-            // Subscribe to Bored Ape mint events from centralized scheduler
-            this.subscribeToMintEvents();
+            // Start monitoring for mints
+            this.startMonitoring();
             
         } catch (error) {
             console.error('❌ Failed to initialize Bored Ape bot:', error.message);
@@ -60,43 +60,56 @@ class BoredApeForeverMintBot {
     }
 
     /**
-     * Subscribe to mint events from the centralized scheduler
+     * Start monitoring for new mints every 15 seconds
      */
-    subscribeToMintEvents() {
-        console.log('🚀 Subscribing to Bored Ape Forever Mint events...');
+    startMonitoring() {
+        console.log('🚀 Starting Bored Ape Forever Mint monitoring...');
         
-        this.sentxScheduler.on('boredApeMint', async (mint) => {
-            await this.handleNewMint(mint);
-        });
+        this.monitoringTask = setInterval(async () => {
+            try {
+                await this.checkForNewMints();
+            } catch (error) {
+                console.error('❌ Error checking for Bored Ape mints:', error.message);
+            }
+        }, 15000); // Check every 15 seconds
     }
 
-    async handleNewMint(mint) {
+    /**
+     * Check for new Bored Ape mints
+     */
+    async checkForNewMints() {
         try {
-            const mintId = `${mint.serial_number}-${mint.mint_date}`;
+            // Fetch recent Bored Ape mints from SentX
+            const recentMints = await sentxService.getBoredApeForeverMints(this.tokenId, 20);
             
-            // Skip if already processed
-            if (this.processedMints.has(mintId)) {
+            if (!recentMints || recentMints.length === 0) {
                 return;
             }
-
-            // Handle both live mints and replay mints
-            if (mint.isReplay) {
-                console.log(`🔄 REPLAY: Processing missed Bored Ape mint: ${mint.nft_name} #${mint.serial_number}`);
-            } else {
+            
+            // Process each mint
+            for (const mint of recentMints) {
+                const mintId = `${mint.serial_number}-${mint.mint_date}`;
+                
+                // Skip if already processed
+                if (this.processedMints.has(mintId)) {
+                    continue;
+                }
+                
                 console.log(`🦍 NEW BORED APE FOREVER MINT: ${mint.nft_name} - ${mint.mint_cost} ${mint.mint_cost_symbol}`);
                 console.log(`   Serial: ${mint.serial_number}, Minter: ${mint.minter_address}`);
+                
+                // Send notifications
+                await this.sendMintNotifications(mint);
+                
+                // Mark as processed
+                this.processedMints.add(mintId);
             }
-
-            // Send notifications to all configured servers
-            await this.sendMintNotifications(mint);
             
-            // Mark as processed
-            this.processedMints.add(mintId);
-
         } catch (error) {
-            console.error('❌ Error handling Bored Ape mint:', error.message);
+            console.error('❌ Error fetching Bored Ape mints:', error.message);
         }
     }
+
 
 
     async sendMintNotifications(mint) {

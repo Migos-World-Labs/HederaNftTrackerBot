@@ -345,17 +345,15 @@ class NFTSalesBot {
             }
 
             // Get recent sales from both marketplaces - include all payment types (HBAR and HTS tokens)
-            // Route SentX calls through centralized scheduler to prevent rate limiting
-            const sentxScheduler = require('./services/sentx-scheduler');
-            const sentxSales = await sentxScheduler.fetchSales(100, true); // Include HTS token payments
+            const sentxSales = await sentxService.getRecentSales(100, true); // Include HTS token payments
             const kabilaSales = await kabilaService.getRecentSales(100);
             
             // Get recent listings from both marketplaces  
-            const sentxListings = await sentxScheduler.fetchListings(50, true); // Include HTS token payments
+            const sentxListings = await sentxService.getRecentListings(50, false, true); // Include HTS token payments
             const kabilaListings = await kabilaService.getRecentListings(50);
             
-            // Skip Forever Mints here - now handled by centralized scheduler events
-            const foreverMints = []; // Forever Mints now handled via event subscription
+            // Get recent Forever Mints from SentX for Wild Tigers
+            const foreverMints = await sentxService.getRecentForeverMints(20);
             
             // Debug: Log API response counts for monitoring
             if (sentxSales.length > 0 || kabilaSales.length > 0 || foreverMints.length > 0) {
