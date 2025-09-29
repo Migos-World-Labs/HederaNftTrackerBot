@@ -26,12 +26,17 @@ class BoredApeForeverMintBot {
         this.sentxService = SentXService;
         
         this.processedMints = new Set(); // Track processed mints to prevent duplicates
+        this.botStartTime = null; // Track when bot started to avoid posting old mints
     }
 
     async initialize() {
         try {
             await this.client.login(process.env.DISCORD_TOKEN);
             console.log('✅ Bored Ape Forever Mint Bot logged in successfully');
+            
+            // Set bot start time to avoid posting old mints
+            this.botStartTime = new Date();
+            console.log(`🕐 Bot start time set to: ${this.botStartTime.toISOString()}`);
             
             // Auto-detect guild ID from channel
             await this.autoDetectGuildId();
@@ -87,9 +92,17 @@ class BoredApeForeverMintBot {
             // Process each mint
             for (const mint of foreverMints) {
                 const mintId = `${mint.serial_number}-${mint.mint_date}`;
+                const mintDate = new Date(mint.mint_date);
                 
                 // Skip if already processed
                 if (this.processedMints.has(mintId)) {
+                    continue;
+                }
+
+                // Only process mints that happened AFTER the bot started
+                if (mintDate <= this.botStartTime) {
+                    console.log(`⏰ Skipping old mint: ${mint.nft_name} #${mint.serial_number} (${mintDate.toISOString()}) - occurred before bot start`);
+                    this.processedMints.add(mintId); // Mark as processed to avoid checking again
                     continue;
                 }
 
