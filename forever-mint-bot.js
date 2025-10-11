@@ -161,17 +161,31 @@ class ForeverMintBot {
         // Convert IPFS to iPhone-compatible Hashpack CDN
         const optimizedImageUrl = this.convertIpfsToHttp(mint.image_url);
         
+        const fields = [
+            { name: '💰 Mint Cost', value: `${mint.mint_cost} HBAR`, inline: true },
+            { name: '🔢 Serial Number', value: `#${mint.serial_number}`, inline: true },
+            { name: '👤 Minted By', value: mint.minter_address, inline: true }
+        ];
+        
+        // Add rarity data if available
+        if (mint.rarity_rank) {
+            fields.push({ name: '🏆 Rarity Rank', value: `#${mint.rarity_rank}`, inline: true });
+        }
+        
+        if (mint.rarity_percentage) {
+            fields.push({ name: '✨ Rarity', value: `${mint.rarity_percentage}%`, inline: true });
+        }
+        
+        fields.push(
+            { name: '🎲 Forever Mint', value: '**500 HBAR** - Lucky mint!', inline: true },
+            { name: '📅 Mint Date', value: new Date(mint.mint_date).toLocaleDateString(), inline: true },
+            { name: '🌐 Marketplace', value: 'SentX Launchpad', inline: true }
+        );
+        
         const embed = new EmbedBuilder()
             .setTitle(`✨ FOREVER MINT! ${mint.nft_name} ✨`)
             .setDescription(`🎉 **Forever Mint Successful!** A new Wild Tigers has been minted for exactly 500 HBAR!`)
-            .addFields([
-                { name: '💰 Mint Cost', value: `${mint.mint_cost} HBAR`, inline: true },
-                { name: '🔢 Serial Number', value: `#${mint.serial_number}`, inline: true },
-                { name: '👤 Minted By', value: mint.minter_address, inline: true },
-                { name: '🎲 Forever Mint', value: '**500 HBAR** - Lucky mint!', inline: true },
-                { name: '📅 Mint Date', value: new Date(mint.mint_date).toLocaleDateString(), inline: true },
-                { name: '🌐 Marketplace', value: 'SentX Launchpad', inline: true }
-            ])
+            .addFields(fields)
             .setColor('#FFD700')
             .setTimestamp(new Date(mint.mint_date));
 

@@ -352,9 +352,11 @@ class SentXService {
             
             console.log(`🎯 Found ${wildTigersMints.length} Forever Mint activities`);
             
-            // Format mint data without rarity to keep notifications simple and fast
-            const formattedMints = wildTigersMints.map((mint) => {
-                return {
+            // Format mint data WITH rarity enrichment (sequential to avoid rate limits)
+            const formattedMints = [];
+            
+            for (const mint of wildTigersMints) {
+                const baseData = {
                     // Core mint data
                     nft_name: mint.nftName,
                     collection_name: mint.collectionName,
@@ -390,9 +392,44 @@ class SentXService {
                     
                     // Additional context
                     is_forever_mint: true,
-                    listing_url: mint.listingUrl
+                    listing_url: mint.listingUrl,
+                    
+                    // Rarity data from API if available
+                    rarity_rank: mint.rarityRank || null,
+                    rarity_percentage: mint.rarityPct || null
                 };
-            });
+                
+                // Only fetch rarity if not already in API response
+                // Note: Skip rarity for very new mints to avoid rate limiting
+                // as they may not be indexed yet in the collection
+                if (!baseData.rarity_rank && !baseData.rarity_percentage) {
+                    const mintAge = Date.now() - new Date(baseData.mint_date).getTime();
+                    const fiveMinutes = 5 * 60 * 1000;
+                    
+                    // Only fetch rarity for mints older than 5 minutes (likely indexed)
+                    if (mintAge > fiveMinutes) {
+                        try {
+                            // Add delay to avoid rate limiting
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            
+                            const rarityDetails = await this.getNFTDetailsFromCollection(baseData.token_id, baseData.serial_number);
+                            if (rarityDetails && rarityDetails.success && rarityDetails.nft) {
+                                baseData.rarity_rank = rarityDetails.nft.rarityRank || null;
+                                baseData.rarity_percentage = rarityDetails.nft.rarityPct || null;
+                                if (baseData.rarity_rank) {
+                                    console.log(`✨ Rarity data for ${baseData.nft_name}: Rank ${baseData.rarity_rank}, ${baseData.rarity_percentage}%`);
+                                }
+                            }
+                        } catch (rarityError) {
+                            console.log(`⚠️ Could not fetch rarity for ${baseData.nft_name}: ${rarityError.message}`);
+                        }
+                    } else {
+                        console.log(`⏰ Skipping rarity fetch for fresh mint ${baseData.nft_name} (${Math.round(mintAge/1000)}s old - may not be indexed yet)`);
+                    }
+                }
+                
+                formattedMints.push(baseData);
+            }
             
             return formattedMints;
 
