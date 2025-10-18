@@ -140,7 +140,6 @@ class ForeverMintBot {
                 }
 
                 const messageOptions = { 
-                    content: `🎉 **FOREVER MINT ALERT!** ${mint.nft_name}`,
                     embeds: [embed] 
                 };
                 
@@ -180,8 +179,8 @@ class ForeverMintBot {
         }
         
         const embed = new EmbedBuilder()
-            .setTitle(`✨ FOREVER MINT! ${mint.nft_name} ✨`)
-            .setDescription(`🎉 **Forever Mint Successful!** A new Wild Tigers has been minted for exactly 500 HBAR!`)
+            .setTitle(`${mint.nft_name}`)
+            .setDescription(`Minted on SentX for **${mint.mint_cost} HBAR**`)
             .addFields([
                 { name: '💰 Mint Cost', value: `${mint.mint_cost} HBAR`, inline: true },
                 { name: '🔢 Serial Number', value: `#${mint.serial_number}`, inline: true },
