@@ -182,12 +182,10 @@ class ForeverMintBot {
             .setTitle(`${mint.nft_name}`)
             .setDescription(`Minted on SentX for **${mint.mint_cost} HBAR**`)
             .addFields([
-                { name: '💰 Mint Cost', value: `${mint.mint_cost} HBAR`, inline: true },
                 { name: '🔢 Serial Number', value: `#${mint.serial_number}`, inline: true },
                 { name: '📊 Rarity Rank', value: rarityRank, inline: true },
                 { name: '🎯 Rarity %', value: rarityPercent, inline: true },
-                { name: '📅 Mint Date', value: new Date(mint.mint_date).toLocaleDateString(), inline: true },
-                { name: '🌐 Marketplace', value: 'SentX Launchpad', inline: true }
+                { name: '📅 Mint Date', value: new Date(mint.mint_date).toLocaleDateString(), inline: true }
             ])
             .setColor('#FFD700')
             .setTimestamp(new Date(mint.mint_date));
