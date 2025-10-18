@@ -161,14 +161,32 @@ class ForeverMintBot {
         // Convert IPFS to iPhone-compatible Hashpack CDN
         const optimizedImageUrl = this.convertIpfsToHttp(mint.image_url);
         
+        // Fetch rarity data from SentX API
+        let rarityRank = 'N/A';
+        let rarityPercent = 'N/A';
+        
+        try {
+            const nftDetails = await sentxService.getNFTDetails(mint.token_id, mint.serial_number);
+            if (nftDetails && nftDetails.success && nftDetails.nft) {
+                if (nftDetails.nft.rarityRank) {
+                    rarityRank = `#${nftDetails.nft.rarityRank}`;
+                }
+                if (nftDetails.nft.rarityPct) {
+                    rarityPercent = `${nftDetails.nft.rarityPct}%`;
+                }
+            }
+        } catch (error) {
+            console.log(`⚠️ Could not fetch rarity data for ${mint.nft_name}: ${error.message}`);
+        }
+        
         const embed = new EmbedBuilder()
             .setTitle(`✨ FOREVER MINT! ${mint.nft_name} ✨`)
             .setDescription(`🎉 **Forever Mint Successful!** A new Wild Tigers has been minted for exactly 500 HBAR!`)
             .addFields([
                 { name: '💰 Mint Cost', value: `${mint.mint_cost} HBAR`, inline: true },
                 { name: '🔢 Serial Number', value: `#${mint.serial_number}`, inline: true },
-                { name: '👤 Minted By', value: mint.minter_address, inline: true },
-                { name: '🎲 Forever Mint', value: '**500 HBAR** - Lucky mint!', inline: true },
+                { name: '📊 Rarity Rank', value: rarityRank, inline: true },
+                { name: '🎯 Rarity %', value: rarityPercent, inline: true },
                 { name: '📅 Mint Date', value: new Date(mint.mint_date).toLocaleDateString(), inline: true },
                 { name: '🌐 Marketplace', value: 'SentX Launchpad', inline: true }
             ])
