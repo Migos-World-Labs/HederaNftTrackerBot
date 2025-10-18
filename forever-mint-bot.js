@@ -184,8 +184,7 @@ class ForeverMintBot {
             .addFields([
                 { name: '🔢 Serial Number', value: `#${mint.serial_number}`, inline: true },
                 { name: '📊 Rarity Rank', value: rarityRank, inline: true },
-                { name: '🎯 Rarity %', value: rarityPercent, inline: true },
-                { name: '📅 Mint Date', value: new Date(mint.mint_date).toLocaleDateString(), inline: true }
+                { name: '🎯 Rarity %', value: rarityPercent, inline: true }
             ])
             .setColor('#FFD700')
             .setTimestamp(new Date(mint.mint_date));
