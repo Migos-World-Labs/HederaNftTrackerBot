@@ -13,7 +13,7 @@ class BoredApeForeverMintBot {
         this.servers = [
             {
                 guildId: '1403386825669873744', // Bored Ape Hedera Club server
-                channelId: '1403391275570434218', // Bored Ape Hedera Club channel
+                channelId: '1411693790519099492', // Bored Ape Hedera Club channel
                 name: 'Bored Ape Hedera Club'
             }
         ];
@@ -48,7 +48,7 @@ class BoredApeForeverMintBot {
         try {
             // Find the guild that contains our target channel
             for (const guild of this.client.guilds.cache.values()) {
-                const channel = guild.channels.cache.get('1403391275570434218');
+                const channel = guild.channels.cache.get('1411693790519099492');
                 if (channel) {
                     this.servers[0].guildId = guild.id;
                     console.log(`✅ Auto-detected guild: ${guild.name} (${guild.id})`);
