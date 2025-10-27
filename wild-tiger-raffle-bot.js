@@ -150,6 +150,7 @@ class WildTigerRaffleBot {
 
     /**
      * Fetch collection info from Hedera Mirror Node API
+     * Note: All 2000 tickets are pre-minted. This fetches the treasury balance to calculate sold count.
      */
     async getCollectionInfo() {
         try {
@@ -160,20 +161,31 @@ class WildTigerRaffleBot {
                 return this.collectionInfo;
             }
             
-            // Fetch fresh data from Hedera Mirror Node
-            const url = `https://mainnet-public.mirrornode.hedera.com/api/v1/tokens/${this.tokenId}`;
-            const response = await axios.get(url, { timeout: 5000 });
+            // Fetch treasury balance to calculate sold tickets
+            const treasuryAccount = '0.0.6024410'; // Wild Tigers treasury
+            const balanceUrl = `https://mainnet-public.mirrornode.hedera.com/api/v1/tokens/${this.tokenId}/balances?limit=100&order=desc`;
+            const response = await axios.get(balanceUrl, { timeout: 5000 });
             
-            if (response.data) {
+            if (response.data && response.data.balances) {
+                const totalSupply = 2000; // All tickets are pre-minted
+                
+                // Find treasury balance
+                console.log(`🔍 Searching for treasury account ${treasuryAccount} in ${response.data.balances.length} balance entries`);
+                const treasuryBalance = response.data.balances.find(b => b.account === treasuryAccount);
+                const stockRemaining = treasuryBalance ? treasuryBalance.balance : 0;
+                const soldCount = totalSupply - stockRemaining;
+                console.log(`💰 Treasury balance: ${stockRemaining}, Sold: ${soldCount}`);
+                
                 this.collectionInfo = {
-                    maxSupply: parseInt(response.data.max_supply || '0'),
-                    totalSupply: parseInt(response.data.total_supply || '0'),
-                    supplyType: response.data.supply_type || 'UNKNOWN',
-                    name: response.data.name || 'Wild Tigers Raffle Ticket'
+                    maxSupply: totalSupply,
+                    soldCount: soldCount,
+                    stockRemaining: stockRemaining,
+                    supplyType: 'FINITE',
+                    name: 'Wild Tigers Raffle Ticket'
                 };
                 this.lastCollectionFetch = now;
                 
-                console.log(`📊 Collection Info: ${this.collectionInfo.totalSupply}/${this.collectionInfo.maxSupply} minted`);
+                console.log(`📊 Collection Info: ${soldCount}/${totalSupply} sold (${stockRemaining} remaining)`);
                 return this.collectionInfo;
             }
             
@@ -194,16 +206,11 @@ class WildTigerRaffleBot {
         // Calculate supply info
         let supplyText = '';
         if (collectionInfo) {
-            const minted = collectionInfo.totalSupply;
-            const maxSupply = collectionInfo.maxSupply;
-            const isInfiniteSupply = collectionInfo.supplyType === 'INFINITE' || maxSupply === 0;
+            const sold = collectionInfo.soldCount;
+            const stock = collectionInfo.stockRemaining;
+            const total = collectionInfo.maxSupply;
             
-            if (isInfiniteSupply) {
-                supplyText = `\n📈 **${minted.toLocaleString()}** Minted • ∞ **Unlimited Supply**`;
-            } else {
-                const remaining = maxSupply - minted;
-                supplyText = `\n📈 **${minted.toLocaleString()}** Minted • 🎟️ **${remaining.toLocaleString()}** Remaining`;
-            }
+            supplyText = `\n📊 **Stock: ${stock.toLocaleString()} / ${total.toLocaleString()}** • 🎟️ **${sold.toLocaleString()} Sold**`;
         }
         
         // Create raffle-themed embed
@@ -219,19 +226,15 @@ class WildTigerRaffleBot {
             .setFooter({ text: 'Wild Tiger Raffle • Good Luck! 🍀' })
             .setTimestamp(new Date(mint.mint_date));
 
-        // Add supply breakdown if available (only for finite supply)
+        // Add supply breakdown progress bar
         if (collectionInfo) {
-            const isInfiniteSupply = collectionInfo.supplyType === 'INFINITE' || collectionInfo.maxSupply === 0;
-            
-            if (!isInfiniteSupply && collectionInfo.maxSupply > 0) {
-                embed.addFields([
-                    { 
-                        name: '📊 Raffle Progress', 
-                        value: `\`\`\`${this.createProgressBar(collectionInfo.totalSupply, collectionInfo.maxSupply)}\`\`\``, 
-                        inline: false 
-                    }
-                ]);
-            }
+            embed.addFields([
+                { 
+                    name: '📊 Raffle Sales Progress', 
+                    value: `\`\`\`${this.createProgressBar(collectionInfo.soldCount, collectionInfo.maxSupply)}\`\`\``, 
+                    inline: false 
+                }
+            ]);
         }
 
         // Add iPhone-compatible image if available
