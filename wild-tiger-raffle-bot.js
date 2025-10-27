@@ -223,6 +223,7 @@ class WildTigerRaffleBot {
                 { name: '🌐 Marketplace', value: 'SentX', inline: true }
             ])
             .setColor('#FF6B35') // Orange/red color for raffle theme
+            .setThumbnail('https://hashpack.b-cdn.net/ipfs/bafybeifr3suqg4qb35kjfhma6zzmlq4v3z57af7ky45ppaacggvcweoa2q/looped-ticket.gif')
             .setFooter({ text: 'Wild Tiger Raffle • Good Luck! 🍀' })
             .setTimestamp(new Date(mint.mint_date));
 
