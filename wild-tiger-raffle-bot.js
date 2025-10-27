@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
 const sentxService = require('./services/sentx');
 
 class WildTigerRaffleBot {
@@ -22,6 +23,11 @@ class WildTigerRaffleBot {
         this.monitoringTask = null; // Monitoring task reference
         this.isFirstRun = true; // Track if this is the first check after startup
         this.tokenId = '0.0.10053295'; // Wild Tiger Raffle NFT Ticket token ID
+        
+        // Cache for collection info (updated every 30 seconds)
+        this.collectionInfo = null;
+        this.lastCollectionFetch = 0;
+        this.collectionCacheDuration = 30000; // 30 seconds
     }
 
     async initialize() {
@@ -142,14 +148,68 @@ class WildTigerRaffleBot {
         }
     }
 
+    /**
+     * Fetch collection info from Hedera Mirror Node API
+     */
+    async getCollectionInfo() {
+        try {
+            const now = Date.now();
+            
+            // Return cached data if still valid
+            if (this.collectionInfo && (now - this.lastCollectionFetch) < this.collectionCacheDuration) {
+                return this.collectionInfo;
+            }
+            
+            // Fetch fresh data from Hedera Mirror Node
+            const url = `https://mainnet-public.mirrornode.hedera.com/api/v1/tokens/${this.tokenId}`;
+            const response = await axios.get(url, { timeout: 5000 });
+            
+            if (response.data) {
+                this.collectionInfo = {
+                    maxSupply: parseInt(response.data.max_supply || '0'),
+                    totalSupply: parseInt(response.data.total_supply || '0'),
+                    supplyType: response.data.supply_type || 'UNKNOWN',
+                    name: response.data.name || 'Wild Tigers Raffle Ticket'
+                };
+                this.lastCollectionFetch = now;
+                
+                console.log(`📊 Collection Info: ${this.collectionInfo.totalSupply}/${this.collectionInfo.maxSupply} minted`);
+                return this.collectionInfo;
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('❌ Error fetching collection info from Hedera Mirror Node:', error.message);
+            return this.collectionInfo; // Return cached data if available
+        }
+    }
+
     async createRaffleTicketEmbed(mint) {
         // Convert IPFS to iPhone-compatible Hashpack CDN
         const optimizedImageUrl = this.convertIpfsToHttp(mint.image_url);
         
+        // Fetch collection info to show minted count and remaining
+        const collectionInfo = await this.getCollectionInfo();
+        
+        // Calculate supply info
+        let supplyText = '';
+        if (collectionInfo) {
+            const minted = collectionInfo.totalSupply;
+            const maxSupply = collectionInfo.maxSupply;
+            const isInfiniteSupply = collectionInfo.supplyType === 'INFINITE' || maxSupply === 0;
+            
+            if (isInfiniteSupply) {
+                supplyText = `\n📈 **${minted.toLocaleString()}** Minted • ∞ **Unlimited Supply**`;
+            } else {
+                const remaining = maxSupply - minted;
+                supplyText = `\n📈 **${minted.toLocaleString()}** Minted • 🎟️ **${remaining.toLocaleString()}** Remaining`;
+            }
+        }
+        
         // Create raffle-themed embed
         const embed = new EmbedBuilder()
             .setTitle(`🎟️ ${mint.nft_name || 'Wild Tiger Raffle Ticket'}`)
-            .setDescription(`**New Raffle Ticket Minted on SentX!**\n\n💰 Mint Cost: **${mint.mint_cost} ${mint.mint_cost_symbol}**`)
+            .setDescription(`**New Raffle Ticket Minted on SentX!**\n\n💰 Mint Cost: **${mint.mint_cost} ${mint.mint_cost_symbol}**${supplyText}`)
             .addFields([
                 { name: '🎫 Serial Number', value: `#${mint.serial_number}`, inline: true },
                 { name: '👤 Minted By', value: mint.minter_address ? `\`${mint.minter_address.substring(0, 10)}...\`` : 'Unknown', inline: true },
@@ -158,6 +218,21 @@ class WildTigerRaffleBot {
             .setColor('#FF6B35') // Orange/red color for raffle theme
             .setFooter({ text: 'Wild Tiger Raffle • Good Luck! 🍀' })
             .setTimestamp(new Date(mint.mint_date));
+
+        // Add supply breakdown if available (only for finite supply)
+        if (collectionInfo) {
+            const isInfiniteSupply = collectionInfo.supplyType === 'INFINITE' || collectionInfo.maxSupply === 0;
+            
+            if (!isInfiniteSupply && collectionInfo.maxSupply > 0) {
+                embed.addFields([
+                    { 
+                        name: '📊 Raffle Progress', 
+                        value: `\`\`\`${this.createProgressBar(collectionInfo.totalSupply, collectionInfo.maxSupply)}\`\`\``, 
+                        inline: false 
+                    }
+                ]);
+            }
+        }
 
         // Add iPhone-compatible image if available
         if (optimizedImageUrl) {
@@ -172,6 +247,20 @@ class WildTigerRaffleBot {
         }
 
         return embed;
+    }
+
+    /**
+     * Create a visual progress bar for raffle ticket sales
+     */
+    createProgressBar(current, max, length = 20) {
+        const percentage = Math.min(100, Math.round((current / max) * 100));
+        const filledLength = Math.round((percentage / 100) * length);
+        const emptyLength = length - filledLength;
+        
+        const filled = '█'.repeat(filledLength);
+        const empty = '░'.repeat(emptyLength);
+        
+        return `${filled}${empty} ${percentage}% (${current.toLocaleString()}/${max.toLocaleString()})`;
     }
 
     convertIpfsToHttp(ipfsUrl) {
