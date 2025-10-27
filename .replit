@@ -20,6 +20,10 @@ args = "Bored Ape Forever Mint Bot"
 task = "workflow.run"
 args = "Main Discord Bot"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Wild Tiger Raffle Bot"
+
 [[workflows.workflow]]
 name = "Bored Ape Forever Mint Bot"
 author = "agent"
@@ -38,6 +42,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node index.js"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "Wild Tiger Raffle Bot"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node raffle-bot-start.js"
 
 [workflows.workflow.metadata]
 outputType = "console"
