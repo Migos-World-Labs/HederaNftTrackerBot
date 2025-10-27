@@ -210,17 +210,16 @@ class WildTigerRaffleBot {
             const stock = collectionInfo.stockRemaining;
             const total = collectionInfo.maxSupply;
             
-            supplyText = `\n📊 **Stock: ${stock.toLocaleString()} / ${total.toLocaleString()}** • 🎟️ **${sold.toLocaleString()} Sold**`;
+            supplyText = `\nStock: **${stock.toLocaleString()} / ${total.toLocaleString()}** • Sold: **${sold.toLocaleString()}**`;
         }
         
         // Create raffle-themed embed
         const embed = new EmbedBuilder()
             .setTitle(`🎟️ ${mint.nft_name || 'Wild Tiger Raffle Ticket'}`)
-            .setDescription(`**New Raffle Ticket Minted on SentX!**\n\n💰 Mint Cost: **${mint.mint_cost} ${mint.mint_cost_symbol}**${supplyText}`)
+            .setDescription(`**New Raffle Ticket Minted!**\n\nMint Cost: **${mint.mint_cost} ${mint.mint_cost_symbol}**${supplyText}`)
             .addFields([
-                { name: '🎫 Serial Number', value: `#${mint.serial_number}`, inline: true },
-                { name: '👤 Minted By', value: mint.minter_address ? `\`${mint.minter_address.substring(0, 10)}...\`` : 'Unknown', inline: true },
-                { name: '🌐 Marketplace', value: 'SentX', inline: true }
+                { name: 'Serial Number', value: `#${mint.serial_number}`, inline: true },
+                { name: 'Minted By', value: mint.minter_address ? `\`${mint.minter_address.substring(0, 10)}...\`` : 'Unknown', inline: true }
             ])
             .setColor('#FF6B35') // Orange/red color for raffle theme
             .setThumbnail('https://hashpack.b-cdn.net/ipfs/bafybeifr3suqg4qb35kjfhma6zzmlq4v3z57af7ky45ppaacggvcweoa2q/looped-ticket.gif')
@@ -231,7 +230,7 @@ class WildTigerRaffleBot {
         if (collectionInfo) {
             embed.addFields([
                 { 
-                    name: '📊 Raffle Sales Progress', 
+                    name: 'Raffle Sales Progress', 
                     value: `\`\`\`${this.createProgressBar(collectionInfo.soldCount, collectionInfo.maxSupply)}\`\`\``, 
                     inline: false 
                 }
@@ -243,7 +242,7 @@ class WildTigerRaffleBot {
 
         // Add SentX launchpad link
         embed.addFields([
-            { name: '🎟️ Get Your Tickets', value: `[View Raffle on SentX](https://sentx.io/launchpad/wildtigers-raffle-ticket-public)`, inline: false }
+            { name: 'Get Your Tickets', value: `[View Raffle on SentX](https://sentx.io/launchpad/wildtigers-raffle-ticket-public)`, inline: false }
         ]);
 
         return embed;
