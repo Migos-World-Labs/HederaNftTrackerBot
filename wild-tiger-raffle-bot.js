@@ -242,12 +242,10 @@ class WildTigerRaffleBot {
             embed.setImage(optimizedImageUrl);
         }
 
-        // Add transaction link if available
-        if (mint.listing_url) {
-            embed.addFields([
-                { name: '🔗 View on SentX', value: `[Click here](https://sentx.io${mint.listing_url})`, inline: false }
-            ]);
-        }
+        // Add SentX launchpad link
+        embed.addFields([
+            { name: '🎟️ Get Your Tickets', value: `[View Raffle on SentX](https://sentx.io/launchpad/wildtigers-raffle-ticket-public)`, inline: false }
+        ]);
 
         return embed;
     }
