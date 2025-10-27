@@ -298,6 +298,189 @@ class SentXService {
     }
 
     /**
+     * Get recent Raffle NFT Ticket mints from SentX marketplace for Wild Tiger Raffle
+     * @param {number} limit - Number of mints to fetch
+     * @returns {Array} Array of mint objects
+     */
+    async getRecentRaffleTicketMints(limit = 20) {
+        try {
+            const apiKey = process.env.SENTX_API_KEY;
+            
+            const params = {
+                apikey: apiKey,
+                token: '0.0.10053295', // Wild Tiger Raffle NFT Ticket token address
+                limit: limit,
+                page: 1
+            };
+            
+            const response = await this.makeRequest('/v1/public/launchpad/activity', params);
+
+            console.log(`🎟️ Raffle Launchpad API Response Status: ${response.status}`);
+            console.log(`🎟️ Raffle Launchpad API Response Type: ${typeof response.data}`);
+            
+            // Check if response is HTML (error page)
+            if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+                console.log('❌ Raffle Launchpad API returned HTML page - endpoint may not be available');
+                return [];
+            }
+
+            if (!response.data || !response.data.success) {
+                console.log('❌ Raffle Launchpad API returned unsuccessful response:', response.data);
+                return [];
+            }
+
+            if (!response.data.response || response.data.response.length === 0) {
+                console.log('⚠️ Raffle Launchpad API returned no activities');
+                return [];
+            }
+            
+            console.log(`🎟️ Found ${response.data.response.length} Wild Tiger Raffle launchpad activities`);
+            
+            // Debug: Log actual structure of first activity
+            if (response.data.response.length > 0) {
+                console.log('📋 First raffle activity structure:', JSON.stringify(response.data.response[0], null, 2));
+            }
+            
+            // Filter for raffle ticket mints
+            const raffleMints = response.data.response.filter(activity => {
+                const isMinted = activity.saletype === 'Minted';
+                return isMinted;
+            });
+            
+            console.log(`🎯 Found ${raffleMints.length} Raffle Ticket Mint activities`);
+            
+            // Format mint data
+            const formattedMints = raffleMints.map((mint) => {
+                return {
+                    // Core mint data
+                    nft_name: mint.nftName,
+                    collection_name: mint.collectionName,
+                    token_id: mint.nftTokenAddress || '0.0.10053295',
+                    serial_number: mint.nftSerialId,
+                    
+                    // Mint details
+                    mint_type: mint.saletype,
+                    mint_subtype: mint.saletypeSub,
+                    mint_date: mint.saleDate,
+                    timestamp: mint.saleDate,
+                    mint_date_unix: mint.saleDateUnix,
+                    
+                    // Minter details
+                    minter_address: mint.buyerAddress,
+                    minter_account_id: mint.buyerAddress,
+                    
+                    // Cost details
+                    mint_cost: mint.salePrice || 0,
+                    mint_cost_symbol: mint.salePriceSymbol || 'Free',
+                    
+                    // NFT metadata
+                    image_url: mint.nftImage,
+                    image_cdn: mint.imageCDN,
+                    metadata_url: mint.nftMetadata,
+                    
+                    // Collection info
+                    collection_url: mint.collectionFriendlyurl,
+                    
+                    // Market data
+                    marketplace: 'SentX',
+                    transaction_id: mint.saleTransactionId,
+                    
+                    // Additional context
+                    is_raffle_ticket: true,
+                    listing_url: mint.listingUrl
+                };
+            });
+            
+            return formattedMints;
+
+        } catch (error) {
+            console.error('Error fetching Raffle Ticket Mints from SentX launchpad API:', error.message);
+            console.log('🔄 Falling back to market activity API for raffle mint detection...');
+            
+            // Fallback to market activity API
+            try {
+                const fallbackParams = {
+                    apikey: process.env.SENTX_API_KEY,
+                    activityFilter: 'All',
+                    amount: limit * 3,
+                    page: 1
+                };
+                
+                const fallbackResponse = await this.axiosInstance.get('/v1/public/market/activity', {
+                    params: fallbackParams
+                });
+
+                if (!fallbackResponse.data || !fallbackResponse.data.success || !fallbackResponse.data.marketActivity) {
+                    return [];
+                }
+
+                // Look for Wild Tiger Raffle mints in market activity
+                const raffleActivities = fallbackResponse.data.marketActivity.filter(activity => {
+                    return activity.nftTokenAddress === '0.0.10053295';
+                });
+
+                // Filter for mint activities
+                const marketMints = raffleActivities.filter(activity => {
+                    return activity.saletype === 'Minted' || 
+                           activity.saletype === 'Claimed' ||
+                           (activity.saletypeSub && activity.saletypeSub.toLowerCase().includes('mint'));
+                }).slice(0, limit);
+
+                // Format mint data from market activity
+                const formattedMarketMints = marketMints.map(mint => ({
+                    // Core mint data
+                    nft_name: mint.nftName,
+                    collection_name: mint.collectionName,
+                    token_id: mint.nftTokenAddress,
+                    serial_number: mint.nftSerialId,
+                    
+                    // Mint details
+                    mint_type: mint.saletype,
+                    mint_subtype: mint.saletypeSub,
+                    mint_date: mint.saleDate,
+                    timestamp: mint.saleDate,
+                    mint_date_unix: mint.saleDateUnix,
+                    
+                    // Minter details
+                    minter_address: mint.buyerAddress,
+                    minter_account_id: mint.buyerAddress,
+                    
+                    // Cost details
+                    mint_cost: mint.salePrice || 0,
+                    mint_cost_symbol: mint.salePriceSymbol || 'HBAR',
+                    
+                    // NFT metadata
+                    image_url: mint.nftImage,
+                    image_cdn: mint.imageCDN,
+                    metadata_url: mint.nftMetadata,
+                    
+                    // Rarity data
+                    rarity_rank: mint.rarityRank,
+                    rarity_percentage: mint.rarityPct,
+                    
+                    // Collection info
+                    collection_url: mint.collectionFriendlyurl,
+                    
+                    // Market data
+                    marketplace: 'SentX',
+                    transaction_id: mint.saleTransactionId,
+                    
+                    // Additional context
+                    is_raffle_ticket: true,
+                    listing_url: mint.listingUrl
+                }));
+
+                console.log(`🎯 Fallback found ${formattedMarketMints.length} Raffle Ticket Mints from market activity`);
+                return formattedMarketMints;
+
+            } catch (fallbackError) {
+                console.error('Error in Raffle fallback mint detection:', fallbackError.message);
+                return [];
+            }
+        }
+    }
+
+    /**
      * Get recent Forever Mints from SentX marketplace for Wild Tigers collection
      * @param {number} limit - Number of mints to fetch
      * @returns {Array} Array of mint objects
