@@ -37,6 +37,15 @@ This project is a Discord bot designed to provide real-time NFT marketplace anal
 - Successfully detecting and posting real-time notifications for "Hedera Ape" NFT mints
 - Features ape-themed Discord embeds with brown styling and appropriate emojis
 
+**Wild Tiger Raffle Ticket Monitoring (October 27, 2025)**: Successfully implemented dedicated raffle ticket tracking system for Wild Tigers Raffle (token ID 0.0.10053295). The system:
+- Monitors token 0.0.10053295 for new Wild Tiger Raffle Ticket mints
+- Posts live raffle ticket notifications exclusively to Migos World Discord (channel 1432509660937719839)
+- Uses SentX launchpad API to detect raffle ticket mints in real-time
+- Displays ticket details including serial numbers, mint costs (50 HBAR), minter addresses, and animated ticket GIFs
+- Features raffle-themed Discord embeds with orange/red styling and ticket emojis
+- Successfully detecting and posting raffle ticket mints with 15-second monitoring intervals
+- Prevents duplicate notifications using in-memory tracking
+
 **Enhanced HTS Token Payment Support**: Fixed critical bug in HTS payment detection and added comprehensive HTS listings test functionality. The bot now properly detects and monitors NFT sales and listings paid with HTS tokens like PAWS, SAUCE, and KARATE across all tracked collections.
 
 **Command Security Enhancement**: Hidden `/announce` command from regular users, making it development-only via `ENABLE_DEV_COMMANDS` environment variable. Users now see only 8 essential commands while development team retains full broadcasting capabilities.
