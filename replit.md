@@ -45,6 +45,8 @@ This project is a Discord bot designed to provide real-time NFT marketplace anal
 - Features raffle-themed Discord embeds with orange/red styling and ticket emojis
 - Successfully detecting and posting raffle ticket mints with 15-second monitoring intervals
 - Prevents duplicate notifications using in-memory tracking
+- Fetches live collection data from Hedera Mirror Node API showing minted count and supply information
+- Properly handles infinite supply tokens, displaying "Unlimited Supply" notation for collections without max supply caps
 
 **Enhanced HTS Token Payment Support**: Fixed critical bug in HTS payment detection and added comprehensive HTS listings test functionality. The bot now properly detects and monitors NFT sales and listings paid with HTS tokens like PAWS, SAUCE, and KARATE across all tracked collections.
 
