@@ -43,7 +43,7 @@ args = "node index.js"
 outputType = "console"
 
 [deployment]
-run = ["sh", "-c", "node index.js & node bored-ape-forever-mint-bot.js & node forever-mint-bot.js & wait"]
+run = ["node", "index.js"]
 deploymentTarget = "vm"
 ignorePorts = true
 
