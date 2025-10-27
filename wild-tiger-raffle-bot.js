@@ -238,10 +238,8 @@ class WildTigerRaffleBot {
             ]);
         }
 
-        // Add iPhone-compatible image if available
-        if (optimizedImageUrl) {
-            embed.setImage(optimizedImageUrl);
-        }
+        // Add main raffle image
+        embed.setImage('https://hashpack.b-cdn.net/ipfs/bafybeifr3suqg4qb35kjfhma6zzmlq4v3z57af7ky45ppaacggvcweoa2q/PawsLuckyDraw.png?optimizer=image&width=1500');
 
         // Add SentX launchpad link
         embed.addFields([
