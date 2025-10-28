@@ -24,6 +24,10 @@ args = "Main Discord Bot"
 task = "workflow.run"
 args = "Wild Tiger Raffle Bot"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Wild Tigers Forever Mint Bot"
+
 [[workflows.workflow]]
 name = "Bored Ape Forever Mint Bot"
 author = "agent"
@@ -57,8 +61,19 @@ args = "node raffle-bot-start.js"
 [workflows.workflow.metadata]
 outputType = "console"
 
+[[workflows.workflow]]
+name = "Wild Tigers Forever Mint Bot"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node forever-mint-bot.js"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
 [deployment]
-run = ["sh", "-c", "node index.js & node bored-ape-forever-mint-bot.js & node raffle-bot-start.js & wait"]
+run = ["sh", "-c", "node index.js & node bored-ape-forever-mint-bot.js & node raffle-bot-start.js & node forever-mint-bot.js & wait"]
 deploymentTarget = "vm"
 ignorePorts = true
 
