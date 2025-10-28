@@ -66,10 +66,8 @@ class WildTigerRaffleBot {
      */
     async checkForNewMints() {
         try {
-            // On first run, fetch more mints to catch up on any missed from last 24 hours
-            const fetchLimit = this.isFirstRun ? 20 : 5;
-            
             // Fetch recent raffle ticket mints from SentX
+            const fetchLimit = 5;
             const recentMints = await sentxService.getRecentRaffleTicketMints(fetchLimit);
             
             if (!recentMints || recentMints.length === 0) {
@@ -80,19 +78,38 @@ class WildTigerRaffleBot {
                 return;
             }
             
-            // On first run, filter to only mints from last 24 hours for catch-up notifications
-            let mintsToProcess = recentMints;
+            // On first run, only notify for the latest mint, mark others as processed
             if (this.isFirstRun) {
-                const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
-                mintsToProcess = recentMints.filter(mint => {
-                    const mintTime = new Date(mint.mint_date).getTime();
-                    return mintTime >= twentyFourHoursAgo;
-                });
-                console.log(`🔍 First run: Found ${mintsToProcess.length} raffle ticket mints from last 24 hours`);
+                console.log(`🔍 First run: Found ${recentMints.length} recent raffle ticket mints`);
+                
+                // Mark all but the latest as processed (no notifications)
+                for (let i = 1; i < recentMints.length; i++) {
+                    const mint = recentMints[i];
+                    const mintId = `${mint.serial_number}-${mint.mint_date}`;
+                    this.processedMints.add(mintId);
+                }
+                
+                // Only process the very latest mint
+                if (recentMints.length > 0) {
+                    const latestMint = recentMints[0];
+                    const mintId = `${latestMint.serial_number}-${latestMint.mint_date}`;
+                    
+                    if (!this.processedMints.has(mintId)) {
+                        console.log(`🎟️ LATEST RAFFLE TICKET: ${latestMint.nft_name} - ${latestMint.mint_cost} ${latestMint.mint_cost_symbol}`);
+                        console.log(`   Serial: ${latestMint.serial_number}, Minter: ${latestMint.minter_address}`);
+                        
+                        await this.sendMintNotifications(latestMint);
+                        this.processedMints.add(mintId);
+                    }
+                }
+                
+                this.isFirstRun = false;
+                console.log('✅ Raffle monitoring started - watching for new ticket mints');
+                return;
             }
             
-            // Process each mint (newest first)
-            for (const mint of mintsToProcess.reverse()) {
+            // Normal operation: process all new mints
+            for (const mint of recentMints) {
                 const mintId = `${mint.serial_number}-${mint.mint_date}`;
                 
                 // Skip if already processed
@@ -108,17 +125,6 @@ class WildTigerRaffleBot {
                 
                 // Mark as processed
                 this.processedMints.add(mintId);
-                
-                // Small delay between notifications on first run to avoid rate limits
-                if (this.isFirstRun && mintsToProcess.length > 1) {
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                }
-            }
-            
-            // Mark first run as complete
-            if (this.isFirstRun) {
-                this.isFirstRun = false;
-                console.log('✅ Raffle catch-up complete - monitoring for new ticket mints');
             }
             
         } catch (error) {
