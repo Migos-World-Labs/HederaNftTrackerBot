@@ -58,7 +58,7 @@ args = "node raffle-bot-start.js"
 outputType = "console"
 
 [deployment]
-run = ["sh", "-c", "node index.js & node bored-ape-forever-mint-bot.js & wait"]
+run = ["sh", "-c", "node index.js & node bored-ape-forever-mint-bot.js & node raffle-bot-start.js & wait"]
 deploymentTarget = "vm"
 ignorePorts = true
 
