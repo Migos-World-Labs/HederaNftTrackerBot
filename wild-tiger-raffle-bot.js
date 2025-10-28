@@ -66,33 +66,37 @@ class WildTigerRaffleBot {
      */
     async checkForNewMints() {
         try {
-            // On first run, only fetch 1 mint to establish baseline and avoid rate limits
-            const fetchLimit = this.isFirstRun ? 1 : 5;
+            // On first run, fetch more mints to catch up on any missed from last 24 hours
+            const fetchLimit = this.isFirstRun ? 20 : 5;
             
             // Fetch recent raffle ticket mints from SentX
             const recentMints = await sentxService.getRecentRaffleTicketMints(fetchLimit);
             
             if (!recentMints || recentMints.length === 0) {
                 if (this.isFirstRun) {
-                    console.log('📍 Raffle baseline established - no recent mints found');
+                    console.log('📍 Raffle monitoring started - no recent mints found');
                     this.isFirstRun = false;
                 }
                 return;
             }
             
-            // Process each mint
-            for (const mint of recentMints) {
+            // On first run, filter to only mints from last 24 hours for catch-up notifications
+            let mintsToProcess = recentMints;
+            if (this.isFirstRun) {
+                const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+                mintsToProcess = recentMints.filter(mint => {
+                    const mintTime = new Date(mint.mint_date).getTime();
+                    return mintTime >= twentyFourHoursAgo;
+                });
+                console.log(`🔍 First run: Found ${mintsToProcess.length} raffle ticket mints from last 24 hours`);
+            }
+            
+            // Process each mint (newest first)
+            for (const mint of mintsToProcess.reverse()) {
                 const mintId = `${mint.serial_number}-${mint.mint_date}`;
                 
                 // Skip if already processed
                 if (this.processedMints.has(mintId)) {
-                    continue;
-                }
-                
-                // On first run, just mark as processed without notifications to establish baseline
-                if (this.isFirstRun) {
-                    this.processedMints.add(mintId);
-                    console.log(`📍 Baseline: Found existing raffle ticket ${mint.nft_name} #${mint.serial_number} (not notifying)`);
                     continue;
                 }
                 
@@ -104,12 +108,17 @@ class WildTigerRaffleBot {
                 
                 // Mark as processed
                 this.processedMints.add(mintId);
+                
+                // Small delay between notifications on first run to avoid rate limits
+                if (this.isFirstRun && mintsToProcess.length > 1) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
             }
             
             // Mark first run as complete
             if (this.isFirstRun) {
                 this.isFirstRun = false;
-                console.log('✅ Raffle baseline established - monitoring for new ticket mints only');
+                console.log('✅ Raffle catch-up complete - monitoring for new ticket mints');
             }
             
         } catch (error) {
