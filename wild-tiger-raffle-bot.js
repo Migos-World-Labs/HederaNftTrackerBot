@@ -231,7 +231,7 @@ class WildTigerRaffleBot {
                 { name: 'Minted By', value: mint.minter_address ? `\`${mint.minter_address.substring(0, 10)}...\`` : 'Unknown', inline: true }
             ])
             .setColor('#FF6B35') // Orange/red color for raffle theme
-            .setThumbnail('https://hashpack.b-cdn.net/ipfs/bafybeifr3suqg4qb35kjfhma6zzmlq4v3z57af7ky45ppaacggvcweoa2q/looped-ticket.gif')
+            .setThumbnail('https://sentx-blob.b-cdn.net/upload/launchpad/848-724be4ab-693b42a7077.webp')
             .setFooter({ text: 'Wild Tiger Raffle • Good Luck! 🍀' })
             .setTimestamp(new Date(mint.mint_date));
 
